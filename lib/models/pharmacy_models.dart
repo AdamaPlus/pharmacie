@@ -758,10 +758,11 @@ class UserAccount {
   final String username;
   final String passwordHash; // simple representation
   final String employeeId;
-  final String role; // 'PHARMACIEN', 'PREPARATEUR', 'CAISSIER', 'ADMIN'
+  final String role; // 'PHARMACIEN', 'PREPARATEUR', 'CAISSIER', 'ADMIN', 'VENDEUR'
   final String fullName;
   final String email;
   final String password;
+  final String pinCode; // Code PIN propre à chaque utilisateur (attribué par l'admin pour les vendeurs)
   final List<String> permissions;
   final String? profileImageBase64;
 
@@ -773,12 +774,13 @@ class UserAccount {
     this.fullName = '',
     this.email = '',
     this.password = '',
+    this.pinCode = '',
     List<String>? permissions,
     this.profileImageBase64,
   }) : this.passwordHash = passwordHash ?? password,
        this.employeeId = employeeId ?? 'E001',
-       this.permissions = permissions ?? (role == 'ADMIN' 
-           ? ['dashboard', 'pos', 'add_product', 'new_medicines', 'reports', 'archives', 'loans', 'replenish', 'suppliers', 'history'] 
+       this.permissions = permissions ?? (role == 'ADMIN'
+           ? ['dashboard', 'pos', 'add_product', 'new_medicines', 'reports', 'archives', 'loans', 'replenish', 'suppliers', 'history']
            : ['dashboard', 'pos', 'archives']);
 
   Map<String, dynamic> toMap() {
@@ -790,6 +792,7 @@ class UserAccount {
       'fullName': fullName,
       'email': email,
       'password': password,
+      'pinCode': pinCode,
       'permissions': permissions,
       'profileImageBase64': profileImageBase64,
     };
@@ -804,6 +807,7 @@ class UserAccount {
       fullName: map['fullName'] ?? '',
       email: map['email'] ?? '',
       password: map['password'] ?? (map['passwordHash'] ?? ''),
+      pinCode: map['pinCode'] ?? '',
       permissions: map['permissions'] != null ? List<String>.from(map['permissions']) : null,
       profileImageBase64: map['profileImageBase64'],
     );

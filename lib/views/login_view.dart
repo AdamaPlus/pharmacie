@@ -440,7 +440,8 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
             themeColor,
             obscure: _obscureRegConfirmPassword,
             required: true,
-            confirmMatch: _regPasswordController.text,
+            // Passer un getter pour lire la valeur en temps réel lors de la validation
+            confirmGetter: () => _regPasswordController.text,
             suffixIcon: IconButton(
               icon: Icon(
                 _obscureRegConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
@@ -516,7 +517,8 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
     bool isPinCode = false,
     int? minLength,
     Widget? suffixIcon,
-    String? confirmMatch,
+    // Utiliser une fonction getter pour lire la valeur en temps réel lors de la validation
+    String? Function()? confirmGetter,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -538,7 +540,8 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
             if (isPhone && v != null && v.isNotEmpty && v.length != 9) return '9 chiffres requis';
             if (isPinCode && v != null && v.isNotEmpty && v.length != 4) return '4 chiffres requis';
             if (minLength != null && v != null && v.length < minLength) return 'Min $minLength caractères';
-            if (confirmMatch != null && v != confirmMatch) return 'Les mots de passe ne correspondent pas';
+            // Lire la valeur à confirmer au moment de la validation (pas au moment du build)
+            if (confirmGetter != null && v != confirmGetter()) return 'Les mots de passe ne correspondent pas';
             return null;
           },
         ),

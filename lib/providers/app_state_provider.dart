@@ -287,17 +287,22 @@ class AppStateProvider extends ChangeNotifier {
 
   bool login(String usernameOrEmail, String password, String pinCode) {
     final input = usernameOrEmail.trim().toLowerCase();
-    final dbPin = _db.pharmacyPinCode.trim();
     final userIndex = _db.users.indexWhere(
-      (u) => (u.username.toLowerCase() == input || (u.email ?? '').toLowerCase() == input) && u.passwordHash == password && u.role != 'ADMIN'
+      (u) => (u.username.toLowerCase() == input || (u.email ?? '').toLowerCase() == input)
+          && u.passwordHash == password
+          && u.role != 'ADMIN'
     );
-    if (userIndex != -1 && pinCode.trim() == dbPin) {
+    if (userIndex != -1) {
       final user = _db.users[userIndex];
-      _db.currentUsername = user.username;
-      _db.currentUserRole = user.role;
-      _db.logAction('CONNEXION', 'Utilisateur ${user.username} s\'est connecté avec le rôle ${user.role}.');
-      notifyListeners();
-      return true;
+      // Chaque vendeur a son propre code PIN attribué par l'admin
+      final userPin = user.pinCode.trim();
+      if (userPin.isNotEmpty && pinCode.trim() == userPin) {
+        _db.currentUsername = user.username;
+        _db.currentUserRole = user.role;
+        _db.logAction('CONNEXION', 'Utilisateur ${user.username} s\'est connecté avec le rôle ${user.role}.');
+        notifyListeners();
+        return true;
+      }
     }
     _db.logAction('CONNEXION_ECHEC', 'Tentative de connexion échouée pour l\'identifiant $usernameOrEmail.');
     return false;
@@ -314,12 +319,13 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void createUserAccount(String username, String password, String employeeId, String role) {
+  void createUserAccount(String username, String password, String employeeId, String role, {String pinCode = ''}) {
     final newUser = UserAccount(
       username: username,
       passwordHash: password,
       employeeId: employeeId,
       role: role,
+      pinCode: pinCode,
     );
     _db.users.add(newUser);
     _db.logAction('ADMIN_USER_CREATE', 'Création du compte utilisateur : $username ($role).');
@@ -344,7 +350,21 @@ class AppStateProvider extends ChangeNotifier {
   void editUser(UserAccount updated) {
     final idx = _db.users.indexWhere((u) => u.username == updated.username);
     if (idx != -1) {
-      _db.users[idx] = updated;
+      final old = _db.users[idx];
+      // Préserver le pinCode existant si le nouveau est vide (mode édition sans changer le PIN)
+      final resolvedPin = updated.pinCode.isNotEmpty ? updated.pinCode : old.pinCode;
+      _db.users[idx] = UserAccount(
+        username: updated.username,
+        passwordHash: updated.passwordHash,
+        employeeId: updated.employeeId,
+        role: updated.role,
+        fullName: updated.fullName,
+        email: updated.email,
+        password: updated.password,
+        pinCode: resolvedPin,
+        permissions: updated.permissions,
+        profileImageBase64: updated.profileImageBase64 ?? old.profileImageBase64,
+      );
       _db.logAction('ADMIN_USER_EDIT', 'Compte utilisateur modifié : ${updated.username}.');
       _db.save();
       notifyListeners();
