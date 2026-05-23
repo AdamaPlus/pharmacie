@@ -85,11 +85,11 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
       final password = _passwordController.text;
       final pin = _pinController.text.trim();
 
-      bool success = provider.loginPharmacy(username, password, pin);
-      if (!success) success = provider.login(username, password, pin);
+      bool success = provider.loginPharmacy(username, password, '');
+      if (!success) success = provider.login(username, password, '');
 
       if (!success) {
-        setState(() => _errorMessage = 'Nom utilisateur, mot de passe ou Code PIN incorrect.');
+        setState(() => _errorMessage = 'Nom utilisateur ou mot de passe incorrect.');
       }
     }
   }
@@ -107,7 +107,8 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
         adminFullName: _regAdminNameController.text.trim(),
         username: _regUsernameController.text.trim().toLowerCase(),
         password: _regPasswordController.text,
-        pinCode: _regPinCodeController.text.trim(),
+        pinCode: '',
+
         contact1: _regContact1Controller.text.trim(),
         contact2: _regContact2Controller.text.trim(),
         logo: _regLogoBytes,
@@ -121,7 +122,6 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
         _regUsernameController.clear();
         _regPasswordController.clear();
         _regConfirmPasswordController.clear();
-        _regPinCodeController.clear();
         _regContact1Controller.clear();
         _regContact2Controller.clear();
         _regLogoBytes = null;
@@ -300,44 +300,6 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
               ),
             ),
           ),
-          const SizedBox(height: 14),
-          _loginField(
-            label: 'Code PIN',
-            controller: _pinController,
-            icon: Icons.pin_rounded,
-            hint: 'Code PIN à 4 chiffres',
-            themeColor: themeColor,
-            obscure: _obscurePin,
-            isPin: true,
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscurePin ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                color: Colors.white38,
-                size: 18,
-              ),
-              onPressed: () => setState(() => _obscurePin = !_obscurePin),
-            ),
-            onSubmit: (_) => _handleLogin(),
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => _showForgotPinCodeDialog(themeColor),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                'Code PIN oublié ?',
-                style: GoogleFonts.inter(
-                  color: Colors.orangeAccent,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12.5,
-                ),
-              ),
-            ),
-          ),
           const SizedBox(height: 22),
           _primaryBtn('Se connecter', Icons.login_rounded, themeColor, _handleLogin),
         ],
@@ -409,8 +371,7 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
           const SizedBox(height: 12),
           _regField('Nom d\'utilisateur (Admin)', _regUsernameController, Icons.person_outline_rounded, themeColor, required: true),
           const SizedBox(height: 12),
-          _regField("Code PIN administrateur", _regPinCodeController, Icons.lock_outline_rounded, themeColor, required: true, isPinCode: true),
-          const SizedBox(height: 12),
+
           _regField('Email', _regContact2Controller, Icons.email_rounded, themeColor, isEmail: true, required: true),
           const SizedBox(height: 12),
           _regField('Téléphone', _regContact1Controller, Icons.phone_rounded, themeColor, required: true, isPhone: true),

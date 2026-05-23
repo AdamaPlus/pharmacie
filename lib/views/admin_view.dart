@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -156,17 +155,7 @@ class _AdminViewState extends State<AdminView> {
                             'Email : ${u.email.isNotEmpty ? u.email : '—'}',
                             style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12.5),
                           ),
-                          const SizedBox(width: 20),
-                          Icon(Icons.pin_rounded, size: 14, color: Colors.orangeAccent),
-                          const SizedBox(width: 4),
-                          Text(
-                            u.pinCode.isNotEmpty ? 'PIN : ••••' : 'PIN : non défini',
-                            style: GoogleFonts.inter(
-                              color: u.pinCode.isNotEmpty ? Colors.orangeAccent : Colors.redAccent,
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -323,9 +312,7 @@ class _AdminViewState extends State<AdminView> {
     final nameCtrl = TextEditingController(text: isEdit ? original.fullName : '');
     final emailCtrl = TextEditingController(text: isEdit ? original.email : '');
     final passCtrl = TextEditingController(text: isEdit ? original.password : '');
-    final pinCtrl = TextEditingController(text: isEdit ? original.pinCode : '');
     bool obscurePass = true;
-    bool obscurePin = true;
 
     // Default permissions for a new vendor
     List<String> selectedPermissions = isEdit
@@ -387,64 +374,8 @@ class _AdminViewState extends State<AdminView> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        // Code PIN du vendeur (attribué par l'admin)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Code PIN du Vendeur (4 chiffres)', style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Ce code PIN est unique pour ce vendeur — différent du PIN administrateur.',
-                              style: GoogleFonts.inter(color: state.textSecondaryLight, fontSize: 11),
-                            ),
-                            const SizedBox(height: 6),
-                            TextFormField(
-                              controller: pinCtrl,
-                              obscureText: obscurePin,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                                LengthLimitingTextInputFormatter(4),
-                              ],
-                              style: GoogleFonts.inter(color: state.textPrimary, fontSize: 18, letterSpacing: obscurePin ? 0 : 8, fontWeight: FontWeight.bold),
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: state.bgPrimary,
-                                hintText: isEdit ? 'Laisser vide pour conserver' : 'Ex : 5678',
-                                hintStyle: GoogleFonts.inter(color: state.textSecondaryLight, fontSize: 12.5),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide.none,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: const Color(0xFF10B981).withOpacity(0.3)),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: const BorderSide(color: Color(0xFF10B981), width: 1.5),
-                                ),
-                                suffixIcon: IconButton(
-                                  icon: Icon(obscurePin ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: state.textSecondaryLight, size: 18),
-                                  onPressed: () => setDialogState(() => obscurePin = !obscurePin),
-                                ),
-                              ),
-                              validator: (v) {
-                                if (!isEdit && (v == null || v.trim().isEmpty)) return 'Code PIN requis';
-                                if (v != null && v.isNotEmpty && v.length != 4) return 'Exactement 4 chiffres requis';
-                                // Vérifier que le PIN du vendeur est différent du PIN admin
-                                final adminPin = Provider.of<AppStateProvider>(context, listen: false).pharmacyPinCode;
-                                if (v != null && v.isNotEmpty && v.trim() == adminPin.trim()) {
-                                  return 'Ce PIN ne peut pas être identique au PIN administrateur';
-                                }
-                                return null;
-                              },
-                            ),
-                          ],
-                        ),
                         const SizedBox(height: 16),
+
 
                         Text(
                           'Autoriser l\'accès aux modules :',
@@ -502,7 +433,8 @@ class _AdminViewState extends State<AdminView> {
                         fullName: nameCtrl.text.trim(),
                         email: emailCtrl.text.trim(),
                         password: passCtrl.text.isNotEmpty ? passCtrl.text.trim() : (original?.password ?? ''),
-                        pinCode: pinCtrl.text.isNotEmpty ? pinCtrl.text.trim() : (original?.pinCode ?? ''),
+                        pinCode: original?.pinCode ?? '',
+
                         role: 'VENDEUR',
                         permissions: selectedPermissions,
                       );

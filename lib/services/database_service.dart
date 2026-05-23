@@ -39,6 +39,8 @@ class DatabaseService {
   String pharmacyContact1 = '';
   String pharmacyContact2 = '';
   bool hasSeenOnboarding = false;
+  String firstLaunchDate = '';
+  bool isLicensed = false;
 
   // ────────────────────────────────────────────────────────────────
   // INITIALISATION
@@ -137,6 +139,13 @@ class DatabaseService {
     pharmacyContact1    = settings['pharmacyContact1']    ?? '';
     pharmacyContact2    = settings['pharmacyContact2']    ?? '';
     hasSeenOnboarding   = settings['hasSeenOnboarding']   == 'true';
+    firstLaunchDate     = settings['firstLaunchDate']     ?? '';
+    isLicensed          = settings['isLicensed']          == 'true';
+
+    if (firstLaunchDate.isEmpty) {
+      firstLaunchDate = DateTime.now().toIso8601String();
+      save();
+    }
 
     // Collections
     products       = await _loadTable('products',       (m) => Product.fromMap(m));
@@ -190,6 +199,8 @@ class DatabaseService {
       upsertSetting('pharmacyContact1',   pharmacyContact1);
       upsertSetting('pharmacyContact2',   pharmacyContact2);
       upsertSetting('hasSeenOnboarding',  hasSeenOnboarding.toString());
+      upsertSetting('firstLaunchDate',    firstLaunchDate);
+      upsertSetting('isLicensed',         isLicensed.toString());
 
       // Collections
       _upsertAll(batch, 'products',       products,       (e) => e.id,       (e) => e.toMap());
@@ -325,6 +336,8 @@ class DatabaseService {
     pharmacyContact1   = '';
     pharmacyContact2   = '';
     hasSeenOnboarding  = false;
+    firstLaunchDate    = '';
+    isLicensed         = false;
   }
 
   // ────────────────────────────────────────────────────────────────
@@ -370,6 +383,8 @@ class DatabaseService {
         'pharmacyContact1':   pharmacyContact1,
         'pharmacyContact2':   pharmacyContact2,
         'hasSeenOnboarding':  hasSeenOnboarding,
+        'firstLaunchDate':    firstLaunchDate,
+        'isLicensed':         isLicensed,
       };
       logAction('BACKUP', 'Sauvegarde exportée avec succès.');
       return const JsonEncoder.withIndent('  ').convert(data);
@@ -415,6 +430,8 @@ class DatabaseService {
       pharmacyContact1   = data['pharmacyContact1']   ?? '';
       pharmacyContact2   = data['pharmacyContact2']   ?? '';
       hasSeenOnboarding  = data['hasSeenOnboarding']  ?? false;
+      firstLaunchDate    = data['firstLaunchDate']    ?? '';
+      isLicensed         = data['isLicensed']         ?? false;
 
       // Persister vers SQLite
       await save();

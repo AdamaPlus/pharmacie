@@ -7,6 +7,7 @@ import 'providers/app_state_provider.dart';
 import 'views/login_view.dart';
 import 'views/main_layout.dart';
 import 'views/onboarding_view.dart';
+import 'views/license_validation_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -91,6 +92,11 @@ class AuthenticationWrapper extends StatelessWidget {
           child: CircularProgressIndicator(color: Color(0xFF10B981)),
         ),
       );
+    }
+
+    // Période d'essai expirée ? Bloquer avec l'écran d'activation de la licence
+    if (state.isTrialExpired) {
+      return const LicenseValidationView();
     }
 
     // Premier lancement : afficher l'écran d'onboarding

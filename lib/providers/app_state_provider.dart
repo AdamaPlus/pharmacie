@@ -92,6 +92,34 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Licence & Trial
+  bool get isLicensed => _db.isLicensed;
+  String get firstLaunchDate => _db.firstLaunchDate;
+
+  int get trialDaysRemaining {
+    if (_db.firstLaunchDate.isEmpty) return 5;
+    try {
+      final launchDate = DateTime.parse(_db.firstLaunchDate);
+      final difference = DateTime.now().difference(launchDate).inDays;
+      final remaining = 5 - difference;
+      return remaining < 0 ? 0 : remaining;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  bool get isTrialExpired => !isLicensed && trialDaysRemaining <= 0;
+
+  bool validateLicense(String key) {
+    if (key.trim() == "M@riame@@##Ad@m!a62380//") {
+      _db.isLicensed = true;
+      _db.save();
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
   // Pharmacy getters
   String get pharmacyName => _db.pharmacyName;
   String get pharmacyQuartier => _db.pharmacyQuartier;
@@ -211,21 +239,18 @@ class AppStateProvider extends ChangeNotifier {
 
   bool loginPharmacy(String usernameOrEmail, String password, String pinCode) {
     final input = usernameOrEmail.trim().toLowerCase();
-    final dbPin = _db.pharmacyPinCode.trim();
     final dbEmail = _db.pharmacyContact2.trim().toLowerCase();
     final adminUser = _db.users.firstWhere(
       (u) => u.role == 'ADMIN',
       orElse: () => UserAccount(username: '', role: 'ADMIN'),
     );
-    // Le username admin peut être le nom complet, le PIN ou l'email
     final adminFullName = (adminUser.fullName ?? '').trim().toLowerCase();
     final adminUsername = adminUser.username.trim().toLowerCase();
     final inputMatches = input == adminUsername ||
-        input == dbPin.toLowerCase() ||
         input == dbEmail ||
         (adminFullName.isNotEmpty && input == adminFullName);
-    if (inputMatches && password == _db.pharmacyPassword && pinCode.trim() == dbPin) {
-      _db.currentUsername = adminUser.username.isNotEmpty ? adminUser.username : dbPin;
+    if (inputMatches && password == _db.pharmacyPassword) {
+      _db.currentUsername = adminUser.username.isNotEmpty ? adminUser.username : adminUsername;
       _db.currentUserRole = 'ADMIN';
       _db.logAction('CONNEXION', 'Connexion réussie pour la pharmacie ${_db.pharmacyName} (Admin).');
       notifyListeners();
@@ -294,15 +319,11 @@ class AppStateProvider extends ChangeNotifier {
     );
     if (userIndex != -1) {
       final user = _db.users[userIndex];
-      // Chaque vendeur a son propre code PIN attribué par l'admin
-      final userPin = user.pinCode.trim();
-      if (userPin.isNotEmpty && pinCode.trim() == userPin) {
-        _db.currentUsername = user.username;
-        _db.currentUserRole = user.role;
-        _db.logAction('CONNEXION', 'Utilisateur ${user.username} s\'est connecté avec le rôle ${user.role}.');
-        notifyListeners();
-        return true;
-      }
+      _db.currentUsername = user.username;
+      _db.currentUserRole = user.role;
+      _db.logAction('CONNEXION', 'Utilisateur ${user.username} s\'est connecté avec le rôle ${user.role}.');
+      notifyListeners();
+      return true;
     }
     _db.logAction('CONNEXION_ECHEC', 'Tentative de connexion échouée pour l\'identifiant $usernameOrEmail.');
     return false;

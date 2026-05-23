@@ -159,14 +159,14 @@ class _MainLayoutState extends State<MainLayout> {
                       children: [
                         if (_pharmacyLogoBytes != null)
                           Container(
-                            width: _isSidebarVisible ? 60 : 44,
-                            height: _isSidebarVisible ? 60 : 44,
+                            width: _isSidebarVisible ? 90 : 56,
+                            height: _isSidebarVisible ? 90 : 56,
                             decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
                             clipBehavior: Clip.antiAlias,
                             child: Image.memory(_pharmacyLogoBytes!, fit: BoxFit.cover),
                           )
                         else
-                          Icon(_pharmacyIcon, color: Colors.white, size: _isSidebarVisible ? 40 : 28),
+                          Icon(_pharmacyIcon, color: Colors.white, size: _isSidebarVisible ? 52 : 34),
                         if (_isSidebarVisible) ...[
                           const SizedBox(height: 12),
                           Text(
@@ -320,12 +320,12 @@ class _MainLayoutState extends State<MainLayout> {
                           );
                           final hasImg = currentUser.profileImageBase64 != null && currentUser.profileImageBase64!.isNotEmpty;
                           return CircleAvatar(
-                            radius: 18,
+                            radius: 26,
                             backgroundColor: themeColor.withOpacity(0.15),
                             backgroundImage: hasImg ? MemoryImage(base64Decode(currentUser.profileImageBase64!)) : null,
                             child: hasImg ? null : Text(
                               state.currentUsername.substring(0, 1).toUpperCase(),
-                              style: GoogleFonts.outfit(color: themeColor, fontWeight: FontWeight.bold),
+                              style: GoogleFonts.outfit(color: themeColor, fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                           );
                         })(),
@@ -405,7 +405,6 @@ class _MainLayoutState extends State<MainLayout> {
                         },
                       ),
                       SizedBox(width: 8),
-                      // Active screen title
                       Text(
                         allTabs.firstWhere((t) => t['index'] == state.activeTab)['title'],
                         style: GoogleFonts.outfit(
@@ -414,6 +413,33 @@ class _MainLayoutState extends State<MainLayout> {
                           color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.white,
                         ),
                       ),
+                      // Badge Période d'essai (Mode Test)
+                      if (!state.isLicensed) ...[
+                        const SizedBox(width: 14),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.timer_outlined, color: Colors.orange, size: 14),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Mode Test : ${state.trialDaysRemaining} jour${state.trialDaysRemaining > 1 ? "s" : ""} restant${state.trialDaysRemaining > 1 ? "s" : ""}',
+                                style: GoogleFonts.inter(
+                                  color: Colors.orange,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       // Compteur archives reçu affiché dans la topbar
                       if (state.activeTab == 9 && state.sales.isNotEmpty) ...[
                         const SizedBox(width: 10),
@@ -738,9 +764,6 @@ class _MainLayoutState extends State<MainLayout> {
     final emailCtrl = TextEditingController(text: currentUser.email);
     final passCtrl = TextEditingController();
     bool obscurePass = true;
-
-    final pinCtrl = TextEditingController(text: state.pharmacyPinCode);
-    bool obscurePin = true;
     Uint8List? newProfileImageBytes;
     String? newProfileImageBase64;
 
@@ -972,47 +995,7 @@ class _MainLayoutState extends State<MainLayout> {
                           },
                         ),
 
-                        // Code PIN de la Pharmacie (ADMIN uniquement)
-                        if (state.currentUserRole == 'ADMIN') ...[
-                          const SizedBox(height: 14),
-                          Text('Code PIN de la Pharmacie', style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 6),
-                          TextFormField(
-                            controller: pinCtrl,
-                            obscureText: obscurePin,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(4),
-                            ],
-                            style: GoogleFonts.inter(color: state.textPrimary),
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: state.bgPrimary,
-                              hintText: 'Code PIN à 4 chiffres',
-                              hintStyle: GoogleFonts.inter(color: state.textSecondaryLight),
-                              prefixIcon: Icon(Icons.pin_rounded, color: state.textSecondaryLight, size: 18),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  obscurePin ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                  color: state.textSecondaryLight, size: 18,
-                                ),
-                                onPressed: () => setDialogState(() => obscurePin = !obscurePin),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: themeColor, width: 1.5),
-                              ),
-                            ),
-                            validator: (v) {
-                              if (v == null || v.trim().isEmpty) return 'Code PIN requis';
-                              if (v.trim().length != 4) return 'Exactement 4 chiffres';
-                              return null;
-                            },
-                          ),
-                        ],
+
 
                         // Permissions (pour VENDEUR uniquement)
                         if (state.currentUserRole == 'VENDEUR') ...[ 
@@ -1063,7 +1046,6 @@ class _MainLayoutState extends State<MainLayout> {
                         email: emailCtrl.text.trim(),
                         newPassword: passCtrl.text.isNotEmpty ? passCtrl.text : null,
                         profileImageBase64: newProfileImageBase64,
-                        newPinCode: state.currentUserRole == 'ADMIN' ? pinCtrl.text.trim() : null,
                       );
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
