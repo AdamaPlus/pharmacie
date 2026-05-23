@@ -1,0 +1,57 @@
+{
+  "products": [],
+  "lots": [],
+  "stockMovements": [],
+  "sales": [],
+  "prescriptions": [],
+  "patients": [],
+  "employees": [],
+  "suppliers": [],
+  "users": [
+    {
+      "username": "1234",
+      "passwordHash": "Adama624",
+      "employeeId": "E001",
+      "role": "ADMIN",
+      "fullName": "Adama keita",
+      "email": "mariameadamakeita5@gmail.com",
+      "password": "Adama624",
+      "permissions": [
+        "dashboard",
+        "pos",
+        "add_product",
+        "new_medicines",
+        "reports",
+        "archives",
+        "loans",
+        "replenish",
+        "suppliers",
+        "history"
+      ]
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "LOG-1779485337630-2",
+      "timestamp": "2026-05-22T21:28:57.630284",
+      "username": "admin",
+      "action": "INIT",
+      "details": "Base de données chargée avec succès depuis le stockage local."
+    },
+    {
+      "id": "LOG-1779484993669-1",
+      "timestamp": "2026-05-22T21:23:13.669982",
+      "username": "admin",
+      "action": "INIT",
+      "details": "Base de données chargée avec succès depuis le stockage local."
+    }
+  ],
+  "pharmacyName": "Keita",
+  "pharmacyQuartier": "Gare",
+  "pharmacyPassword": "Adama624",
+  "pharmacyPinCode": "1234",
+  "pharmacyLogoBase64": "",
+  "pharmacyContact1": "624064642",
+  "pharmacyContact2": "mariameadamakeita5@gmail.com",
+  "hasSeenOnboarding": true
+}

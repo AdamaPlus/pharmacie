@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=PharmaGuinée
+Comment=Gestion de Pharmacie
+Exec=pharmaguinee
+Icon=pharmaguinee
+Type=Application
+Categories=Office;Science;Medicine;
+StartupWMClass=pharmaguinee
+Keywords=pharmacie;médicaments;gestion;stock;
