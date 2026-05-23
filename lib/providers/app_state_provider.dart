@@ -104,6 +104,7 @@ class AppStateProvider extends ChangeNotifier {
     required String name,
     required String quartier,
     String adminFullName = '',
+    required String username,
     required String password,
     required String pinCode,
     required String contact1,
@@ -128,18 +129,20 @@ class AppStateProvider extends ChangeNotifier {
     final String resolvedFullName = adminFullName.isNotEmpty ? adminFullName : quartier;
     final adminIndex = _db.users.indexWhere((u) => u.role == 'ADMIN');
     if (adminIndex != -1) {
+      final old = _db.users[adminIndex];
       _db.users[adminIndex] = UserAccount(
-        username: pinCode,
+        username: username,
         passwordHash: password,
         employeeId: 'E001',
         role: 'ADMIN',
         fullName: resolvedFullName,
         email: contact2,
         password: password,
+        profileImageBase64: old.profileImageBase64,
       );
     } else {
       _db.users.add(UserAccount(
-        username: pinCode,
+        username: username,
         passwordHash: password,
         employeeId: 'E001',
         role: 'ADMIN',
@@ -150,7 +153,7 @@ class AppStateProvider extends ChangeNotifier {
     }
 
     _db.save();
-    _db.logAction('INSCRIPTION', 'Nouvelle pharmacie enregistrée : $name par $pinCode ($quartier).');
+    _db.logAction('INSCRIPTION', 'Nouvelle pharmacie enregistrée : $name par $username ($quartier).');
     notifyListeners();
   }
 
@@ -357,6 +360,8 @@ class AppStateProvider extends ChangeNotifier {
     String? fullName,
     String? email,
     String? newPassword,
+    String? profileImageBase64,
+    String? newPinCode,
   }) {
     final idx = _db.users.indexWhere((u) => u.username == _db.currentUsername);
     if (idx != -1) {
@@ -370,10 +375,17 @@ class AppStateProvider extends ChangeNotifier {
         fullName: fullName ?? old.fullName,
         email: email ?? old.email,
         password: updatedPassword,
+        permissions: old.permissions,
+        profileImageBase64: profileImageBase64 ?? old.profileImageBase64,
       );
-      // Si admin, synchroniser aussi le mot de passe de la pharmacie
-      if (old.role == 'ADMIN' && newPassword != null && newPassword.isNotEmpty) {
-        _db.pharmacyPassword = newPassword;
+      // Si admin, synchroniser aussi le mot de passe et le code PIN de la pharmacie
+      if (old.role == 'ADMIN') {
+        if (newPassword != null && newPassword.isNotEmpty) {
+          _db.pharmacyPassword = newPassword;
+        }
+        if (newPinCode != null && newPinCode.isNotEmpty) {
+          _db.pharmacyPinCode = newPinCode;
+        }
       }
       _db.logAction('PROFIL_MAJ', 'Profil de ${_db.currentUsername} mis à jour.');
       _db.save();

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state_provider.dart';
@@ -116,12 +117,17 @@ class _AdminViewState extends State<AdminView> {
                 CircleAvatar(
                   radius: 24,
                   backgroundColor: themeColor.withOpacity(0.1),
-                  child: Text(
-                    u.fullName.isNotEmpty
-                        ? u.fullName.substring(0, 2).toUpperCase()
-                        : u.username.substring(0, 2).toUpperCase(),
-                    style: GoogleFonts.outfit(color: themeColor, fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
+                  backgroundImage: (u.profileImageBase64 != null && u.profileImageBase64!.isNotEmpty)
+                      ? MemoryImage(base64Decode(u.profileImageBase64!))
+                      : null,
+                  child: (u.profileImageBase64 == null || u.profileImageBase64!.isEmpty)
+                      ? Text(
+                          u.fullName.isNotEmpty
+                              ? (u.fullName.length >= 2 ? u.fullName.substring(0, 2).toUpperCase() : u.fullName.toUpperCase())
+                              : (u.username.length >= 2 ? u.username.substring(0, 2).toUpperCase() : u.username.toUpperCase()),
+                          style: GoogleFonts.outfit(color: themeColor, fontWeight: FontWeight.bold, fontSize: 14),
+                        )
+                      : null,
                 ),
                 const SizedBox(width: 20),
 

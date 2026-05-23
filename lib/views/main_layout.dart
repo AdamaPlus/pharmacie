@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -311,14 +313,22 @@ class _MainLayoutState extends State<MainLayout> {
                           ? MainAxisAlignment.start
                           : MainAxisAlignment.center,
                       children: [
-                        CircleAvatar(
-                          radius: 18,
-                          backgroundColor: themeColor.withOpacity(0.15),
-                          child: Text(
-                            state.currentUsername.substring(0, 1).toUpperCase(),
-                            style: GoogleFonts.outfit(color: themeColor, fontWeight: FontWeight.bold),
-                          ),
-                        ),
+                        (() {
+                          final currentUser = state.users.firstWhere(
+                            (u) => u.username == state.currentUsername,
+                            orElse: () => UserAccount(username: state.currentUsername, role: state.currentUserRole),
+                          );
+                          final hasImg = currentUser.profileImageBase64 != null && currentUser.profileImageBase64!.isNotEmpty;
+                          return CircleAvatar(
+                            radius: 18,
+                            backgroundColor: themeColor.withOpacity(0.15),
+                            backgroundImage: hasImg ? MemoryImage(base64Decode(currentUser.profileImageBase64!)) : null,
+                            child: hasImg ? null : Text(
+                              state.currentUsername.substring(0, 1).toUpperCase(),
+                              style: GoogleFonts.outfit(color: themeColor, fontWeight: FontWeight.bold),
+                            ),
+                          );
+                        })(),
                         if (_isSidebarVisible) ...[
                           const SizedBox(width: 12),
                           Expanded(
@@ -729,11 +739,17 @@ class _MainLayoutState extends State<MainLayout> {
     final passCtrl = TextEditingController();
     bool obscurePass = true;
 
+    final pinCtrl = TextEditingController(text: state.pharmacyPinCode);
+    bool obscurePin = true;
+    Uint8List? newProfileImageBytes;
+    String? newProfileImageBase64;
+
     showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            final hasImg = newProfileImageBase64 != '' && (newProfileImageBytes != null || (currentUser.profileImageBase64 != null && currentUser.profileImageBase64!.isNotEmpty));
             return AlertDialog(
               backgroundColor: state.bgSecondary,
               title: Row(
@@ -741,7 +757,17 @@ class _MainLayoutState extends State<MainLayout> {
                   CircleAvatar(
                     radius: 22,
                     backgroundColor: themeColor.withOpacity(0.15),
-                    child: Text(
+                    backgroundImage: (() {
+                      if (newProfileImageBase64 == '') return null;
+                      if (newProfileImageBytes != null) return MemoryImage(newProfileImageBytes!);
+                      if (currentUser.profileImageBase64 != null && currentUser.profileImageBase64!.isNotEmpty) {
+                        try {
+                          return MemoryImage(base64Decode(currentUser.profileImageBase64!));
+                        } catch (_) {}
+                      }
+                      return null;
+                    })(),
+                    child: hasImg ? null : Text(
                       state.currentUsername.substring(0, 1).toUpperCase(),
                       style: GoogleFonts.outfit(color: themeColor, fontSize: 20, fontWeight: FontWeight.bold),
                     ),
@@ -792,120 +818,232 @@ class _MainLayoutState extends State<MainLayout> {
                 width: 420,
                 child: Form(
                   key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Nom complet
-                      Text('Nom complet', style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: nameCtrl,
-                        style: GoogleFonts.inter(color: state.textPrimary),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: state.bgPrimary,
-                          hintText: 'Votre nom complet',
-                          hintStyle: GoogleFonts.inter(color: state.textSecondaryLight),
-                          prefixIcon: Icon(Icons.badge_outlined, color: state.textSecondaryLight, size: 18),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: themeColor, width: 1.5),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Email
-                      Text('Email', style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: emailCtrl,
-                        keyboardType: TextInputType.emailAddress,
-                        style: GoogleFonts.inter(color: state.textPrimary),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: state.bgPrimary,
-                          hintText: 'votre@email.com',
-                          hintStyle: GoogleFonts.inter(color: state.textSecondaryLight),
-                          prefixIcon: Icon(Icons.email_outlined, color: state.textSecondaryLight, size: 18),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: themeColor, width: 1.5),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Nouveau mot de passe
-                      Text('Nouveau mot de passe (laisser vide pour ne pas changer)',
-                          style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: passCtrl,
-                        obscureText: obscurePass,
-                        style: GoogleFonts.inter(color: state.textPrimary),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: state.bgPrimary,
-                          hintText: '••••••••',
-                          hintStyle: GoogleFonts.inter(color: state.textSecondaryLight),
-                          prefixIcon: Icon(Icons.lock_outline_rounded, color: state.textSecondaryLight, size: 18),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                              color: state.textSecondaryLight, size: 18,
-                            ),
-                            onPressed: () => setDialogState(() => obscurePass = !obscurePass),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: themeColor, width: 1.5),
-                          ),
-                        ),
-                        validator: (v) {
-                          if (v != null && v.isNotEmpty && v.length < 4) {
-                            return 'Minimum 4 caractères';
-                          }
-                          return null;
-                        },
-                      ),
-
-                      // Permissions (pour VENDEUR uniquement)
-                      if (state.currentUserRole == 'VENDEUR') ...[ 
-                        const SizedBox(height: 20),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: themeColor.withOpacity(0.06),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: themeColor.withOpacity(0.15)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Photo de Profil
+                        Center(
+                          child: Stack(
+                            alignment: Alignment.bottomRight,
                             children: [
-                              Row(children: [
-                                Icon(Icons.shield_outlined, color: themeColor, size: 14),
-                                const SizedBox(width: 6),
-                                Text('Vos droits d\'accès', style: GoogleFonts.inter(color: themeColor, fontSize: 12, fontWeight: FontWeight.bold)),
-                              ]),
-                              const SizedBox(height: 8),
-                              _permRow('✓', 'Tableau de bord', state),
-                              _permRow('✓', 'Point de ventes (POS)', state),
-                              _permRow('✓', 'Archives reçu', state),
-                              _permRow('✗', 'Stock / Inventaire', state, denied: true),
-                              _permRow('✗', 'Fournisseurs / Admin', state, denied: true),
+                              Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  color: state.bgPrimary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: themeColor.withOpacity(0.3), width: 2),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: (() {
+                                  if (newProfileImageBase64 == '') {
+                                    return Icon(Icons.person_rounded, color: themeColor.withOpacity(0.7), size: 40);
+                                  }
+                                  if (newProfileImageBytes != null) {
+                                    return Image.memory(newProfileImageBytes!, fit: BoxFit.cover);
+                                  }
+                                  if (currentUser.profileImageBase64 != null && currentUser.profileImageBase64!.isNotEmpty) {
+                                    try {
+                                      return Image.memory(base64Decode(currentUser.profileImageBase64!), fit: BoxFit.cover);
+                                    } catch (e) {
+                                      debugPrint('Error decoding base64: $e');
+                                    }
+                                  }
+                                  return Icon(Icons.person_rounded, color: themeColor.withOpacity(0.7), size: 40);
+                                })(),
+                              ),
+                              GestureDetector(
+                                onTap: () async {
+                                  final result = await FilePicker.pickFiles(type: FileType.image, withData: true);
+                                  if (result != null && result.files.single.bytes != null) {
+                                    setDialogState(() {
+                                      newProfileImageBytes = result.files.single.bytes;
+                                      newProfileImageBase64 = base64Encode(newProfileImageBytes!);
+                                    });
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(5),
+                                  decoration: BoxDecoration(
+                                    color: themeColor,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: state.bgSecondary, width: 2),
+                                  ),
+                                  child: const Icon(Icons.edit_rounded, color: Colors.white, size: 12),
+                                ),
+                              ),
                             ],
                           ),
                         ),
+                        if (newProfileImageBase64 != '' && (newProfileImageBytes != null || (currentUser.profileImageBase64 != null && currentUser.profileImageBase64!.isNotEmpty)))
+                          Center(
+                            child: TextButton(
+                              onPressed: () {
+                                setDialogState(() {
+                                  newProfileImageBytes = null;
+                                  newProfileImageBase64 = '';
+                                });
+                              },
+                              child: const Text('Retirer la photo', style: TextStyle(color: Colors.redAccent, fontSize: 12)),
+                            ),
+                          ),
+                        const SizedBox(height: 16),
+
+                        // Nom complet
+                        Text('Nom complet', style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: nameCtrl,
+                          style: GoogleFonts.inter(color: state.textPrimary),
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: state.bgPrimary,
+                            hintText: 'Votre nom complet',
+                            hintStyle: GoogleFonts.inter(color: state.textSecondaryLight),
+                            prefixIcon: Icon(Icons.badge_outlined, color: state.textSecondaryLight, size: 18),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: themeColor, width: 1.5),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Email
+                        Text('Email', style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: emailCtrl,
+                          keyboardType: TextInputType.emailAddress,
+                          style: GoogleFonts.inter(color: state.textPrimary),
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: state.bgPrimary,
+                            hintText: 'votre@email.com',
+                            hintStyle: GoogleFonts.inter(color: state.textSecondaryLight),
+                            prefixIcon: Icon(Icons.email_outlined, color: state.textSecondaryLight, size: 18),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: themeColor, width: 1.5),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Nouveau mot de passe
+                        Text('Nouveau mot de passe (laisser vide pour ne pas changer)',
+                            style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: passCtrl,
+                          obscureText: obscurePass,
+                          style: GoogleFonts.inter(color: state.textPrimary),
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: state.bgPrimary,
+                            hintText: '••••••••',
+                            hintStyle: GoogleFonts.inter(color: state.textSecondaryLight),
+                            prefixIcon: Icon(Icons.lock_outline_rounded, color: state.textSecondaryLight, size: 18),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                color: state.textSecondaryLight, size: 18,
+                              ),
+                              onPressed: () => setDialogState(() => obscurePass = !obscurePass),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: themeColor, width: 1.5),
+                            ),
+                          ),
+                          validator: (v) {
+                            if (v != null && v.isNotEmpty && v.length < 4) {
+                              return 'Minimum 4 caractères';
+                            }
+                            return null;
+                          },
+                        ),
+
+                        // Code PIN de la Pharmacie (ADMIN uniquement)
+                        if (state.currentUserRole == 'ADMIN') ...[
+                          const SizedBox(height: 14),
+                          Text('Code PIN de la Pharmacie', style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 6),
+                          TextFormField(
+                            controller: pinCtrl,
+                            obscureText: obscurePin,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(4),
+                            ],
+                            style: GoogleFonts.inter(color: state.textPrimary),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: state.bgPrimary,
+                              hintText: 'Code PIN à 4 chiffres',
+                              hintStyle: GoogleFonts.inter(color: state.textSecondaryLight),
+                              prefixIcon: Icon(Icons.pin_rounded, color: state.textSecondaryLight, size: 18),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  obscurePin ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                  color: state.textSecondaryLight, size: 18,
+                                ),
+                                onPressed: () => setDialogState(() => obscurePin = !obscurePin),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: themeColor, width: 1.5),
+                              ),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) return 'Code PIN requis';
+                              if (v.trim().length != 4) return 'Exactement 4 chiffres';
+                              return null;
+                            },
+                          ),
+                        ],
+
+                        // Permissions (pour VENDEUR uniquement)
+                        if (state.currentUserRole == 'VENDEUR') ...[ 
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: themeColor.withOpacity(0.06),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: themeColor.withOpacity(0.15)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(children: [
+                                  Icon(Icons.shield_outlined, color: themeColor, size: 14),
+                                  const SizedBox(width: 6),
+                                  Text('Vos droits d\'accès', style: GoogleFonts.inter(color: themeColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                                ]),
+                                const SizedBox(height: 8),
+                                _permRow('✓', 'Tableau de bord', state),
+                                _permRow('✓', 'Point de ventes (POS)', state),
+                                _permRow('✓', 'Archives reçu', state),
+                                _permRow('✗', 'Stock / Inventaire', state, denied: true),
+                                _permRow('✗', 'Fournisseurs / Admin', state, denied: true),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -924,6 +1062,8 @@ class _MainLayoutState extends State<MainLayout> {
                         fullName: nameCtrl.text.trim(),
                         email: emailCtrl.text.trim(),
                         newPassword: passCtrl.text.isNotEmpty ? passCtrl.text : null,
+                        profileImageBase64: newProfileImageBase64,
+                        newPinCode: state.currentUserRole == 'ADMIN' ? pinCtrl.text.trim() : null,
                       );
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -998,13 +1138,15 @@ class _MainLayoutState extends State<MainLayout> {
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
               ),
               onChanged: (val) {
+                final adminUser = state.users.firstWhere(
+                  (u) => u.role == 'ADMIN',
+                  orElse: () => UserAccount(username: '', role: 'ADMIN'),
+                );
                 state.registerPharmacy(
                   name: val,
                   quartier: state.pharmacyQuartier,
-                  adminFullName: state.users.firstWhere(
-                    (u) => u.role == 'ADMIN',
-                    orElse: () => UserAccount(username: '', role: 'ADMIN'),
-                  ).fullName,
+                  adminFullName: adminUser.fullName,
+                  username: adminUser.username.isNotEmpty ? adminUser.username : state.pharmacyPinCode,
                   password: state.pharmacyPassword,
                   pinCode: state.pharmacyPinCode,
                   contact1: state.pharmacyContact1,
@@ -1055,9 +1197,15 @@ class _MainLayoutState extends State<MainLayout> {
                       withData: true,
                     );
                     if (result != null && result.files.single.bytes != null) {
+                      final adminUser = state.users.firstWhere(
+                        (u) => u.role == 'ADMIN',
+                        orElse: () => UserAccount(username: '', role: 'ADMIN'),
+                      );
                       state.registerPharmacy(
                         name: state.pharmacyName,
                         quartier: state.pharmacyQuartier,
+                        adminFullName: adminUser.fullName,
+                        username: adminUser.username.isNotEmpty ? adminUser.username : state.pharmacyPinCode,
                         password: state.pharmacyPassword,
                         pinCode: state.pharmacyPinCode,
                         contact1: state.pharmacyContact1,
@@ -1078,9 +1226,15 @@ class _MainLayoutState extends State<MainLayout> {
                   SizedBox(width: 12),
                   TextButton.icon(
                     onPressed: () {
+                      final adminUser = state.users.firstWhere(
+                        (u) => u.role == 'ADMIN',
+                        orElse: () => UserAccount(username: '', role: 'ADMIN'),
+                      );
                       state.registerPharmacy(
                         name: state.pharmacyName,
                         quartier: state.pharmacyQuartier,
+                        adminFullName: adminUser.fullName,
+                        username: adminUser.username.isNotEmpty ? adminUser.username : state.pharmacyPinCode,
                         password: state.pharmacyPassword,
                         pinCode: state.pharmacyPinCode,
                         contact1: state.pharmacyContact1,

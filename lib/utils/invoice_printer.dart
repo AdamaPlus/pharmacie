@@ -344,12 +344,12 @@ class InvoicePrinter {
           crossAxisAlignment: pw.CrossAxisAlignment.center,
           children: [
             pw.Text(
-              '★  MERCI DE VOTRE VISITE  ★',
+              '★  MERCI DE VOTRE CONFIANCE  ★',
               style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
             ),
             pw.SizedBox(height: 6),
             pw.Text(
-              'Prompt rétablissement à vous',
+              'On vous souhaite prompt rétablissement.',
               style: pw.TextStyle(fontSize: 7, fontStyle: pw.FontStyle.italic),
               textAlign: pw.TextAlign.center,
             ),

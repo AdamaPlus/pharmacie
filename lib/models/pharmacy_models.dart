@@ -763,6 +763,7 @@ class UserAccount {
   final String email;
   final String password;
   final List<String> permissions;
+  final String? profileImageBase64;
 
   UserAccount({
     required this.username,
@@ -773,6 +774,7 @@ class UserAccount {
     this.email = '',
     this.password = '',
     List<String>? permissions,
+    this.profileImageBase64,
   }) : this.passwordHash = passwordHash ?? password,
        this.employeeId = employeeId ?? 'E001',
        this.permissions = permissions ?? (role == 'ADMIN' 
@@ -789,6 +791,7 @@ class UserAccount {
       'email': email,
       'password': password,
       'permissions': permissions,
+      'profileImageBase64': profileImageBase64,
     };
   }
 
@@ -802,6 +805,7 @@ class UserAccount {
       email: map['email'] ?? '',
       password: map['password'] ?? (map['passwordHash'] ?? ''),
       permissions: map['permissions'] != null ? List<String>.from(map['permissions']) : null,
+      profileImageBase64: map['profileImageBase64'],
     );
   }
 }

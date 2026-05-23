@@ -117,6 +117,38 @@ class _OnboardingViewState extends State<OnboardingView>
       body: Stack(
         fit: StackFit.expand,
         children: [
+          // ── Image de fond plein écran avec transition (Cliquable pour Suivant) ──
+          GestureDetector(
+            onTap: _goNext,
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 600),
+              child: Image.asset(
+                slide.imagePath,
+                key: ValueKey<String>(slide.imagePath),
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+              ),
+            ),
+          ),
+
+          // ── Overlay sombre pour la lisibilité ───────────────────────
+          IgnorePointer(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.7),
+                    Colors.black.withOpacity(0.9),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
           // ── Fond animé avec particules décoratives ──────────────────
           AnimatedBuilder(
             animation: _bgAnim,
@@ -320,13 +352,13 @@ class _OnboardingViewState extends State<OnboardingView>
           animation: _bgAnim,
           builder: (context, _) {
             return Container(
-              width: 250 + 20 * _bgAnim.value,
-              height: 170 + 15 * _bgAnim.value,
+              width: 140 + 20 * _bgAnim.value,
+              height: 140 + 15 * _bgAnim.value,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
+                shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: slide.iconBg.withOpacity(0.18 + 0.05 * _bgAnim.value),
+                    color: slide.iconBg.withOpacity(0.3 + 0.05 * _bgAnim.value),
                     blurRadius: 45,
                     spreadRadius: 2,
                   ),
@@ -335,16 +367,14 @@ class _OnboardingViewState extends State<OnboardingView>
             );
           },
         ),
-        // Image Container
+        // Big floating icon in a beautiful glowing circle
         Container(
-          width: 280,
-          height: 190,
+          width: 100,
+          height: 100,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.15),
-              width: 2,
-            ),
+            color: const Color(0xFF0F172A).withOpacity(0.85),
+            shape: BoxShape.circle,
+            border: Border.all(color: slide.iconBg, width: 3),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.4),
@@ -353,36 +383,10 @@ class _OnboardingViewState extends State<OnboardingView>
               ),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: Image.asset(
-              slide.imagePath,
-              fit: BoxFit.cover,
-            ),
-          ),
-        ),
-        // Small floating icon badge
-        Positioned(
-          bottom: -10,
-          right: -10,
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
-              shape: BoxShape.circle,
-              border: Border.all(color: slide.iconBg, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: slide.iconBg.withOpacity(0.4),
-                  blurRadius: 10,
-                ),
-              ],
-            ),
-            child: Icon(
-              slide.icon,
-              color: slide.iconColor,
-              size: 20,
-            ),
+          child: Icon(
+            slide.icon,
+            color: slide.iconColor,
+            size: 44,
           ),
         ),
       ],

@@ -1061,7 +1061,7 @@ class _SalesViewState extends State<SalesView> {
                   ),
                   SizedBox(height: 12),
                   Text(
-                    'Merci de votre confiance !\nConservez ce ticket pour vos retours.\nLes médicaments ne sont repris qu\'en parfait état sous 48 heures.',
+                    'Merci de votre confiance !\nOn vous souhaite prompt rétablissement.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 10, fontStyle: FontStyle.italic),
                   ),

@@ -31,6 +31,7 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
   final _regNameController = TextEditingController();      // Nom de la pharmacie
   final _regQuartierController = TextEditingController();  // Quartier / localisation
   final _regAdminNameController = TextEditingController(); // Nom complet de l'admin
+  final _regUsernameController = TextEditingController(); // Nom d'utilisateur de l'admin
   final _regPasswordController = TextEditingController();
   final _regConfirmPasswordController = TextEditingController();
   final _regPinCodeController = TextEditingController();
@@ -64,6 +65,7 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
     _regNameController.dispose();
     _regQuartierController.dispose();
     _regAdminNameController.dispose();
+    _regUsernameController.dispose();
     _regPasswordController.dispose();
     _regConfirmPasswordController.dispose();
     _regPinCodeController.dispose();
@@ -103,6 +105,7 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
         name: _regNameController.text.trim(),
         quartier: _regQuartierController.text.trim(),
         adminFullName: _regAdminNameController.text.trim(),
+        username: _regUsernameController.text.trim().toLowerCase(),
         password: _regPasswordController.text,
         pinCode: _regPinCodeController.text.trim(),
         contact1: _regContact1Controller.text.trim(),
@@ -115,6 +118,7 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
         _regNameController.clear();
         _regQuartierController.clear();
         _regAdminNameController.clear();
+        _regUsernameController.clear();
         _regPasswordController.clear();
         _regConfirmPasswordController.clear();
         _regPinCodeController.clear();
@@ -253,10 +257,10 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _loginField(
-            label: "Nom d'utilisateur",
+            label: "Nom d'utilisateur ou Email",
             controller: _usernameController,
             icon: Icons.person_outline_rounded,
-            hint: "adamakeita",
+            hint: "username ou email@gmail.com",
             themeColor: themeColor,
             forceLowerCase: true,
           ),
@@ -402,6 +406,8 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
           _regField('Quartier / Localisation', _regQuartierController, Icons.location_on_rounded, themeColor, required: true),
           const SizedBox(height: 12),
           _regField('Votre nom complet (Admin)', _regAdminNameController, Icons.person_outline_rounded, themeColor, required: true),
+          const SizedBox(height: 12),
+          _regField('Nom d\'utilisateur (Admin)', _regUsernameController, Icons.person_outline_rounded, themeColor, required: true),
           const SizedBox(height: 12),
           _regField("Code PIN administrateur", _regPinCodeController, Icons.lock_outline_rounded, themeColor, required: true, isPinCode: true),
           const SizedBox(height: 12),
