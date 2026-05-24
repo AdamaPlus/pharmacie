@@ -13,6 +13,7 @@ class InvoicePrinter {
     String quartier = 'Ratoma, Conakry – Guinée',
     String contact1 = '+224 622 34 56 78',
     String contact2 = '',
+    bool share = false,
   }) async {
     final doc = pw.Document();
     final fmt = NumberFormat.decimalPattern('fr');
@@ -386,8 +387,15 @@ class InvoicePrinter {
       ),
     );
 
-    await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => doc.save(),
-    );
+    if (share) {
+      await Printing.sharePdf(
+        bytes: await doc.save(),
+        filename: 'facture_${sale.id.replaceAll(RegExp(r'[^\w-]'), "_")}.pdf',
+      );
+    } else {
+      await Printing.layoutPdf(
+        onLayout: (PdfPageFormat format) async => doc.save(),
+      );
+    }
   }
 }

@@ -1094,6 +1094,19 @@ class _SalesViewState extends State<SalesView> {
             ElevatedButton.icon(
               onPressed: () {
                 Navigator.pop(context);
+                _exportInvoice(sale);
+              },
+              icon: Icon(Icons.share_rounded, size: 18),
+              label: Text('Exporter', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF3B82F6),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
                 _printInvoice(sale);
               },
               icon: Icon(Icons.print_rounded, size: 18),
@@ -1132,6 +1145,19 @@ class _SalesViewState extends State<SalesView> {
       quartier: state.pharmacyQuartier,
       contact1: state.pharmacyContact1,
       contact2: state.pharmacyContact2,
+    );
+  }
+
+  Future<void> _exportInvoice(Sale sale) async {
+    final state = Provider.of<AppStateProvider>(context, listen: false);
+    await InvoicePrinter.printInvoice(
+      sale,
+      state.pharmacyLogo,
+      pharmacyName: state.pharmacyName,
+      quartier: state.pharmacyQuartier,
+      contact1: state.pharmacyContact1,
+      contact2: state.pharmacyContact2,
+      share: true,
     );
   }
 }
