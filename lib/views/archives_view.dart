@@ -248,6 +248,234 @@ class _ArchivesViewState extends State<ArchivesView> with SingleTickerProviderSt
     );
   }
 
+  Widget _receiptRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11)),
+          Text('$value GNF', style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11)),
+        ],
+      ),
+    );
+  }
+
+  void _showReceiptDialog(BuildContext context, Sale sale, AppStateProvider state) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: state.bgSecondary,
+          content: Container(
+            width: 380,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Logo in virtual receipt
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      state.pharmacyLogo != null
+                          ? Image.memory(
+                              state.pharmacyLogo!,
+                              width: 24,
+                              height: 24,
+                              fit: BoxFit.cover,
+                            )
+                          : Container(
+                              width: 22,
+                              height: 22,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF0D9488),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      width: 4,
+                                      height: 14,
+                                      color: Colors.white,
+                                    ),
+                                    Container(
+                                      width: 14,
+                                      height: 4,
+                                      color: Colors.white,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                      const SizedBox(width: 8),
+                      Text(
+                        state.pharmacyName.toUpperCase(),
+                        style: GoogleFonts.courierPrime(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '${state.pharmacyQuartier}\nTel: ${state.pharmacyContact2.isNotEmpty ? "${state.pharmacyContact1} / ${state.pharmacyContact2}" : state.pharmacyContact1}\nNIF: 998274-A',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '------------------------------------',
+                    style: GoogleFonts.courierPrime(color: Colors.black),
+                  ),
+                  Text(
+                    'REÇU DE PAIEMENT\nN°: ${sale.id}\nDate: ${DateFormat('dd/MM/yyyy HH:mm').format(sale.date)}\nCaissier: ${sale.cashierName}\nClient: ${sale.patientName ?? 'Passage'}',
+                    style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11),
+                  ),
+                  Text(
+                    '------------------------------------',
+                    style: GoogleFonts.courierPrime(color: Colors.black),
+                  ),
+                  
+                  // Items lines
+                  ...sale.items.map((item) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.productName,
+                                  style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11.5, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '   ${item.quantity} x ${NumberFormat.decimalPattern('fr').format(item.unitPrice)} GNF',
+                                style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11),
+                              ),
+                              Text(
+                                '${NumberFormat.decimalPattern('fr').format(item.total)} GNF',
+                                style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  
+                  Text(
+                    '------------------------------------',
+                    style: GoogleFonts.courierPrime(color: Colors.black),
+                  ),
+
+                  // Calculations
+                  if (sale.discountAmount > 0)
+                    _receiptRow('REMISE APPLIQUÉE', '- ${NumberFormat.decimalPattern('fr').format(sale.discountAmount)}'),
+                  
+                  Text(
+                    '------------------------------------',
+                    style: GoogleFonts.courierPrime(color: Colors.black),
+                  ),
+
+                  // Net Total
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('TOTAL NET PAYÉ', style: GoogleFonts.courierPrime(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text('${NumberFormat.decimalPattern('fr').format(sale.netAmount)} GNF', style: GoogleFonts.courierPrime(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14)),
+                    ],
+                  ),
+                  _receiptRow('MODE DE PAIEMENT', sale.paymentMethod),
+                  
+                  Text(
+                    '------------------------------------',
+                    style: GoogleFonts.courierPrime(color: Colors.black),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Signature',
+                            style: GoogleFonts.courierPrime(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(height: 35),
+                          Text(
+                            '........................',
+                            style: GoogleFonts.courierPrime(color: Colors.black),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Merci de votre confiance !\nOn vous souhaite prompt rétablissement.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 10, fontStyle: FontStyle.italic),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: Text('Fermer', style: GoogleFonts.inter(color: Colors.grey, fontWeight: FontWeight.bold)),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                InvoicePrinter.printInvoice(
+                  sale,
+                  state.pharmacyLogo,
+                  pharmacyName: state.pharmacyName,
+                  quartier: state.pharmacyQuartier,
+                  contact1: state.pharmacyContact1,
+                  contact2: state.pharmacyContact2,
+                );
+              },
+              icon: const Icon(Icons.print_rounded, size: 18),
+              label: Text('Imprimer Facture', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF10B981),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildSaleRow(Sale sale, AppStateProvider state, NumberFormat fmt, BuildContext ctx) {
     final isToday = sale.date.year == DateTime.now().year &&
         sale.date.month == DateTime.now().month &&
@@ -357,14 +585,7 @@ class _ArchivesViewState extends State<ArchivesView> with SingleTickerProviderSt
                 message: 'Imprimer le reçu',
                 child: IconButton(
                   icon: const Icon(Icons.print_rounded, color: Color(0xFF10B981), size: 18),
-                  onPressed: () => InvoicePrinter.printInvoice(
-                    sale,
-                    state.pharmacyLogo,
-                    pharmacyName: state.pharmacyName,
-                    quartier: state.pharmacyQuartier,
-                    contact1: state.pharmacyContact1,
-                    contact2: state.pharmacyContact2,
-                  ),
+                  onPressed: () => _showReceiptDialog(ctx, sale, state),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),

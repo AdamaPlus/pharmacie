@@ -28,134 +28,196 @@ class _SalesHistoryViewState extends State<SalesHistoryView> {
     return '${NumberFormat.decimalPattern('fr').format(amount)} GNF';
   }
 
+  Widget _receiptRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11)),
+          Text('$value GNF', style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11)),
+        ],
+      ),
+    );
+  }
+
   void _showSaleDetailsDialog(Sale sale, NumberFormat currencyFmt, AppStateProvider state) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           backgroundColor: state.bgSecondary,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              Icon(Icons.receipt_long_rounded, color: const Color(0xFF10B981)),
-              const SizedBox(width: 10),
-              Text(
-                'Détails du Reçu #${sale.id.substring(0, math.min(sale.id.length, 8))}',
-                style: GoogleFonts.outfit(color: state.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-            ],
-          ),
-          content: SizedBox(
-            width: 480,
+          content: Container(
+            width: 380,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Meta details
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: state.bgPrimary,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      children: [
-                        _buildDetailRow('Date & Heure', DateFormat('dd/MM/yyyy HH:mm:ss').format(sale.date), state),
-                        const SizedBox(height: 6),
-                        _buildDetailRow('Caissier', '@${sale.cashierName}', state),
-                        const SizedBox(height: 6),
-                        _buildDetailRow('Méthode de Paiement', sale.paymentMethod, state),
-                        if (sale.patientName != null && sale.patientName!.isNotEmpty) ...[
-                          const SizedBox(height: 6),
-                          _buildDetailRow('Client/Patient', sale.patientName!, state),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Articles Achetés :',
-                    style: GoogleFonts.inter(color: state.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
-                  const SizedBox(height: 8),
-                  ...sale.items.map((item) {
-                    final product = state.products.firstWhere((p) => p.id == item.productId, orElse: () => Product(id: '', name: '', barcode: '', description: '', category: '', purchasePrice: 0, sellingPrice: 0, totalQuantity: 0, minStock: 0, vat: 0, supplierName: '', image: ''));
-                    
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: state.bgPrimary.withOpacity(0.4),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.white.withOpacity(0.04)),
+                  // Logo in virtual receipt
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      state.pharmacyLogo != null
+                          ? Image.memory(
+                              state.pharmacyLogo!,
+                              width: 24,
+                              height: 24,
+                              fit: BoxFit.cover,
+                            )
+                          : Container(
+                              width: 22,
+                              height: 22,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF0D9488),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      width: 4,
+                                      height: 14,
+                                      color: Colors.white,
+                                    ),
+                                    Container(
+                                      width: 14,
+                                      height: 4,
+                                      color: Colors.white,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                      const SizedBox(width: 8),
+                      Text(
+                        state.pharmacyName.toUpperCase(),
+                        style: GoogleFonts.courierPrime(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
-                      child: Row(
+                    ],
+                  ),
+                  Text(
+                    '${state.pharmacyQuartier}\nTel: ${state.pharmacyContact2.isNotEmpty ? "${state.pharmacyContact1} / ${state.pharmacyContact2}" : state.pharmacyContact1}\nNIF: 998274-A',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '------------------------------------',
+                    style: GoogleFonts.courierPrime(color: Colors.black),
+                  ),
+                  Text(
+                    'REÇU DE PAIEMENT\nN°: ${sale.id}\nDate: ${DateFormat('dd/MM/yyyy HH:mm').format(sale.date)}\nCaissier: ${sale.cashierName}\nClient: ${sale.patientName ?? 'Passage'}',
+                    style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11),
+                  ),
+                  Text(
+                    '------------------------------------',
+                    style: GoogleFonts.courierPrime(color: Colors.black),
+                  ),
+                  
+                  // Items lines
+                  ...sale.items.map((item) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: state.bgPrimary,
-                              borderRadius: BorderRadius.circular(6),
-                              image: product.image.isNotEmpty && !product.image.startsWith('generic_pill') && product.image.length > 50
-                                  ? DecorationImage(
-                                      image: MemoryImage(base64Decode(product.image)),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : null,
-                            ),
-                            child: !(product.image.isNotEmpty && !product.image.startsWith('generic_pill') && product.image.length > 50)
-                                ? Icon(Icons.medication_rounded, color: state.textSecondary, size: 20)
-                                : null,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
                                   item.productName,
-                                  style: GoogleFonts.inter(color: state.textPrimary, fontWeight: FontWeight.w600, fontSize: 12.5),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11.5, fontWeight: FontWeight.bold),
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${item.quantity} x ${_formatCurrency(item.unitPrice)}',
-                                  style: GoogleFonts.inter(color: state.textSecondary, fontSize: 11),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            _formatCurrency(item.total),
-                            style: GoogleFonts.outfit(color: state.textPrimary, fontWeight: FontWeight.bold, fontSize: 12.5),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '   ${item.quantity} x ${NumberFormat.decimalPattern('fr').format(item.unitPrice)} GNF',
+                                style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11),
+                              ),
+                              Text(
+                                '${NumberFormat.decimalPattern('fr').format(item.total)} GNF',
+                                style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     );
-                  }).toList(),
-                  const SizedBox(height: 16),
-                  Divider(color: Colors.white.withOpacity(0.08)),
-                  const SizedBox(height: 10),
-                  _buildSummaryRow('Montant Total', sale.totalAmount, currencyFmt, state),
-                  if (sale.discountAmount > 0) ...[
-                    const SizedBox(height: 6),
-                    _buildSummaryRow('Remise', sale.discountAmount, currencyFmt, state, isNegative: true),
-                  ],
-                  const SizedBox(height: 8),
+                  }),
+                  
+                  Text(
+                    '------------------------------------',
+                    style: GoogleFonts.courierPrime(color: Colors.black),
+                  ),
+
+                  // Calculations
+                  if (sale.discountAmount > 0)
+                    _receiptRow('REMISE APPLIQUÉE', '- ${NumberFormat.decimalPattern('fr').format(sale.discountAmount)}'),
+                  
+                  Text(
+                    '------------------------------------',
+                    style: GoogleFonts.courierPrime(color: Colors.black),
+                  ),
+
+                  // Net Total
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'MONTANT NET PAYÉ',
-                        style: GoogleFonts.inter(color: state.textSecondary, fontWeight: FontWeight.bold, fontSize: 12),
-                      ),
-                      Text(
-                        state.maskRevenues ? '**** GNF' : currencyFmt.format(sale.netAmount),
-                        style: GoogleFonts.outfit(color: const Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 18),
+                      Text('TOTAL NET PAYÉ', style: GoogleFonts.courierPrime(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text('${NumberFormat.decimalPattern('fr').format(sale.netAmount)} GNF', style: GoogleFonts.courierPrime(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14)),
+                    ],
+                  ),
+                  _receiptRow('MODE DE PAIEMENT', sale.paymentMethod),
+                  
+                  Text(
+                    '------------------------------------',
+                    style: GoogleFonts.courierPrime(color: Colors.black),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Signature',
+                            style: GoogleFonts.courierPrime(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(height: 35),
+                          Text(
+                            '........................',
+                            style: GoogleFonts.courierPrime(color: Colors.black),
+                          ),
+                        ],
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Merci de votre confiance !\nOn vous souhaite prompt rétablissement.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 10, fontStyle: FontStyle.italic),
                   ),
                 ],
               ),
@@ -163,52 +225,27 @@ class _SalesHistoryViewState extends State<SalesHistoryView> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Fermer', style: GoogleFonts.inter(color: state.textSecondary)),
+              child: Text('Fermer', style: GoogleFonts.inter(color: Colors.grey, fontWeight: FontWeight.bold)),
+              onPressed: () {
+                Navigator.pop(context);
+              },
             ),
             ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                _printInvoice(state, sale);
+              },
+              icon: const Icon(Icons.print_rounded, size: 18),
+              label: Text('Imprimer Facture', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF10B981),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              onPressed: () {
-                _printInvoice(state, sale);
-                Navigator.pop(context);
-              },
-              icon: const Icon(Icons.print_rounded, size: 16),
-              label: Text('Imprimer', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
             ),
           ],
         );
       },
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value, AppStateProvider state) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12)),
-        Text(value, style: GoogleFonts.inter(color: state.textPrimary, fontWeight: FontWeight.bold, fontSize: 12)),
-      ],
-    );
-  }
-
-  Widget _buildSummaryRow(String label, double val, NumberFormat fmt, AppStateProvider state, {bool isNegative = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12)),
-        Text(
-          '${isNegative ? "-" : ""}${state.maskRevenues ? "****" : fmt.format(val)}',
-          style: GoogleFonts.outfit(
-            color: isNegative ? Colors.redAccent : state.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
-          ),
-        ),
-      ],
     );
   }
 
@@ -597,7 +634,7 @@ class _SalesHistoryViewState extends State<SalesHistoryView> {
                                   IconButton(
                                     icon: Icon(Icons.print_rounded, color: themeColor, size: 18),
                                     tooltip: 'Réimprimer facture',
-                                    onPressed: () => _printInvoice(state, sale),
+                                    onPressed: () => _showSaleDetailsDialog(sale, currencyFmt, state),
                                   ),
                                 ],
                               ),
