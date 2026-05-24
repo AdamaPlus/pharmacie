@@ -71,7 +71,7 @@ class _MainLayoutState extends State<MainLayout> {
     );
 
     if (currentUser.role != 'VENDEUR' && currentUser.role != 'ADMIN') {
-      return tabIndex == 14;
+      return tabIndex == 14 || tabIndex == 15;
     }
 
     String permKey;
@@ -105,7 +105,8 @@ class _MainLayoutState extends State<MainLayout> {
         permKey = 'history';
         break;
       case 14:
-        return true; // Always allow details
+      case 15:
+        return true; // Always allow details and documentation
       default:
         return false;
     }
@@ -132,6 +133,7 @@ class _MainLayoutState extends State<MainLayout> {
       {'index': 7,  'title': 'Gestion des comptes',    'icon': Icons.manage_accounts_rounded,        'group': 'Système'},
       {'index': 12, 'title': 'Paramètres',             'icon': Icons.settings_rounded,               'group': 'Système'},
       {'index': 14, 'title': 'Détails',                'icon': Icons.info_outline_rounded,           'group': 'Système'},
+      {'index': 15, 'title': 'Documentation',          'icon': Icons.help_outline_rounded,           'group': 'Système'},
     ];
 
     // Filter tabs based on role permissions
@@ -235,6 +237,8 @@ class _MainLayoutState extends State<MainLayout> {
                             onTap: () {
                               if (tab['index'] == 14) {
                                 _showDetailDialog(context, state);
+                              } else if (tab['index'] == 15) {
+                                _showDocumentationDialog(context, state);
                               } else {
                                 state.setActiveTab(tab['index']);
                               }
@@ -845,6 +849,343 @@ class _MainLayoutState extends State<MainLayout> {
           ],
         ),
       ],
+    );
+  }
+
+  // ==========================================
+  // VIRTUAL MANUAL / DOCUMENTATION DIALOG
+  // ==========================================
+  void _showDocumentationDialog(BuildContext context, AppStateProvider state) {
+    const themeColor = Color(0xFF10B981);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: state.bgSecondary,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: themeColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.menu_book_rounded, color: themeColor, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Documentation & Mode d\'emploi',
+              style: GoogleFonts.outfit(
+                color: state.textPrimary,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Container(
+          width: 750,
+          height: 600,
+          child: DefaultTabController(
+            length: 5,
+            child: Column(
+              children: [
+                TabBar(
+                  isScrollable: true,
+                  labelColor: themeColor,
+                  unselectedLabelColor: state.textSecondary,
+                  indicatorColor: themeColor,
+                  labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
+                  unselectedLabelStyle: GoogleFonts.inter(fontSize: 13),
+                  tabs: const [
+                    Tab(text: 'Général', icon: Icon(Icons.info_outline, size: 18)),
+                    Tab(text: 'Ventes (POS)', icon: Icon(Icons.point_of_sale, size: 18)),
+                    Tab(text: 'Stock & Lots', icon: Icon(Icons.inventory_2, size: 18)),
+                    Tab(text: 'Dettes', icon: Icon(Icons.account_balance_wallet, size: 18)),
+                    Tab(text: 'Reçus & PDF', icon: Icon(Icons.receipt_long, size: 18)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _buildDocGeneral(state),
+                      _buildDocPOS(state),
+                      _buildDocStock(state),
+                      _buildDocDettes(state),
+                      _buildDocExport(state),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Fermer',
+              style: GoogleFonts.inter(
+                color: themeColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocGeneral(AppStateProvider state) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _docSectionHeader('🚀 Bienvenue sur PharmaGuinée', 'Votre solution moderne pour gérer votre officine de pharmacie au quotidien.'),
+          const SizedBox(height: 16),
+          _docCard(
+            title: 'À propos de la plateforme',
+            description: 'PharmaGuinée permet de centraliser et d\'automatiser l\'intégralité des opérations de votre pharmacie :\n'
+                '• Encaissement rapide et fiable des clients.\n'
+                '• Gestion en temps réel du stock global et des alertes de rupture.\n'
+                '• Traçabilité absolue des ventes passées et des crédits accordés.\n'
+                '• Tableau de bord analytique des indicateurs de performance.',
+            icon: Icons.auto_awesome_rounded,
+            iconColor: Colors.purple,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: 'Sécurité et Permissions',
+            description: 'L\'accès est sécurisé par un code PIN à 4 chiffres unique pour chaque utilisateur. '
+                'Le rôle ADMIN détient l\'accès complet (tarification, comptes, configurations), '
+                'tandis que les VENDEURS sont restreints aux fonctionnalités de caisse et de consultation des stocks selon leurs droits.',
+            icon: Icons.shield_rounded,
+            iconColor: Colors.blue,
+            state: state,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocPOS(AppStateProvider state) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _docSectionHeader('🛒 Faire une Vente (Point de Vente)', 'Comment réaliser des transactions rapidement et imprimer les reçus.'),
+          const SizedBox(height: 16),
+          _docCard(
+            title: '1. Sélectionner les produits',
+            description: 'Recherchez un produit par son nom ou scannez son code-barres dans la barre de recherche POS. '
+                'Cliquez sur un produit en stock pour l\'ajouter au panier. La quantité du produit dans le panier s\'incrémente automatiquement.',
+            icon: Icons.search_rounded,
+            iconColor: Colors.amber,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: '2. Configurer le Panier',
+            description: 'Dans le panneau de droite, vous pouvez ajuster la quantité de chaque ligne avec les boutons (+) et (-). '
+                'Vous pouvez appliquer une remise en GNF ou saisir le nom du patient (facultatif).',
+            icon: Icons.shopping_basket_rounded,
+            iconColor: Colors.green,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: '3. Mode de Paiement et Validation',
+            description: 'Sélectionnez le mode de paiement directement en bas du panier :\n'
+                '• Espèces (par défaut)\n'
+                '• Crédit (génère une dette dans l\'onglet Dettes)\n'
+                '• Orange Money (validation électronique)\n\n'
+                'Cliquez ensuite sur "Traiter le paiement" pour valider la vente.',
+            icon: Icons.payment_rounded,
+            iconColor: Colors.teal,
+            state: state,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocStock(AppStateProvider state) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _docSectionHeader('📦 Gestion des Stocks & Alertes', 'Optimisez votre approvisionnement et évitez les ruptures ou produits périmés.'),
+          const SizedBox(height: 16),
+          _docCard(
+            title: 'Suivi et Recherche des Médicaments',
+            description: 'L\'onglet Stock présente l\'ensemble de vos produits avec leur prix d\'achat, prix de vente, et niveau de stock actuel. '
+                'Vous pouvez filtrer par catégorie thérapeutique pour cibler un médicament particulier.',
+            icon: Icons.inventory_rounded,
+            iconColor: Colors.teal,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: 'Alertes Automatiques',
+            description: 'L\'application vous alerte de façon proactive :\n'
+                '• Niveau faible/rupture : si un stock descend sous le seuil d\'alerte minimal spécifié.\n'
+                '• Produits périmés : l\'application suit chaque lot individuellement pour signaler les péremptions imminentes.',
+            icon: Icons.warning_amber_rounded,
+            iconColor: Colors.redAccent,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: 'Réapprovisionnement et Fournisseurs',
+            description: 'Utilisez le module Réapprovisionnement pour enregistrer les nouvelles livraisons de médicaments, '
+                'spécifier les numéros de lots, dates de péremption, et assigner un fournisseur.',
+            icon: Icons.local_shipping_rounded,
+            iconColor: Colors.orange,
+            state: state,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocDettes(AppStateProvider state) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _docSectionHeader('💳 Suivi des Dettes & Crédits Clients', 'Gardez le contrôle sur les encaissements différés de vos clients.'),
+          const SizedBox(height: 16),
+          _docCard(
+            title: 'Création d\'un crédit',
+            description: 'Lorsqu\'un client achète à crédit, sélectionnez l\'option "Crédit" dans le panier POS avant de cliquer sur "Traiter le paiement". '
+                'Une entrée de dette sera créée automatiquement associée au nom du patient.',
+            icon: Icons.add_card_rounded,
+            iconColor: Colors.indigo,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: 'Suivi et Remboursement',
+            description: 'Dans l\'onglet Dettes, vous pouvez consulter la liste complète des impayés avec les montants restants. '
+                'Pour enregistrer un versement, cliquez sur "Rembourser", saisissez la somme payée, et le solde restant se mettra à jour instantanément.',
+            icon: Icons.price_check_rounded,
+            iconColor: Colors.green,
+            state: state,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocExport(AppStateProvider state) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _docSectionHeader('📄 Gestion des Reçus, Impression et Partages', 'Imprimez et partagez les reçus professionnels de vos clients.'),
+          const SizedBox(height: 16),
+          _docCard(
+            title: 'Aperçu Virtuel Thermique',
+            description: 'Chaque validation de vente ouvre automatiquement un reçu virtuel compact au format thermique (80mm). '
+                'Il respecte la mise en page standard des tickets de caisse avec toutes les mentions obligatoires.',
+            icon: Icons.receipt_rounded,
+            iconColor: Colors.blueGrey,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: 'Impression direct physique',
+            description: 'Cliquez sur le bouton "Imprimer Facture" pour envoyer le document PDF dynamique directement '
+                'à l\'imprimante de reçus de l\'officine via le gestionnaire d\'impression.',
+            icon: Icons.print_rounded,
+            iconColor: Colors.green,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: 'Export et Partage Numérique',
+            description: 'Cliquez sur le bouton "Exporter" pour enregistrer la facture au format PDF, ou la partager instantanément '
+                'par e-mail, messagerie ou toute autre application de votre ordinateur.',
+            icon: Icons.share_rounded,
+            iconColor: Colors.blue,
+            state: state,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _docSectionHeader(String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF10B981)),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: GoogleFonts.inter(fontSize: 12.5, color: Colors.grey[500]),
+        ),
+      ],
+    );
+  }
+
+  Widget _docCard({
+    required String title,
+    required String description,
+    required IconData icon,
+    required Color iconColor,
+    required AppStateProvider state,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: state.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: state.borderTheme),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.outfit(
+                    color: state.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  description,
+                  style: GoogleFonts.inter(
+                    color: state.textSecondary,
+                    fontSize: 12,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
