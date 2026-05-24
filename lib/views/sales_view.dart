@@ -20,7 +20,7 @@ class _SalesViewState extends State<SalesView> {
   final _cashReceivedController = TextEditingController();
   
   String _selectedCategory = 'Tous';
-  String _paymentMethod = 'ESPECES'; // 'ESPECES', 'CARTE', 'CHEQUE'
+  String _paymentMethod = 'ESPECES'; // 'ESPECES', 'CREDIT', 'ORANGE MONEY'
 
   // Selection states
   bool _isCartVisible = true;
@@ -400,14 +400,14 @@ class _SalesViewState extends State<SalesView> {
                           )
                         : LayoutBuilder(
                             builder: (context, constraints) {
-                              int crossAxisCount = (constraints.maxWidth / 320).floor();
+                              int crossAxisCount = (constraints.maxWidth / 260).floor();
                               if (crossAxisCount < 1) crossAxisCount = 1;
                               return GridView.builder(
                                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: crossAxisCount,
-                                  mainAxisSpacing: 12,
-                                  crossAxisSpacing: 12,
-                                  mainAxisExtent: 140, // Increased to 140 to comfortably fit all text lines
+                                  mainAxisSpacing: 8,
+                                  crossAxisSpacing: 8,
+                                  mainAxisExtent: 110,
                                 ),
                                 itemCount: filteredProducts.length,
                                 itemBuilder: (context, index) {
@@ -454,23 +454,23 @@ class _SalesViewState extends State<SalesView> {
                                             child: const Icon(Icons.check_rounded, color: Colors.white, size: 14),
                                           ),
                                         ),
-                                      // Product Layout Row
+                                      // Product Layout
                                       Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                         child: Row(
                                           children: [
                                             // Image on the left
                                             Container(
-                                              width: 90,
-                                              height: 90,
+                                              width: 68,
+                                              height: 68,
                                               decoration: BoxDecoration(
                                                 color: state.bgPrimary,
-                                                borderRadius: BorderRadius.circular(10),
+                                                borderRadius: BorderRadius.circular(8),
                                               ),
                                               clipBehavior: Clip.antiAlias,
-                                              child: _buildHorizontalProductImage(prod, 90),
+                                              child: _buildHorizontalProductImage(prod, 68),
                                             ),
-                                            const SizedBox(width: 16),
+                                            const SizedBox(width: 10),
                                             
                                             // Details on the right
                                             Expanded(
@@ -480,11 +480,11 @@ class _SalesViewState extends State<SalesView> {
                                                 children: [
                                                   Text(
                                                     prod.name,
-                                                    maxLines: 2,
+                                                    maxLines: 1,
                                                     overflow: TextOverflow.ellipsis,
                                                     style: GoogleFonts.outfit(
                                                       color: state.textPrimary,
-                                                      fontSize: 15.0,
+                                                      fontSize: 13.0,
                                                       fontWeight: FontWeight.bold,
                                                       height: 1.1,
                                                     ),
@@ -492,19 +492,19 @@ class _SalesViewState extends State<SalesView> {
                                                   const SizedBox(height: 2),
                                                   Text(
                                                     prod.description.isNotEmpty ? prod.description : prod.category,
-                                                    maxLines: 2,
+                                                    maxLines: 1,
                                                     overflow: TextOverflow.ellipsis,
                                                     style: GoogleFonts.inter(
                                                       color: state.textSecondary,
-                                                      fontSize: 12,
+                                                      fontSize: 10.5,
                                                       height: 1.2,
                                                     ),
                                                   ),
                                                   Text(
                                                     _formatCurrency(prod.sellingPrice),
                                                     style: GoogleFonts.inter(
-                                                      color: const Color(0xFF3B82F6), // Blue matching user screenshot!
-                                                      fontSize: 16.0,
+                                                      color: const Color(0xFF3B82F6),
+                                                      fontSize: 13.5,
                                                       fontWeight: FontWeight.bold,
                                                     ),
                                                   ),
@@ -796,7 +796,19 @@ class _SalesViewState extends State<SalesView> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
+
+                        // Payment method selector
+                        Row(
+                          children: [
+                            _paymentBtn('ESPECES', Icons.payments_rounded, themeColor, state),
+                            const SizedBox(width: 8),
+                            _paymentBtn('CREDIT', Icons.credit_score_rounded, themeColor, state),
+                            const SizedBox(width: 8),
+                            _paymentBtn('ORANGE MONEY', Icons.phone_android_rounded, themeColor, state),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
 
                         // Validation Button - Traiter le paiement
                         ElevatedButton(
@@ -804,18 +816,15 @@ class _SalesViewState extends State<SalesView> {
                               ? null
                               : () {
                                   final success = state.checkoutCart(
-                                    'ESPECES',
+                                    _paymentMethod,
                                     netTotal,
                                     0.0,
                                   );
                                   if (success) {
-                                    final lastSale = state.sales[0]; // Gets the just checked out sale
+                                    final lastSale = state.sales[0];
                                     _showReceiptDialog(context, lastSale);
-
-                                    // Reset local variables
                                     _discountController.clear();
                                     _cashReceivedController.clear();
-
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
@@ -842,40 +851,46 @@ class _SalesViewState extends State<SalesView> {
     );
   }
 
-  // Payment method selection button
-  // ignore: unused_element
-  Widget _paymentMethodBtn(String method, IconData icon) {
-    final state = Provider.of<AppStateProvider>(context, listen: false);
+  // Compact payment method button (Espèces / Crédit / Orange Money)
+  Widget _paymentBtn(String method, IconData icon, Color themeColor, AppStateProvider state) {
     final isSelected = _paymentMethod == method;
-    final activeColor = Color(0xFF10B981);
+    // Pick label shown on button
+    final label = method == 'ESPECES'
+        ? 'Espèces'
+        : method == 'CREDIT'
+            ? 'Crédit'
+            : 'Orange Money';
 
     return Expanded(
-      child: InkWell(
-        onTap: () {
-          setState(() {
-            _paymentMethod = method;
-          });
-        },
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+      child: GestureDetector(
+        onTap: () => setState(() => _paymentMethod = method),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? activeColor.withOpacity(0.12) : state.bgSecondary,
-            borderRadius: BorderRadius.circular(8),
+            color: isSelected ? themeColor.withOpacity(0.15) : state.bgPrimary,
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? activeColor : Colors.white.withOpacity(0.04),
+              color: isSelected ? themeColor : Colors.white.withOpacity(0.06),
+              width: isSelected ? 1.5 : 1,
             ),
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: isSelected ? activeColor : state.textSecondaryLight, size: 18),
-              SizedBox(height: 6),
+              Icon(
+                icon,
+                color: isSelected ? themeColor : state.textSecondaryLight,
+                size: 18,
+              ),
+              const SizedBox(height: 4),
               Text(
-                method,
+                label,
+                textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
-                  color: isSelected ? (state.isDarkMode ? Colors.white : activeColor) : state.textSecondaryLight,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
+                  color: isSelected ? themeColor : state.textSecondaryLight,
+                  fontSize: 10.5,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 ),
               ),
             ],

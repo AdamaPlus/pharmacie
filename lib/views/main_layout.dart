@@ -327,7 +327,7 @@ class _MainLayoutState extends State<MainLayout> {
                     bottomRight: Radius.circular(0),
                   ),
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: _isSidebarVisible ? 20 : 12, vertical: 20),
+                    padding: EdgeInsets.symmetric(horizontal: _isSidebarVisible ? 20 : 12, vertical: 16),
                     decoration: BoxDecoration(
                       color: Theme.of(context).scaffoldBackgroundColor,
                       border: Border(top: BorderSide(color: Theme.of(context).dividerTheme.color ?? Colors.white.withOpacity(0.03))),
@@ -344,17 +344,17 @@ class _MainLayoutState extends State<MainLayout> {
                           );
                           final hasImg = currentUser.profileImageBase64 != null && currentUser.profileImageBase64!.isNotEmpty;
                           return CircleAvatar(
-                            radius: 26,
+                            radius: 22,
                             backgroundColor: themeColor.withOpacity(0.15),
                             backgroundImage: hasImg ? MemoryImage(base64Decode(currentUser.profileImageBase64!)) : null,
                             child: hasImg ? null : Text(
                               state.currentUsername.substring(0, 1).toUpperCase(),
-                              style: GoogleFonts.outfit(color: themeColor, fontWeight: FontWeight.bold, fontSize: 16),
+                              style: GoogleFonts.outfit(color: themeColor, fontWeight: FontWeight.bold, fontSize: 14),
                             ),
                           );
                         })(),
                         if (_isSidebarVisible) ...[
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -363,7 +363,7 @@ class _MainLayoutState extends State<MainLayout> {
                                   state.currentUsername.toLowerCase(),
                                   style: GoogleFonts.inter(
                                     color: state.textPrimary,
-                                    fontSize: 13,
+                                    fontSize: 12.5,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -379,14 +379,37 @@ class _MainLayoutState extends State<MainLayout> {
                               ],
                             ),
                           ),
-                          Icon(Icons.edit_outlined, color: state.textSecondaryLight, size: 14),
-                          const SizedBox(width: 4),
-                          IconButton(
-                            icon: Icon(Icons.logout_rounded, color: state.textSecondary, size: 18),
-                            onPressed: () {
-                              state.logout();
-                            },
-                            tooltip: 'Se déconnecter',
+                          Icon(Icons.edit_outlined, color: state.textSecondaryLight, size: 13),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Bouton déconnexion séparé
+                InkWell(
+                  onTap: () => state.logout(),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: _isSidebarVisible ? 20 : 12, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withOpacity(0.06),
+                      border: Border(top: BorderSide(color: Colors.redAccent.withOpacity(0.12))),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: _isSidebarVisible
+                          ? MainAxisAlignment.start
+                          : MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
+                        if (_isSidebarVisible) ...[
+                          const SizedBox(width: 10),
+                          Text(
+                            'Se déconnecter',
+                            style: GoogleFonts.inter(
+                              color: Colors.redAccent,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ],
@@ -485,8 +508,62 @@ class _MainLayoutState extends State<MainLayout> {
                         ),
                       ],
                       Spacer(),
-                      
-                      // Notification bell / system warnings
+
+                      // Compte utilisateur dans la Navbar
+                      (() {
+                        final currentUser = state.users.firstWhere(
+                          (u) => u.username == state.currentUsername,
+                          orElse: () => UserAccount(username: state.currentUsername, role: state.currentUserRole),
+                        );
+                        final hasImg = currentUser.profileImageBase64 != null && currentUser.profileImageBase64!.isNotEmpty;
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: themeColor.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: themeColor.withOpacity(0.2)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircleAvatar(
+                                radius: 14,
+                                backgroundColor: themeColor.withOpacity(0.2),
+                                backgroundImage: hasImg ? MemoryImage(base64Decode(currentUser.profileImageBase64!)) : null,
+                                child: hasImg ? null : Text(
+                                  state.currentUsername.substring(0, 1).toUpperCase(),
+                                  style: GoogleFonts.outfit(color: themeColor, fontWeight: FontWeight.bold, fontSize: 12),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    state.currentUsername.toLowerCase(),
+                                    style: GoogleFonts.inter(
+                                      color: state.textPrimary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    state.currentUserRole,
+                                    style: GoogleFonts.inter(
+                                      color: themeColor,
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      })(),
+                      const SizedBox(width: 16),
                       if (state.notificationsEnabled && alertCount > 0) ...[
                         Tooltip(
                           message: 'Alertes système : $lowStockCount ruptures/faibles & $expiredCount lots périmés',
