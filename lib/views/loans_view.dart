@@ -70,41 +70,7 @@ class _LoansViewState extends State<LoansView>
   AppStateProvider get state => Provider.of<AppStateProvider>(context);
   late TabController _tabController;
 
-  final List<MedicamentLoan> _loans = [
-    MedicamentLoan(
-      id: 'PRET-001',
-      items: [
-        LoanItem(
-          productName: 'Amoxicilline Sandoz 1g',
-          quantity: 20,
-          unitValue: 5000,
-        ),
-      ],
-      lenderType: 'pharmacie',
-      lenderName: 'Pharmacie Centrale',
-      lenderContact: '620000001',
-      lenderAddress: 'Conakry, Kaloum',
-      loanDate: DateTime.now().subtract(const Duration(days: 3)),
-      notes: 'Urgence stock rupture',
-    ),
-    MedicamentLoan(
-      id: 'PRET-002',
-      items: [
-        LoanItem(
-          productName: 'Paracétamol Biogaran 500mg',
-          quantity: 50,
-          unitValue: 1500,
-        ),
-      ],
-      lenderType: 'personne',
-      lenderName: 'Dr. Mamadou Diallo',
-      lenderContact: '628111222',
-      lenderAddress: 'Ratoma, Conakry',
-      loanDate: DateTime.now().subtract(const Duration(days: 10)),
-      isReturned: true,
-      notes: '',
-    ),
-  ];
+  final List<MedicamentLoan> _loans = [];
 
   @override
   void initState() {

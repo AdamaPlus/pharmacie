@@ -1108,9 +1108,6 @@ class _MainLayoutState extends State<MainLayout> {
     if (_nameController.text != state.pharmacyName && !_nameFocusNode.hasFocus) {
       _nameController.text = state.pharmacyName;
     }
-    if (_subtitleController.text != _pharmacySubtitle && !_subtitleFocusNode.hasFocus) {
-      _subtitleController.text = _pharmacySubtitle;
-    }
 
     return Center(
       child: Container(
