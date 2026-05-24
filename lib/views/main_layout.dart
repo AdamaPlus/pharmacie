@@ -37,6 +37,30 @@ class _MainLayoutState extends State<MainLayout> {
   IconData _pharmacyIcon = Icons.local_pharmacy_rounded;
   Uint8List? get _pharmacyLogoBytes => state.pharmacyLogo;
 
+  late final TextEditingController _nameController;
+  late final TextEditingController _subtitleController;
+  late final FocusNode _nameFocusNode;
+  late final FocusNode _subtitleFocusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    final appState = Provider.of<AppStateProvider>(context, listen: false);
+    _nameController = TextEditingController(text: appState.pharmacyName);
+    _subtitleController = TextEditingController(text: _pharmacySubtitle);
+    _nameFocusNode = FocusNode();
+    _subtitleFocusNode = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _subtitleController.dispose();
+    _nameFocusNode.dispose();
+    _subtitleFocusNode.dispose();
+    super.dispose();
+  }
+
   // Check permission for current role and user custom permissions
   bool _hasAccess(AppStateProvider state, String role, int tabIndex) {
     if (role == 'ADMIN') return true;
@@ -1080,9 +1104,13 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   Widget _buildSettingsView() {
-    final nameController = TextEditingController(text: _pharmacyName);
-    final subtitleController = TextEditingController(text: _pharmacySubtitle);
     final state = Provider.of<AppStateProvider>(context, listen: false);
+    if (_nameController.text != state.pharmacyName && !_nameFocusNode.hasFocus) {
+      _nameController.text = state.pharmacyName;
+    }
+    if (_subtitleController.text != _pharmacySubtitle && !_subtitleFocusNode.hasFocus) {
+      _subtitleController.text = _pharmacySubtitle;
+    }
 
     return Center(
       child: Container(
@@ -1110,7 +1138,8 @@ class _MainLayoutState extends State<MainLayout> {
             ),
             SizedBox(height: 24),
             TextField(
-              controller: nameController,
+              controller: _nameController,
+              focusNode: _nameFocusNode,
               style: TextStyle(color: state.textPrimary),
               decoration: InputDecoration(
                 labelText: 'Nom de la Pharmacie', 
@@ -1138,7 +1167,8 @@ class _MainLayoutState extends State<MainLayout> {
             ),
             SizedBox(height: 16),
             TextField(
-              controller: subtitleController,
+              controller: _subtitleController,
+              focusNode: _subtitleFocusNode,
               style: TextStyle(color: state.textPrimary),
               decoration: InputDecoration(
                 labelText: 'Sous-titre / Description', 
