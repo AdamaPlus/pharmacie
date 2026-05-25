@@ -53,8 +53,13 @@ class _AdminViewState extends State<AdminView> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: themeColor,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
               ],
@@ -62,9 +67,7 @@ class _AdminViewState extends State<AdminView> {
           ),
 
           // Main body: list of vendors
-          Expanded(
-            child: _buildUsersTab(state, themeColor),
-          ),
+          Expanded(child: _buildUsersTab(state, themeColor)),
         ],
       ),
     );
@@ -82,16 +85,27 @@ class _AdminViewState extends State<AdminView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.people_outline_rounded, size: 64, color: state.textSecondaryLight),
+            Icon(
+              Icons.people_outline_rounded,
+              size: 64,
+              color: state.textSecondaryLight,
+            ),
             const SizedBox(height: 16),
             Text(
               'Aucun compte vendeur n\'a été créé.',
-              style: GoogleFonts.inter(color: state.textSecondary, fontSize: 15, fontWeight: FontWeight.w500),
+              style: GoogleFonts.inter(
+                color: state.textSecondary,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Cliquez sur "Ajouter un Vendeur" pour commencer.',
-              style: GoogleFonts.inter(color: state.textSecondaryLight, fontSize: 13),
+              style: GoogleFonts.inter(
+                color: state.textSecondaryLight,
+                fontSize: 13,
+              ),
             ),
           ],
         ),
@@ -117,15 +131,27 @@ class _AdminViewState extends State<AdminView> {
                 CircleAvatar(
                   radius: 24,
                   backgroundColor: themeColor.withOpacity(0.1),
-                  backgroundImage: (u.profileImageBase64 != null && u.profileImageBase64!.isNotEmpty)
+                  backgroundImage:
+                      (u.profileImageBase64 != null &&
+                          u.profileImageBase64!.isNotEmpty)
                       ? MemoryImage(base64Decode(u.profileImageBase64!))
                       : null,
-                  child: (u.profileImageBase64 == null || u.profileImageBase64!.isEmpty)
+                  child:
+                      (u.profileImageBase64 == null ||
+                          u.profileImageBase64!.isEmpty)
                       ? Text(
                           u.fullName.isNotEmpty
-                              ? (u.fullName.length >= 2 ? u.fullName.substring(0, 2).toUpperCase() : u.fullName.toUpperCase())
-                              : (u.username.length >= 2 ? u.username.substring(0, 2).toUpperCase() : u.username.toUpperCase()),
-                          style: GoogleFonts.outfit(color: themeColor, fontWeight: FontWeight.bold, fontSize: 14),
+                              ? (u.fullName.length >= 2
+                                    ? u.fullName.substring(0, 2).toUpperCase()
+                                    : u.fullName.toUpperCase())
+                              : (u.username.length >= 2
+                                    ? u.username.substring(0, 2).toUpperCase()
+                                    : u.username.toUpperCase()),
+                          style: GoogleFonts.outfit(
+                            color: themeColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                         )
                       : null,
                 ),
@@ -137,25 +163,42 @@ class _AdminViewState extends State<AdminView> {
                     children: [
                       Text(
                         u.fullName,
-                        style: GoogleFonts.inter(color: state.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                        style: GoogleFonts.inter(
+                          color: state.textPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          Icon(Icons.badge_outlined, size: 14, color: state.textSecondaryLight),
+                          Icon(
+                            Icons.badge_outlined,
+                            size: 14,
+                            color: state.textSecondaryLight,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'Identifiant : ${u.username}',
-                            style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12.5),
+                            style: GoogleFonts.inter(
+                              color: state.textSecondary,
+                              fontSize: 12.5,
+                            ),
                           ),
                           const SizedBox(width: 20),
-                          Icon(Icons.email_outlined, size: 14, color: state.textSecondaryLight),
+                          Icon(
+                            Icons.email_outlined,
+                            size: 14,
+                            color: state.textSecondaryLight,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'Email : ${u.email.isNotEmpty ? u.email : '—'}',
-                            style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12.5),
+                            style: GoogleFonts.inter(
+                              color: state.textSecondary,
+                              fontSize: 12.5,
+                            ),
                           ),
-
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -198,11 +241,16 @@ class _AdminViewState extends State<AdminView> {
                               break;
                           }
                           return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: themeColor.withOpacity(0.08),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: themeColor.withOpacity(0.18)),
+                              border: Border.all(
+                                color: themeColor.withOpacity(0.18),
+                              ),
                             ),
                             child: Text(
                               label,
@@ -221,32 +269,51 @@ class _AdminViewState extends State<AdminView> {
 
                 // Actions
                 IconButton(
-                  icon: Icon(Icons.edit_outlined, color: state.textSecondary, size: 20),
+                  icon: Icon(
+                    Icons.edit_outlined,
+                    color: state.textSecondary,
+                    size: 20,
+                  ),
                   tooltip: 'Modifier les informations & droits',
                   onPressed: () => _showAddUserDialog(context, state, u),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Colors.redAccent,
+                    size: 20,
+                  ),
                   tooltip: 'Supprimer ce compte',
                   onPressed: () {
                     showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
                         backgroundColor: state.bgSecondary,
-                        title: Text('Supprimer le compte', style: GoogleFonts.outfit(color: state.textPrimary)),
+                        title: Text(
+                          'Supprimer le compte',
+                          style: GoogleFonts.outfit(color: state.textPrimary),
+                        ),
                         content: Text(
                           'Êtes-vous sûr de vouloir supprimer le compte vendeur de ${u.fullName} ? Cette action est irréversible.',
                           style: GoogleFonts.inter(color: state.textSecondary),
                         ),
                         actions: [
                           TextButton(
-                            child: Text('Annuler', style: TextStyle(color: state.textSecondaryLight)),
+                            child: Text(
+                              'Annuler',
+                              style: TextStyle(color: state.textSecondaryLight),
+                            ),
                             onPressed: () => Navigator.pop(context),
                           ),
                           ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                            child: const Text('Supprimer', style: TextStyle(color: Colors.white)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.redAccent,
+                            ),
+                            child: const Text(
+                              'Supprimer',
+                              style: TextStyle(color: Colors.white),
+                            ),
                             onPressed: () {
                               state.deleteUser(u.username);
                               Navigator.pop(context);
@@ -279,7 +346,14 @@ class _AdminViewState extends State<AdminView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            color: state.textSecondary,
+            fontSize: 12.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
@@ -289,9 +363,18 @@ class _AdminViewState extends State<AdminView> {
             filled: true,
             fillColor: state.bgPrimary,
             hintText: hintText,
-            hintStyle: GoogleFonts.inter(color: state.textSecondaryLight, fontSize: 12.5),
-            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+            hintStyle: GoogleFonts.inter(
+              color: state.textSecondaryLight,
+              fontSize: 12.5,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 14,
+              horizontal: 16,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
+            ),
           ),
           validator: (value) {
             if (required && (value == null || value.trim().isEmpty)) {
@@ -305,19 +388,33 @@ class _AdminViewState extends State<AdminView> {
   }
 
   // Add / Edit User Dialog
-  void _showAddUserDialog(BuildContext context, AppStateProvider state, [UserAccount? original]) {
+  void _showAddUserDialog(
+    BuildContext context,
+    AppStateProvider state, [
+    UserAccount? original,
+  ]) {
     final isEdit = original != null;
     final formKey = GlobalKey<FormState>();
-    final userCtrl = TextEditingController(text: isEdit ? original.username : '');
-    final nameCtrl = TextEditingController(text: isEdit ? original.fullName : '');
+    final userCtrl = TextEditingController(
+      text: isEdit ? original.username : '',
+    );
+    final nameCtrl = TextEditingController(
+      text: isEdit ? original.fullName : '',
+    );
     final emailCtrl = TextEditingController(text: isEdit ? original.email : '');
-    final passCtrl = TextEditingController(text: isEdit ? original.password : '');
+    final passCtrl = TextEditingController(
+      text: isEdit ? original.password : '',
+    );
     bool obscurePass = true;
 
     // Default permissions for a new vendor
     List<String> selectedPermissions = isEdit
         ? List<String>.from(original.permissions)
         : ['dashboard', 'pos', 'archives'];
+
+    if (!selectedPermissions.contains('suppliers')) {
+      selectedPermissions.add('suppliers');
+    }
 
     showDialog(
       context: context,
@@ -327,7 +424,9 @@ class _AdminViewState extends State<AdminView> {
             return AlertDialog(
               backgroundColor: state.bgSecondary,
               title: Text(
-                isEdit ? 'Modifier le Compte Vendeur' : 'Créer un nouveau Compte Vendeur',
+                isEdit
+                    ? 'Modifier le Compte Vendeur'
+                    : 'Créer un nouveau Compte Vendeur',
                 style: GoogleFonts.outfit(color: state.textPrimary),
               ),
               content: SizedBox(
@@ -339,36 +438,78 @@ class _AdminViewState extends State<AdminView> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _dialogField(label: 'Identifiant / Nom d\'utilisateur', controller: userCtrl, required: true, readOnly: isEdit),
+                        _dialogField(
+                          label: 'Identifiant / Nom d\'utilisateur',
+                          controller: userCtrl,
+                          required: true,
+                          readOnly: isEdit,
+                        ),
                         const SizedBox(height: 12),
-                        _dialogField(label: 'Nom Complet du Vendeur', controller: nameCtrl, required: true),
+                        _dialogField(
+                          label: 'Nom Complet du Vendeur',
+                          controller: nameCtrl,
+                          required: true,
+                        ),
                         const SizedBox(height: 12),
-                        _dialogField(label: 'Email Professionnel', controller: emailCtrl),
+                        _dialogField(
+                          label: 'Email Professionnel',
+                          controller: emailCtrl,
+                        ),
                         const SizedBox(height: 12),
                         // Mot de passe avec visibilité
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Mot de Passe', style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                            Text(
+                              'Mot de Passe',
+                              style: GoogleFonts.inter(
+                                color: state.textSecondary,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                             const SizedBox(height: 6),
                             TextFormField(
                               controller: passCtrl,
                               obscureText: obscurePass,
-                              style: GoogleFonts.inter(color: state.textPrimary, fontSize: 14),
+                              style: GoogleFonts.inter(
+                                color: state.textPrimary,
+                                fontSize: 14,
+                              ),
                               decoration: InputDecoration(
                                 filled: true,
                                 fillColor: state.bgPrimary,
-                                hintText: isEdit ? 'Laisser vide pour conserver' : 'Mot de passe du vendeur',
-                                hintStyle: GoogleFonts.inter(color: state.textSecondaryLight, fontSize: 12.5),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                hintText: isEdit
+                                    ? 'Laisser vide pour conserver'
+                                    : 'Mot de passe du vendeur',
+                                hintStyle: GoogleFonts.inter(
+                                  color: state.textSecondaryLight,
+                                  fontSize: 12.5,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                  horizontal: 16,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide.none,
+                                ),
                                 suffixIcon: IconButton(
-                                  icon: Icon(obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: state.textSecondaryLight, size: 18),
-                                  onPressed: () => setDialogState(() => obscurePass = !obscurePass),
+                                  icon: Icon(
+                                    obscurePass
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                    color: state.textSecondaryLight,
+                                    size: 18,
+                                  ),
+                                  onPressed: () => setDialogState(
+                                    () => obscurePass = !obscurePass,
+                                  ),
                                 ),
                               ),
                               validator: (v) {
-                                if (!isEdit && (v == null || v.trim().isEmpty)) return 'Mot de passe requis';
+                                if (!isEdit && (v == null || v.trim().isEmpty))
+                                  return 'Mot de passe requis';
                                 return null;
                               },
                             ),
@@ -376,10 +517,13 @@ class _AdminViewState extends State<AdminView> {
                         ),
                         const SizedBox(height: 16),
 
-
                         Text(
                           'Autoriser l\'accès aux modules :',
-                          style: GoogleFonts.inter(color: state.textSecondary, fontSize: 13, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.inter(
+                            color: state.textSecondary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Container(
@@ -390,22 +534,84 @@ class _AdminViewState extends State<AdminView> {
                             border: Border.all(color: state.borderTheme),
                           ),
                           child: RawScrollbar(
-                            thumbColor: const Color(0xFF10B981).withOpacity(0.3),
+                            thumbColor: const Color(
+                              0xFF10B981,
+                            ).withOpacity(0.3),
                             radius: const Radius.circular(4),
                             thickness: 4,
                             child: ListView(
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               children: [
-                                _buildPermissionCheckbox('dashboard', 'Tableau de bord', selectedPermissions, setDialogState, state),
-                                _buildPermissionCheckbox('pos', 'Point de ventes (POS)', selectedPermissions, setDialogState, state),
-                                _buildPermissionCheckbox('add_product', 'Ajouter un produit', selectedPermissions, setDialogState, state),
-                                _buildPermissionCheckbox('new_medicines', 'Nouveaux médicaments', selectedPermissions, setDialogState, state),
-                                _buildPermissionCheckbox('reports', 'Rapport de ventes', selectedPermissions, setDialogState, state),
-                                _buildPermissionCheckbox('archives', 'Archives reçu', selectedPermissions, setDialogState, state),
-                                _buildPermissionCheckbox('loans', 'Dettes', selectedPermissions, setDialogState, state),
-                                _buildPermissionCheckbox('replenish', 'Réapprovisionnement', selectedPermissions, setDialogState, state),
-                                _buildPermissionCheckbox('suppliers', 'Fournisseurs', selectedPermissions, setDialogState, state),
-                                _buildPermissionCheckbox('history', 'Historique des ventes', selectedPermissions, setDialogState, state),
+                                _buildPermissionCheckbox(
+                                  'dashboard',
+                                  'Tableau de bord',
+                                  selectedPermissions,
+                                  setDialogState,
+                                  state,
+                                ),
+                                _buildPermissionCheckbox(
+                                  'pos',
+                                  'Point de ventes (POS)',
+                                  selectedPermissions,
+                                  setDialogState,
+                                  state,
+                                ),
+                                _buildPermissionCheckbox(
+                                  'add_product',
+                                  'Ajouter un produit',
+                                  selectedPermissions,
+                                  setDialogState,
+                                  state,
+                                ),
+                                _buildPermissionCheckbox(
+                                  'new_medicines',
+                                  'Nouveaux médicaments',
+                                  selectedPermissions,
+                                  setDialogState,
+                                  state,
+                                ),
+                                _buildPermissionCheckbox(
+                                  'reports',
+                                  'Rapport de ventes',
+                                  selectedPermissions,
+                                  setDialogState,
+                                  state,
+                                ),
+                                _buildPermissionCheckbox(
+                                  'archives',
+                                  'Archives reçu',
+                                  selectedPermissions,
+                                  setDialogState,
+                                  state,
+                                ),
+                                _buildPermissionCheckbox(
+                                  'loans',
+                                  'Dettes',
+                                  selectedPermissions,
+                                  setDialogState,
+                                  state,
+                                ),
+                                _buildPermissionCheckbox(
+                                  'replenish',
+                                  'Réapprovisionnement',
+                                  selectedPermissions,
+                                  setDialogState,
+                                  state,
+                                ),
+                                _buildPermissionCheckbox(
+                                  'suppliers',
+                                  'Fournisseurs',
+                                  selectedPermissions,
+                                  setDialogState,
+                                  state,
+                                ),
+                                _buildPermissionCheckbox(
+                                  'history',
+                                  'Historique des ventes',
+                                  selectedPermissions,
+                                  setDialogState,
+                                  state,
+                                ),
                               ],
                             ),
                           ),
@@ -417,14 +623,22 @@ class _AdminViewState extends State<AdminView> {
               ),
               actions: [
                 TextButton(
-                  child: Text('Annuler', style: GoogleFonts.inter(color: state.textSecondaryLight)),
+                  child: Text(
+                    'Annuler',
+                    style: GoogleFonts.inter(color: state.textSecondaryLight),
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF10B981),
+                  ),
                   child: Text(
                     isEdit ? 'Modifier' : 'Créer le Compte',
-                    style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
@@ -432,7 +646,9 @@ class _AdminViewState extends State<AdminView> {
                         username: userCtrl.text.trim(),
                         fullName: nameCtrl.text.trim(),
                         email: emailCtrl.text.trim(),
-                        password: passCtrl.text.isNotEmpty ? passCtrl.text.trim() : (original?.password ?? ''),
+                        password: passCtrl.text.isNotEmpty
+                            ? passCtrl.text.trim()
+                            : (original?.password ?? ''),
                         pinCode: original?.pinCode ?? '',
 
                         role: 'VENDEUR',
@@ -466,7 +682,10 @@ class _AdminViewState extends State<AdminView> {
     final isChecked = selectedList.contains(key);
     return CheckboxListTile(
       value: isChecked,
-      title: Text(label, style: GoogleFonts.inter(color: state.textPrimary, fontSize: 13)),
+      title: Text(
+        label,
+        style: GoogleFonts.inter(color: state.textPrimary, fontSize: 13),
+      ),
       activeColor: const Color(0xFF10B981),
       checkColor: Colors.white,
       dense: true,
