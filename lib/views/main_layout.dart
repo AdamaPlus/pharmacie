@@ -323,72 +323,7 @@ class _MainLayoutState extends State<MainLayout> {
                 ),
 
 
-                // User footer (cliquable pour voir/modifier le profil)
-                InkWell(
-                  onTap: () => _showProfileDialog(context, state),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(0),
-                    bottomRight: Radius.circular(0),
-                  ),
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: _isSidebarVisible ? 20 : 12, vertical: 16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      border: Border(top: BorderSide(color: Theme.of(context).dividerTheme.color ?? Colors.white.withOpacity(0.03))),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: _isSidebarVisible
-                          ? MainAxisAlignment.start
-                          : MainAxisAlignment.center,
-                      children: [
-                        (() {
-                          final currentUser = state.users.firstWhere(
-                            (u) => u.username == state.currentUsername,
-                            orElse: () => UserAccount(username: state.currentUsername, role: state.currentUserRole),
-                          );
-                          final hasImg = currentUser.profileImageBase64 != null && currentUser.profileImageBase64!.isNotEmpty;
-                          return CircleAvatar(
-                            radius: 22,
-                            backgroundColor: themeColor.withOpacity(0.15),
-                            backgroundImage: hasImg ? MemoryImage(base64Decode(currentUser.profileImageBase64!)) : null,
-                            child: hasImg ? null : Text(
-                              state.currentUsername.substring(0, 1).toUpperCase(),
-                              style: GoogleFonts.outfit(color: themeColor, fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
-                          );
-                        })(),
-                        if (_isSidebarVisible) ...[
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  state.currentUsername.toLowerCase(),
-                                  style: GoogleFonts.inter(
-                                    color: state.textPrimary,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  state.currentUserRole,
-                                  style: GoogleFonts.inter(
-                                    color: themeColor,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Icon(Icons.edit_outlined, color: state.textSecondaryLight, size: 13),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
+
 
                 // Bouton déconnexion séparé
                 InkWell(
@@ -1468,11 +1403,36 @@ class _MainLayoutState extends State<MainLayout> {
                                   Text('Vos droits d\'accès', style: GoogleFonts.inter(color: themeColor, fontSize: 12, fontWeight: FontWeight.bold)),
                                 ]),
                                 const SizedBox(height: 8),
-                                _permRow('✓', 'Tableau de bord', state),
-                                _permRow('✓', 'Point de ventes (POS)', state),
-                                _permRow('✓', 'Archives reçu', state),
-                                _permRow('✗', 'Stock / Inventaire', state, denied: true),
-                                _permRow('✗', 'Fournisseurs / Admin', state, denied: true),
+                                _permRow(
+                                  currentUser.permissions.contains('dashboard') ? '✓' : '✗',
+                                  'Tableau de bord',
+                                  state,
+                                  denied: !currentUser.permissions.contains('dashboard'),
+                                ),
+                                _permRow(
+                                  currentUser.permissions.contains('pos') ? '✓' : '✗',
+                                  'Point de ventes (POS)',
+                                  state,
+                                  denied: !currentUser.permissions.contains('pos'),
+                                ),
+                                _permRow(
+                                  currentUser.permissions.contains('archives') ? '✓' : '✗',
+                                  'Archives reçu',
+                                  state,
+                                  denied: !currentUser.permissions.contains('archives'),
+                                ),
+                                _permRow(
+                                  (currentUser.permissions.contains('add_product') || currentUser.permissions.contains('new_medicines') || currentUser.permissions.contains('replenish')) ? '✓' : '✗',
+                                  'Stock / Inventaire',
+                                  state,
+                                  denied: !(currentUser.permissions.contains('add_product') || currentUser.permissions.contains('new_medicines') || currentUser.permissions.contains('replenish')),
+                                ),
+                                _permRow(
+                                  currentUser.permissions.contains('suppliers') ? '✓' : '✗',
+                                  'Fournisseurs',
+                                  state,
+                                  denied: !currentUser.permissions.contains('suppliers'),
+                                ),
                               ],
                             ),
                           ),
