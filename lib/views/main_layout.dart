@@ -513,6 +513,18 @@ class _MainLayoutState extends State<MainLayout> {
                       ],
                       Spacer(),
 
+                      // Date au centre de la Navbar
+                      Text(
+                        DateFormat('d MMMM yyyy', 'fr_FR').format(DateTime.now()),
+                        style: GoogleFonts.inter(
+                          color: Theme.of(context).brightness == Brightness.dark ? state.textSecondary : Color(0xFF475569),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+
+                      Spacer(),
+
                       if (state.notificationsEnabled && alertCount > 0) ...[
                         Tooltip(
                           message: 'Alertes système : $lowStockCount ruptures/faibles & $expiredCount lots périmés',
@@ -602,15 +614,6 @@ class _MainLayoutState extends State<MainLayout> {
                       ),
                       SizedBox(width: 16),
 
-                      // Simple Date Display
-                      Text(
-                        DateFormat('d MMMM yyyy', 'fr_FR').format(DateTime.now()),
-                        style: GoogleFonts.inter(
-                          color: Theme.of(context).brightness == Brightness.dark ? state.textSecondary : Color(0xFF475569),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
                       const SizedBox(width: 16),
 
                       // Compte utilisateur dans la Navbar (derrière la date)
