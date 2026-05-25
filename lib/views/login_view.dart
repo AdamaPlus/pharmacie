@@ -7,6 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../providers/app_state_provider.dart';
+import '../models/pharmacy_models.dart';
+
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -15,8 +17,8 @@ class LoginView extends StatefulWidget {
   State<LoginView> createState() => _LoginViewState();
 }
 
-class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMixin {
-
+class _LoginViewState extends State<LoginView>
+    with SingleTickerProviderStateMixin {
   final _formKeyLogin = GlobalKey<FormState>();
   final _formKeyRegister = GlobalKey<FormState>();
 
@@ -28,10 +30,13 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
   bool _obscurePin = true;
 
   // Register controllers
-  final _regNameController = TextEditingController();      // Nom de la pharmacie
-  final _regQuartierController = TextEditingController();  // Quartier / localisation
-  final _regAdminNameController = TextEditingController(); // Nom complet de l'admin
-  final _regUsernameController = TextEditingController(); // Nom d'utilisateur de l'admin
+  final _regNameController = TextEditingController(); // Nom de la pharmacie
+  final _regQuartierController =
+      TextEditingController(); // Quartier / localisation
+  final _regAdminNameController =
+      TextEditingController(); // Nom complet de l'admin
+  final _regUsernameController =
+      TextEditingController(); // Nom d'utilisateur de l'admin
   final _regPasswordController = TextEditingController();
   final _regConfirmPasswordController = TextEditingController();
   final _regPinCodeController = TextEditingController();
@@ -44,6 +49,8 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
 
   String? _errorMessage;
   String? _successMessage;
+  String? _usernameError;
+  String? _passwordError;
 
   late AnimationController _animCtrl;
   late Animation<double> _fadeAnim;
@@ -51,7 +58,10 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
   @override
   void initState() {
     super.initState();
-    _animCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
     _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
     _animCtrl.forward();
   }
@@ -75,21 +85,57 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
   }
 
   void _handleLogin() {
+    setState(() {
+      _usernameError = null;
+      _passwordError = null;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+
     if (_formKeyLogin.currentState!.validate()) {
-      setState(() {
-        _errorMessage = null;
-        _successMessage = null;
-      });
       final provider = Provider.of<AppStateProvider>(context, listen: false);
       final username = _usernameController.text.trim();
       final password = _passwordController.text;
-      final pin = _pinController.text.trim();
+
+      final input = username.toLowerCase();
+
+      // Check if username/email exists in admin or standard users
+      final dbEmail = provider.pharmacyContact2.trim().toLowerCase();
+      final adminUser = provider.users.firstWhere(
+        (u) => u.role == 'ADMIN',
+        orElse: () => UserAccount(username: '', role: 'ADMIN'),
+      );
+      final adminFullName = (adminUser.fullName ?? '').trim().toLowerCase();
+      final adminUsername = adminUser.username.trim().toLowerCase();
+
+      final isAdminMatch =
+          input == adminUsername ||
+          input == dbEmail ||
+          (adminFullName.isNotEmpty && input == adminFullName);
+
+      final isUserMatch = provider.users.any(
+        (u) =>
+            u.role != 'ADMIN' &&
+            (u.username.toLowerCase() == input ||
+                (u.email ?? '').toLowerCase() == input),
+      );
+
+      if (!isAdminMatch && !isUserMatch) {
+        setState(() {
+          _usernameError = "Identifiant incorrect ou inexistant";
+        });
+        _formKeyLogin.currentState!.validate();
+        return;
+      }
 
       bool success = provider.loginPharmacy(username, password, '');
       if (!success) success = provider.login(username, password, '');
 
       if (!success) {
-        setState(() => _errorMessage = 'Nom utilisateur ou mot de passe incorrect.');
+        setState(() {
+          _passwordError = "Mot de passe incorrect";
+        });
+        _formKeyLogin.currentState!.validate();
       }
     }
   }
@@ -114,7 +160,8 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
         logo: _regLogoBytes,
       );
       setState(() {
-        _successMessage = 'Compte créé avec succès ! Connectez-vous maintenant.';
+        _successMessage =
+            'Compte créé avec succès ! Connectez-vous maintenant.';
         // Ne pas pré-remplir les champs de connexion
         _regNameController.clear();
         _regQuartierController.clear();
@@ -128,7 +175,6 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
       });
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -144,22 +190,20 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
         fit: StackFit.expand,
         children: [
           // ── Fond image pharmacie ──
-          Image.asset(
-            'assets/images/pharmacy_bg.png',
-            fit: BoxFit.cover,
-          ),
+          Image.asset('assets/images/pharmacy_bg.png', fit: BoxFit.cover),
 
           // ── Overlay sombre complet pour centrage ──
-          Container(
-            color: const Color(0xAA0F172A),
-          ),
+          Container(color: const Color(0xAA0F172A)),
 
           // ── Formulaire centré ──
           Center(
             child: FadeTransition(
               opacity: _fadeAnim,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 32,
+                  horizontal: 24,
+                ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(28),
                   child: BackdropFilter(
@@ -170,7 +214,10 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                       decoration: BoxDecoration(
                         color: const Color(0xFF0F172A).withOpacity(0.78),
                         borderRadius: BorderRadius.circular(28),
-                        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.1),
+                          width: 1,
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.45),
@@ -192,7 +239,11 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                                   color: themeColor.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(Icons.local_pharmacy_rounded, size: 28, color: themeColor),
+                                child: const Icon(
+                                  Icons.local_pharmacy_rounded,
+                                  size: 28,
+                                  color: themeColor,
+                                ),
                               ),
                               const SizedBox(width: 14),
                               Column(
@@ -207,7 +258,9 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                                     ),
                                   ),
                                   Text(
-                                    showRegister ? 'Créez votre pharmacie' : 'Bienvenue — Connectez-vous',
+                                    showRegister
+                                        ? 'Créez votre pharmacie'
+                                        : 'Bienvenue — Connectez-vous',
                                     style: GoogleFonts.inter(
                                       fontSize: 12,
                                       color: Colors.white.withOpacity(0.5),
@@ -221,11 +274,19 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
 
                           // Alertes
                           if (_errorMessage != null) ...[
-                            _alertBox(_errorMessage!, Colors.redAccent, Icons.error_outline_rounded),
+                            _alertBox(
+                              _errorMessage!,
+                              Colors.redAccent,
+                              Icons.error_outline_rounded,
+                            ),
                             const SizedBox(height: 16),
                           ],
                           if (_successMessage != null) ...[
-                            _alertBox(_successMessage!, themeColor, Icons.check_circle_outline_rounded),
+                            _alertBox(
+                              _successMessage!,
+                              themeColor,
+                              Icons.check_circle_outline_rounded,
+                            ),
                             const SizedBox(height: 16),
                           ],
 
@@ -263,6 +324,16 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
             hint: "username ou email@gmail.com",
             themeColor: themeColor,
             forceLowerCase: true,
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Champ requis';
+              if (_usernameError != null) return _usernameError;
+              return null;
+            },
+            onChanged: (v) {
+              if (_usernameError != null) {
+                setState(() => _usernameError = null);
+              }
+            },
           ),
           const SizedBox(height: 18),
           _loginField(
@@ -274,12 +345,25 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
             obscure: _obscurePassword,
             suffixIcon: IconButton(
               icon: Icon(
-                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                _obscurePassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
                 color: Colors.white38,
                 size: 18,
               ),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
             ),
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Champ requis';
+              if (_passwordError != null) return _passwordError;
+              return null;
+            },
+            onChanged: (v) {
+              if (_passwordError != null) {
+                setState(() => _passwordError = null);
+              }
+            },
           ),
           Align(
             alignment: Alignment.centerRight,
@@ -301,7 +385,12 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
             ),
           ),
           const SizedBox(height: 22),
-          _primaryBtn('Se connecter', Icons.login_rounded, themeColor, _handleLogin),
+          _primaryBtn(
+            'Se connecter',
+            Icons.login_rounded,
+            themeColor,
+            _handleLogin,
+          ),
         ],
       ),
     );
@@ -322,20 +411,31 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
               alignment: Alignment.bottomRight,
               children: [
                 Container(
-                  width: 80, height: 80,
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.06),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withOpacity(0.12), width: 2),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.12),
+                      width: 2,
+                    ),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: _regLogoBytes != null
                       ? Image.memory(_regLogoBytes!, fit: BoxFit.cover)
-                      : Icon(Icons.add_photo_alternate_rounded, color: themeColor.withOpacity(0.7), size: 32),
+                      : Icon(
+                          Icons.add_photo_alternate_rounded,
+                          color: themeColor.withOpacity(0.7),
+                          size: 32,
+                        ),
                 ),
                 GestureDetector(
                   onTap: () async {
-                    final result = await FilePicker.pickFiles(type: FileType.image, withData: true);
+                    final result = await FilePicker.pickFiles(
+                      type: FileType.image,
+                      withData: true,
+                    );
                     if (result != null && result.files.single.bytes != null) {
                       setState(() => _regLogoBytes = result.files.single.bytes);
                     }
@@ -345,9 +445,16 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                     decoration: BoxDecoration(
                       color: themeColor,
                       shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF0F172A), width: 2),
+                      border: Border.all(
+                        color: const Color(0xFF0F172A),
+                        width: 2,
+                      ),
                     ),
-                    child: const Icon(Icons.edit_rounded, color: Colors.white, size: 12),
+                    child: const Icon(
+                      Icons.edit_rounded,
+                      color: Colors.white,
+                      size: 12,
+                    ),
                   ),
                 ),
               ],
@@ -363,18 +470,56 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
             ),
           ),
 
-          _regField('Nom de la pharmacie', _regNameController, Icons.apartment_rounded, themeColor, required: true),
+          _regField(
+            'Nom de la pharmacie',
+            _regNameController,
+            Icons.apartment_rounded,
+            themeColor,
+            required: true,
+          ),
           const SizedBox(height: 12),
-          _regField('Quartier / Localisation', _regQuartierController, Icons.location_on_rounded, themeColor, required: true),
+          _regField(
+            'Quartier / Localisation',
+            _regQuartierController,
+            Icons.location_on_rounded,
+            themeColor,
+            required: true,
+          ),
           const SizedBox(height: 12),
-          _regField('Votre nom complet (Admin)', _regAdminNameController, Icons.person_outline_rounded, themeColor, required: true),
+          _regField(
+            'Votre nom complet (Admin)',
+            _regAdminNameController,
+            Icons.person_outline_rounded,
+            themeColor,
+            required: true,
+          ),
           const SizedBox(height: 12),
-          _regField('Nom d\'utilisateur (Admin)', _regUsernameController, Icons.person_outline_rounded, themeColor, required: true),
+          _regField(
+            'Nom d\'utilisateur (Admin)',
+            _regUsernameController,
+            Icons.person_outline_rounded,
+            themeColor,
+            required: true,
+          ),
           const SizedBox(height: 12),
 
-          _regField('Email', _regContact2Controller, Icons.email_rounded, themeColor, isEmail: true, required: true),
+          _regField(
+            'Email',
+            _regContact2Controller,
+            Icons.email_rounded,
+            themeColor,
+            isEmail: true,
+            required: true,
+          ),
           const SizedBox(height: 12),
-          _regField('Téléphone', _regContact1Controller, Icons.phone_rounded, themeColor, required: true, isPhone: true),
+          _regField(
+            'Téléphone',
+            _regContact1Controller,
+            Icons.phone_rounded,
+            themeColor,
+            required: true,
+            isPhone: true,
+          ),
           const SizedBox(height: 12),
           _regField(
             'Mot de passe',
@@ -386,11 +531,14 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
             minLength: 4,
             suffixIcon: IconButton(
               icon: Icon(
-                _obscureRegPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                _obscureRegPassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
                 color: Colors.white38,
                 size: 18,
               ),
-              onPressed: () => setState(() => _obscureRegPassword = !_obscureRegPassword),
+              onPressed: () =>
+                  setState(() => _obscureRegPassword = !_obscureRegPassword),
             ),
           ),
           const SizedBox(height: 12),
@@ -405,20 +553,28 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
             confirmGetter: () => _regPasswordController.text,
             suffixIcon: IconButton(
               icon: Icon(
-                _obscureRegConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                _obscureRegConfirmPassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
                 color: Colors.white38,
                 size: 18,
               ),
-              onPressed: () => setState(() => _obscureRegConfirmPassword = !_obscureRegConfirmPassword),
+              onPressed: () => setState(
+                () => _obscureRegConfirmPassword = !_obscureRegConfirmPassword,
+              ),
             ),
           ),
           const SizedBox(height: 28),
-          _primaryBtn('Créer le compte', Icons.check_circle_rounded, themeColor, _handlePharmacyRegistration),
+          _primaryBtn(
+            'Créer le compte',
+            Icons.check_circle_rounded,
+            themeColor,
+            _handlePharmacyRegistration,
+          ),
         ],
       ),
     );
   }
-
 
   // ══════════════════════════════════════════
   // WIDGETS HELPERS
@@ -434,18 +590,32 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
     Widget? suffixIcon,
     void Function(String)? onSubmit,
     bool forceLowerCase = false,
+    String? Function(String?)? validator,
+    void Function(String)? onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white60)),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.white60,
+          ),
+        ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           obscureText: obscure,
-          textCapitalization: forceLowerCase ? TextCapitalization.none : TextCapitalization.none,
+          textCapitalization: forceLowerCase
+              ? TextCapitalization.none
+              : TextCapitalization.none,
           inputFormatters: isPin
-              ? [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4)]
+              ? [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(4),
+                ]
               : (forceLowerCase ? [LowerCaseTextFormatter()] : null),
           keyboardType: isPin ? TextInputType.number : TextInputType.text,
           style: GoogleFonts.inter(
@@ -455,12 +625,20 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
             fontWeight: isPin && !obscure ? FontWeight.bold : FontWeight.normal,
           ),
           onFieldSubmitted: onSubmit,
-          decoration: _glassDeco(hint, icon, themeColor, suffixIcon: suffixIcon),
-          validator: (v) {
-            if (v == null || v.trim().isEmpty) return 'Champ requis';
-            if (isPin && v.trim().length != 4) return '4 chiffres requis';
-            return null;
-          },
+          onChanged: onChanged,
+          decoration: _glassDeco(
+            hint,
+            icon,
+            themeColor,
+            suffixIcon: suffixIcon,
+          ),
+          validator:
+              validator ??
+              (v) {
+                if (v == null || v.trim().isEmpty) return 'Champ requis';
+                if (isPin && v.trim().length != 4) return '4 chiffres requis';
+                return null;
+              },
         ),
       ],
     );
@@ -484,25 +662,60 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w600, color: Colors.white60)),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+            color: Colors.white60,
+          ),
+        ),
         const SizedBox(height: 6),
         TextFormField(
           controller: ctrl,
           obscureText: obscure,
-          keyboardType: isPhone ? TextInputType.phone : (isEmail ? TextInputType.emailAddress : (isPinCode ? TextInputType.number : TextInputType.text)),
+          keyboardType: isPhone
+              ? TextInputType.phone
+              : (isEmail
+                    ? TextInputType.emailAddress
+                    : (isPinCode ? TextInputType.number : TextInputType.text)),
           inputFormatters: isPhone
-              ? [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(9)]
-              : (isPinCode ? [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4)] : null),
+              ? [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(9),
+                ]
+              : (isPinCode
+                    ? [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(4),
+                      ]
+                    : null),
           style: GoogleFonts.inter(color: Colors.white, fontSize: 13.5),
-          decoration: _glassDeco(isPhone ? 'Ex: 620000000 (9 chiffres)' : (isPinCode ? 'Code PIN à 4 chiffres (Ex: 1234)' : label), icon, themeColor, suffixIcon: suffixIcon),
+          decoration: _glassDeco(
+            isPhone
+                ? 'Ex: 620000000 (9 chiffres)'
+                : (isPinCode ? 'Code PIN à 4 chiffres (Ex: 1234)' : label),
+            icon,
+            themeColor,
+            suffixIcon: suffixIcon,
+          ),
           validator: (v) {
-            if (required && (v == null || v.trim().isEmpty)) return 'Champ requis';
-            if (isEmail && v != null && v.isNotEmpty && (!v.contains('@') || !v.contains('.'))) return 'Email invalide';
-            if (isPhone && v != null && v.isNotEmpty && v.length != 9) return '9 chiffres requis';
-            if (isPinCode && v != null && v.isNotEmpty && v.length != 4) return '4 chiffres requis';
-            if (minLength != null && v != null && v.length < minLength) return 'Min $minLength caractères';
+            if (required && (v == null || v.trim().isEmpty))
+              return 'Champ requis';
+            if (isEmail &&
+                v != null &&
+                v.isNotEmpty &&
+                (!v.contains('@') || !v.contains('.')))
+              return 'Email invalide';
+            if (isPhone && v != null && v.isNotEmpty && v.length != 9)
+              return '9 chiffres requis';
+            if (isPinCode && v != null && v.isNotEmpty && v.length != 4)
+              return '4 chiffres requis';
+            if (minLength != null && v != null && v.length < minLength)
+              return 'Min $minLength caractères';
             // Lire la valeur à confirmer au moment de la validation (pas au moment du build)
-            if (confirmGetter != null && v != confirmGetter()) return 'Les mots de passe ne correspondent pas';
+            if (confirmGetter != null && v != confirmGetter())
+              return 'Les mots de passe ne correspondent pas';
             return null;
           },
         ),
@@ -510,7 +723,12 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
     );
   }
 
-  InputDecoration _glassDeco(String hint, IconData prefix, Color themeColor, {Widget? suffixIcon}) {
+  InputDecoration _glassDeco(
+    String hint,
+    IconData prefix,
+    Color themeColor, {
+    Widget? suffixIcon,
+  }) {
     return InputDecoration(
       filled: true,
       fillColor: Colors.white.withOpacity(0.06),
@@ -519,7 +737,10 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
       hintText: hint,
       hintStyle: GoogleFonts.inter(color: Colors.white24, fontSize: 13),
       contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 16),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
@@ -540,7 +761,12 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
     );
   }
 
-  Widget _primaryBtn(String label, IconData icon, Color themeColor, VoidCallback onTap) {
+  Widget _primaryBtn(
+    String label,
+    IconData icon,
+    Color themeColor,
+    VoidCallback onTap,
+  ) {
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
@@ -556,7 +782,13 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
         children: [
           Icon(icon, size: 18),
           const SizedBox(width: 10),
-          Text(label, style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            style: GoogleFonts.outfit(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -575,7 +807,14 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
           Icon(icon, color: color, size: 16),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(message, style: GoogleFonts.inter(color: color, fontSize: 12, fontWeight: FontWeight.w500)),
+            child: Text(
+              message,
+              style: GoogleFonts.inter(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
         ],
       ),
@@ -588,12 +827,12 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
     final codeCtrl = TextEditingController();
     final newPinCtrl = TextEditingController();
     final newPinConfirmCtrl = TextEditingController();
-    
+
     final formKeyPhone = GlobalKey<FormState>();
     final formKeyCode = GlobalKey<FormState>();
     final formKeyPin = GlobalKey<FormState>();
 
-    int currentStep = 1; 
+    int currentStep = 1;
     String generatedCode = '';
     String? localError;
     String? localSuccess;
@@ -633,14 +872,22 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (localError != null) ...[
-                      _alertBox(localError!, Colors.redAccent, Icons.error_outline_rounded),
+                      _alertBox(
+                        localError!,
+                        Colors.redAccent,
+                        Icons.error_outline_rounded,
+                      ),
                       const SizedBox(height: 16),
                     ],
                     if (localSuccess != null) ...[
-                      _alertBox(localSuccess!, Colors.orangeAccent, Icons.check_circle_outline_rounded),
+                      _alertBox(
+                        localSuccess!,
+                        Colors.orangeAccent,
+                        Icons.check_circle_outline_rounded,
+                      ),
                       const SizedBox(height: 16),
                     ],
-                    
+
                     if (currentStep == 1)
                       Form(
                         key: formKeyPhone,
@@ -649,12 +896,20 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                           children: [
                             Text(
                               'Entrez le numéro de téléphone associé à votre pharmacie (l\'administrateur) pour recevoir le code de récupération.',
-                              style: GoogleFonts.inter(color: Colors.white70, fontSize: 13, height: 1.5),
+                              style: GoogleFonts.inter(
+                                color: Colors.white70,
+                                fontSize: 13,
+                                height: 1.5,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Numéro de téléphone',
-                              style: GoogleFonts.inter(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.bold),
+                              style: GoogleFonts.inter(
+                                color: Colors.white60,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: 6),
                             TextFormField(
@@ -664,18 +919,27 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                                 FilteringTextInputFormatter.digitsOnly,
                                 LengthLimitingTextInputFormatter(9),
                               ],
-                              style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
-                              decoration: _glassDeco('Ex: 620000000', Icons.phone_rounded, Colors.orangeAccent),
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
+                              decoration: _glassDeco(
+                                'Ex: 620000000',
+                                Icons.phone_rounded,
+                                Colors.orangeAccent,
+                              ),
                               validator: (v) {
-                                if (v == null || v.trim().isEmpty) return 'Veuillez saisir votre numéro';
-                                if (v.trim().length != 9) return '9 chiffres requis';
+                                if (v == null || v.trim().isEmpty)
+                                  return 'Veuillez saisir votre numéro';
+                                if (v.trim().length != 9)
+                                  return '9 chiffres requis';
                                 return null;
                               },
                             ),
                           ],
                         ),
                       ),
-                      
+
                     if (currentStep == 2)
                       Form(
                         key: formKeyCode,
@@ -684,12 +948,20 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                           children: [
                             Text(
                               'Saisissez le code à 4 chiffres reçu sur le numéro de téléphone ${phoneCtrl.text}.',
-                              style: GoogleFonts.inter(color: Colors.white70, fontSize: 13, height: 1.5),
+                              style: GoogleFonts.inter(
+                                color: Colors.white70,
+                                fontSize: 13,
+                                height: 1.5,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Code de validation',
-                              style: GoogleFonts.inter(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.bold),
+                              style: GoogleFonts.inter(
+                                color: Colors.white60,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: 6),
                             TextFormField(
@@ -699,11 +971,22 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                                 FilteringTextInputFormatter.digitsOnly,
                                 LengthLimitingTextInputFormatter(4),
                               ],
-                              style: GoogleFonts.inter(color: Colors.white, fontSize: 16, letterSpacing: 8, fontWeight: FontWeight.bold),
-                              decoration: _glassDeco('Code', Icons.message_rounded, Colors.orangeAccent),
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 16,
+                                letterSpacing: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              decoration: _glassDeco(
+                                'Code',
+                                Icons.message_rounded,
+                                Colors.orangeAccent,
+                              ),
                               validator: (v) {
-                                if (v == null || v.trim().isEmpty) return 'Code requis';
-                                if (v.trim() != generatedCode) return 'Code de validation incorrect';
+                                if (v == null || v.trim().isEmpty)
+                                  return 'Code requis';
+                                if (v.trim() != generatedCode)
+                                  return 'Code de validation incorrect';
                                 return null;
                               },
                             ),
@@ -719,12 +1002,19 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                           children: [
                             Text(
                               'Définissez votre nouveau Code PIN administrateur (exactement 4 chiffres).',
-                              style: GoogleFonts.inter(color: Colors.white70, fontSize: 13),
+                              style: GoogleFonts.inter(
+                                color: Colors.white70,
+                                fontSize: 13,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Nouveau Code PIN (4 chiffres)',
-                              style: GoogleFonts.inter(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.bold),
+                              style: GoogleFonts.inter(
+                                color: Colors.white60,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: 6),
                             TextFormField(
@@ -735,30 +1025,47 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                                 FilteringTextInputFormatter.digitsOnly,
                                 LengthLimitingTextInputFormatter(4),
                               ],
-                              style: GoogleFonts.inter(color: Colors.white, fontSize: 14, letterSpacing: obscureNewPin ? 0 : 8, fontWeight: obscureNewPin ? FontWeight.normal : FontWeight.bold),
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 14,
+                                letterSpacing: obscureNewPin ? 0 : 8,
+                                fontWeight: obscureNewPin
+                                    ? FontWeight.normal
+                                    : FontWeight.bold,
+                              ),
                               decoration: _glassDeco(
                                 'Nouveau Code PIN',
                                 Icons.lock_outline_rounded,
                                 Colors.orangeAccent,
                                 suffixIcon: IconButton(
                                   icon: Icon(
-                                    obscureNewPin ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                    obscureNewPin
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
                                     color: Colors.white38,
                                     size: 18,
                                   ),
-                                  onPressed: () => setLocalState(() => obscureNewPin = !obscureNewPin),
+                                  onPressed: () => setLocalState(
+                                    () => obscureNewPin = !obscureNewPin,
+                                  ),
                                 ),
                               ),
                               validator: (v) {
-                                if (v == null || v.trim().isEmpty) return 'Code PIN requis';
-                                if (v.length != 4) return 'Exactement 4 chiffres requis';
+                                if (v == null || v.trim().isEmpty)
+                                  return 'Code PIN requis';
+                                if (v.length != 4)
+                                  return 'Exactement 4 chiffres requis';
                                 return null;
                               },
                             ),
                             const SizedBox(height: 12),
                             Text(
                               'Confirmer le nouveau Code PIN',
-                              style: GoogleFonts.inter(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.bold),
+                              style: GoogleFonts.inter(
+                                color: Colors.white60,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: 6),
                             TextFormField(
@@ -769,23 +1076,37 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                                 FilteringTextInputFormatter.digitsOnly,
                                 LengthLimitingTextInputFormatter(4),
                               ],
-                              style: GoogleFonts.inter(color: Colors.white, fontSize: 14, letterSpacing: obscureNewPinConfirm ? 0 : 8, fontWeight: obscureNewPinConfirm ? FontWeight.normal : FontWeight.bold),
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 14,
+                                letterSpacing: obscureNewPinConfirm ? 0 : 8,
+                                fontWeight: obscureNewPinConfirm
+                                    ? FontWeight.normal
+                                    : FontWeight.bold,
+                              ),
                               decoration: _glassDeco(
                                 'Confirmer le Code PIN',
                                 Icons.lock_outline_rounded,
                                 Colors.orangeAccent,
                                 suffixIcon: IconButton(
                                   icon: Icon(
-                                    obscureNewPinConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                    obscureNewPinConfirm
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
                                     color: Colors.white38,
                                     size: 18,
                                   ),
-                                  onPressed: () => setLocalState(() => obscureNewPinConfirm = !obscureNewPinConfirm),
+                                  onPressed: () => setLocalState(
+                                    () => obscureNewPinConfirm =
+                                        !obscureNewPinConfirm,
+                                  ),
                                 ),
                               ),
                               validator: (v) {
-                                if (v == null || v.trim().isEmpty) return 'Confirmation requise';
-                                if (v != newPinCtrl.text) return 'Les Codes PIN ne correspondent pas';
+                                if (v == null || v.trim().isEmpty)
+                                  return 'Confirmation requise';
+                                if (v != newPinCtrl.text)
+                                  return 'Les Codes PIN ne correspondent pas';
                                 return null;
                               },
                             ),
@@ -813,46 +1134,56 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orangeAccent,
                     foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   onPressed: () {
                     setLocalState(() {
                       localError = null;
                       localSuccess = null;
                     });
-                    
+
                     if (currentStep == 1) {
                       if (formKeyPhone.currentState!.validate()) {
                         final phone = phoneCtrl.text.trim();
                         if (phone == state.pharmacyContact1.trim()) {
-                          final randomVal = (1000 + Random.secure().nextInt(9000)).toString();
+                          final randomVal =
+                              (1000 + Random.secure().nextInt(9000)).toString();
                           generatedCode = randomVal;
-                          
+
                           setLocalState(() {
                             currentStep = 2;
-                            localSuccess = 'Le message de confirmation a été envoyé sur son numéro de téléphone.';
+                            localSuccess =
+                                'Le message de confirmation a été envoyé sur son numéro de téléphone.';
                           });
-                          
+
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               backgroundColor: const Color(0xFF1E293B),
                               duration: const Duration(seconds: 12),
                               content: Text(
                                 '📲 SMS : Le message de confirmation a été envoyé sur son numéro de téléphone ($phone) : $generatedCode',
-                                style: GoogleFonts.inter(color: Colors.orangeAccent, fontWeight: FontWeight.bold),
+                                style: GoogleFonts.inter(
+                                  color: Colors.orangeAccent,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               action: SnackBarAction(
                                 label: 'Copier',
                                 textColor: Colors.orangeAccent,
                                 onPressed: () {
-                                  Clipboard.setData(ClipboardData(text: generatedCode));
+                                  Clipboard.setData(
+                                    ClipboardData(text: generatedCode),
+                                  );
                                 },
                               ),
                             ),
                           );
                         } else {
                           setLocalState(() {
-                            localError = 'Ce numéro de téléphone ne correspond à aucun compte administrateur.';
+                            localError =
+                                'Ce numéro de téléphone ne correspond à aucun compte administrateur.';
                           });
                         }
                       }
@@ -860,21 +1191,28 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                       if (formKeyCode.currentState!.validate()) {
                         setLocalState(() {
                           currentStep = 3;
-                          localSuccess = 'Code validé ! Définissez le nouveau Code PIN administrateur.';
+                          localSuccess =
+                              'Code validé ! Définissez le nouveau Code PIN administrateur.';
                         });
                       }
                     } else if (currentStep == 3) {
                       if (formKeyPin.currentState!.validate()) {
                         final phone = phoneCtrl.text.trim();
                         final newPinCode = newPinCtrl.text;
-                        final success = state.resetPinCodeByPhone(phone, newPinCode);
+                        final success = state.resetPinCodeByPhone(
+                          phone,
+                          newPinCode,
+                        );
                         if (success) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               backgroundColor: Colors.orangeAccent,
                               content: Text(
                                 'Code PIN administrateur réinitialisé avec succès ! Connectez-vous.',
-                                style: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.bold),
+                                style: GoogleFonts.inter(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           );
@@ -885,7 +1223,8 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                           Navigator.pop(context);
                         } else {
                           setLocalState(() {
-                            localError = 'Erreur lors de la réinitialisation du Code PIN.';
+                            localError =
+                                'Erreur lors de la réinitialisation du Code PIN.';
                           });
                         }
                       }
@@ -910,12 +1249,12 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
     final codeCtrl = TextEditingController();
     final newPassCtrl = TextEditingController();
     final newPassConfirmCtrl = TextEditingController();
-    
+
     final formKeyPhone = GlobalKey<FormState>();
     final formKeyCode = GlobalKey<FormState>();
     final formKeyPass = GlobalKey<FormState>();
 
-    int currentStep = 1; 
+    int currentStep = 1;
     String generatedCode = '';
     String? localError;
     String? localSuccess;
@@ -955,14 +1294,22 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (localError != null) ...[
-                      _alertBox(localError!, Colors.redAccent, Icons.error_outline_rounded),
+                      _alertBox(
+                        localError!,
+                        Colors.redAccent,
+                        Icons.error_outline_rounded,
+                      ),
                       const SizedBox(height: 16),
                     ],
                     if (localSuccess != null) ...[
-                      _alertBox(localSuccess!, themeColor, Icons.check_circle_outline_rounded),
+                      _alertBox(
+                        localSuccess!,
+                        themeColor,
+                        Icons.check_circle_outline_rounded,
+                      ),
                       const SizedBox(height: 16),
                     ],
-                    
+
                     if (currentStep == 1)
                       Form(
                         key: formKeyPhone,
@@ -971,12 +1318,20 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                           children: [
                             Text(
                               'Entrez le numéro de téléphone associé à votre pharmacie (l\'administrateur) pour recevoir le code de récupération.',
-                              style: GoogleFonts.inter(color: Colors.white70, fontSize: 13, height: 1.5),
+                              style: GoogleFonts.inter(
+                                color: Colors.white70,
+                                fontSize: 13,
+                                height: 1.5,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Numéro de téléphone',
-                              style: GoogleFonts.inter(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.bold),
+                              style: GoogleFonts.inter(
+                                color: Colors.white60,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: 6),
                             TextFormField(
@@ -986,18 +1341,27 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                                 FilteringTextInputFormatter.digitsOnly,
                                 LengthLimitingTextInputFormatter(9),
                               ],
-                              style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
-                              decoration: _glassDeco('Ex: 620000000', Icons.phone_rounded, themeColor),
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
+                              decoration: _glassDeco(
+                                'Ex: 620000000',
+                                Icons.phone_rounded,
+                                themeColor,
+                              ),
                               validator: (v) {
-                                if (v == null || v.trim().isEmpty) return 'Veuillez saisir votre numéro';
-                                if (v.trim().length != 9) return '9 chiffres requis';
+                                if (v == null || v.trim().isEmpty)
+                                  return 'Veuillez saisir votre numéro';
+                                if (v.trim().length != 9)
+                                  return '9 chiffres requis';
                                 return null;
                               },
                             ),
                           ],
                         ),
                       ),
-                      
+
                     if (currentStep == 2)
                       Form(
                         key: formKeyCode,
@@ -1006,12 +1370,20 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                           children: [
                             Text(
                               'Saisissez le code à 4 chiffres reçu sur le numéro ${phoneCtrl.text}.',
-                              style: GoogleFonts.inter(color: Colors.white70, fontSize: 13, height: 1.5),
+                              style: GoogleFonts.inter(
+                                color: Colors.white70,
+                                fontSize: 13,
+                                height: 1.5,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Code de validation',
-                              style: GoogleFonts.inter(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.bold),
+                              style: GoogleFonts.inter(
+                                color: Colors.white60,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: 6),
                             TextFormField(
@@ -1021,11 +1393,22 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                                 FilteringTextInputFormatter.digitsOnly,
                                 LengthLimitingTextInputFormatter(4),
                               ],
-                              style: GoogleFonts.inter(color: Colors.white, fontSize: 16, letterSpacing: 8, fontWeight: FontWeight.bold),
-                              decoration: _glassDeco('Code', Icons.message_rounded, themeColor),
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 16,
+                                letterSpacing: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              decoration: _glassDeco(
+                                'Code',
+                                Icons.message_rounded,
+                                themeColor,
+                              ),
                               validator: (v) {
-                                if (v == null || v.trim().isEmpty) return 'Code requis';
-                                if (v.trim() != generatedCode) return 'Code de validation incorrect';
+                                if (v == null || v.trim().isEmpty)
+                                  return 'Code requis';
+                                if (v.trim() != generatedCode)
+                                  return 'Code de validation incorrect';
                                 return null;
                               },
                             ),
@@ -1041,33 +1424,48 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                           children: [
                             Text(
                               'Définissez votre nouveau mot de passe administrateur.',
-                              style: GoogleFonts.inter(color: Colors.white70, fontSize: 13),
+                              style: GoogleFonts.inter(
+                                color: Colors.white70,
+                                fontSize: 13,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Nouveau mot de passe',
-                              style: GoogleFonts.inter(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.bold),
+                              style: GoogleFonts.inter(
+                                color: Colors.white60,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: 6),
                             TextFormField(
                               controller: newPassCtrl,
                               obscureText: obscureNewPass,
-                              style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
                               decoration: _glassDeco(
                                 'Nouveau mot de passe',
                                 Icons.lock_outline_rounded,
                                 themeColor,
                                 suffixIcon: IconButton(
                                   icon: Icon(
-                                    obscureNewPass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                    obscureNewPass
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
                                     color: Colors.white38,
                                     size: 18,
                                   ),
-                                  onPressed: () => setLocalState(() => obscureNewPass = !obscureNewPass),
+                                  onPressed: () => setLocalState(
+                                    () => obscureNewPass = !obscureNewPass,
+                                  ),
                                 ),
                               ),
                               validator: (v) {
-                                if (v == null || v.trim().isEmpty) return 'Mot de passe requis';
+                                if (v == null || v.trim().isEmpty)
+                                  return 'Mot de passe requis';
                                 if (v.length < 4) return 'Min 4 caractères';
                                 return null;
                               },
@@ -1075,29 +1473,43 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                             const SizedBox(height: 12),
                             Text(
                               'Confirmer le nouveau mot de passe',
-                              style: GoogleFonts.inter(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.bold),
+                              style: GoogleFonts.inter(
+                                color: Colors.white60,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: 6),
                             TextFormField(
                               controller: newPassConfirmCtrl,
                               obscureText: obscureNewPassConfirm,
-                              style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
                               decoration: _glassDeco(
                                 'Confirmer le mot de passe',
                                 Icons.lock_outline_rounded,
                                 themeColor,
                                 suffixIcon: IconButton(
                                   icon: Icon(
-                                    obscureNewPassConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                    obscureNewPassConfirm
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
                                     color: Colors.white38,
                                     size: 18,
                                   ),
-                                  onPressed: () => setLocalState(() => obscureNewPassConfirm = !obscureNewPassConfirm),
+                                  onPressed: () => setLocalState(
+                                    () => obscureNewPassConfirm =
+                                        !obscureNewPassConfirm,
+                                  ),
                                 ),
                               ),
                               validator: (v) {
-                                if (v == null || v.trim().isEmpty) return 'Confirmation requise';
-                                if (v != newPassCtrl.text) return 'Les mots de passe ne correspondent pas';
+                                if (v == null || v.trim().isEmpty)
+                                  return 'Confirmation requise';
+                                if (v != newPassCtrl.text)
+                                  return 'Les mots de passe ne correspondent pas';
                                 return null;
                               },
                             ),
@@ -1125,46 +1537,56 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                   style: ElevatedButton.styleFrom(
                     backgroundColor: themeColor,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   onPressed: () {
                     setLocalState(() {
                       localError = null;
                       localSuccess = null;
                     });
-                    
+
                     if (currentStep == 1) {
                       if (formKeyPhone.currentState!.validate()) {
                         final phone = phoneCtrl.text.trim();
                         if (phone == state.pharmacyContact1.trim()) {
-                          final randomVal = (1000 + Random.secure().nextInt(9000)).toString();
+                          final randomVal =
+                              (1000 + Random.secure().nextInt(9000)).toString();
                           generatedCode = randomVal;
-                          
+
                           setLocalState(() {
                             currentStep = 2;
-                            localSuccess = 'Le message de confirmation a été envoyé sur son numéro de téléphone.';
+                            localSuccess =
+                                'Le message de confirmation a été envoyé sur son numéro de téléphone.';
                           });
-                          
+
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               backgroundColor: const Color(0xFF1E293B),
                               duration: const Duration(seconds: 12),
                               content: Text(
                                 '📲 SMS : Le message de confirmation a été envoyé sur son numéro de téléphone ($phone) : $generatedCode',
-                                style: GoogleFonts.inter(color: themeColor, fontWeight: FontWeight.bold),
+                                style: GoogleFonts.inter(
+                                  color: themeColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               action: SnackBarAction(
                                 label: 'Copier',
                                 textColor: themeColor,
                                 onPressed: () {
-                                  Clipboard.setData(ClipboardData(text: generatedCode));
+                                  Clipboard.setData(
+                                    ClipboardData(text: generatedCode),
+                                  );
                                 },
                               ),
                             ),
                           );
                         } else {
                           setLocalState(() {
-                            localError = 'Ce numéro de téléphone ne correspond à aucun compte administrateur.';
+                            localError =
+                                'Ce numéro de téléphone ne correspond à aucun compte administrateur.';
                           });
                         }
                       }
@@ -1172,21 +1594,28 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                       if (formKeyCode.currentState!.validate()) {
                         setLocalState(() {
                           currentStep = 3;
-                          localSuccess = 'Code validé avec succès ! Définissez le nouveau mot de passe.';
+                          localSuccess =
+                              'Code validé avec succès ! Définissez le nouveau mot de passe.';
                         });
                       }
                     } else if (currentStep == 3) {
                       if (formKeyPass.currentState!.validate()) {
                         final phone = phoneCtrl.text.trim();
                         final newPassword = newPassCtrl.text;
-                        final success = state.resetPasswordByPhone(phone, newPassword);
+                        final success = state.resetPasswordByPhone(
+                          phone,
+                          newPassword,
+                        );
                         if (success) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               backgroundColor: themeColor,
                               content: Text(
                                 'Mot de passe administrateur réinitialisé avec succès ! Connectez-vous.',
-                                style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+                                style: GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           );
@@ -1197,7 +1626,8 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                           Navigator.pop(context);
                         } else {
                           setLocalState(() {
-                            localError = 'Erreur lors de la réinitialisation du mot de passe.';
+                            localError =
+                                'Erreur lors de la réinitialisation du mot de passe.';
                           });
                         }
                       }
@@ -1219,7 +1649,10 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
 
 class LowerCaseTextFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     return newValue.copyWith(text: newValue.text.toLowerCase());
   }
 }
