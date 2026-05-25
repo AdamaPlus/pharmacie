@@ -692,13 +692,32 @@ class AppStateProvider extends ChangeNotifier {
 
   /// Retourne le nom d'affichage du caissier (fullName si dispo, sinon username)
   String _getCashierDisplayName() {
+    // Chercher l'utilisateur dans la liste des comptes
     final user = _db.users.firstWhere(
       (u) => u.username == _db.currentUsername,
       orElse: () => UserAccount(username: _db.currentUsername, role: _db.currentUserRole),
     );
-    return (user.fullName != null && user.fullName!.isNotEmpty)
-        ? user.fullName!
-        : _db.currentUsername;
+
+    // Si l'utilisateur a un fullName défini, l'utiliser en priorité
+    if (user.fullName != null && user.fullName!.trim().isNotEmpty) {
+      return user.fullName!.trim();
+    }
+
+    // Si l'utilisateur est ADMIN, chercher le compte admin dans la liste
+    if (_db.currentUserRole == 'ADMIN') {
+      final adminUser = _db.users.firstWhere(
+        (u) => u.role == 'ADMIN',
+        orElse: () => UserAccount(username: _db.currentUsername, role: 'ADMIN'),
+      );
+      if (adminUser.fullName != null && adminUser.fullName!.trim().isNotEmpty) {
+        return adminUser.fullName!.trim();
+      }
+      // Fallback: utiliser le username de l'admin
+      return adminUser.username.isNotEmpty ? adminUser.username : 'Administrateur';
+    }
+
+    // Sinon, retourner le username courant
+    return _db.currentUsername.isNotEmpty ? _db.currentUsername : 'Vendeur';
   }
 
   // Confirm Sale & Deduct stock sequentially from earliest expiring lots (FIFO by expiration)

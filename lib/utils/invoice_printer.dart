@@ -149,7 +149,12 @@ class InvoicePrinter {
     content.add(pw.SizedBox(height: 2));
     content.add(
       buildRow(
-        'Caissier:',
+        (sale.cashierName.toLowerCase().contains('admin') ||
+         sale.cashierName.toLowerCase().contains('responsable') ||
+         sale.cashierName.toLowerCase().contains('le-responsable') ||
+         sale.cashierName.toLowerCase().contains('administrateur'))
+            ? 'Admin:'
+            : 'Caissier:',
         sale.cashierName.toUpperCase(),
         fontWeight: pw.FontWeight.bold,
       ),

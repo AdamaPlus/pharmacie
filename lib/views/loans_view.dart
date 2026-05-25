@@ -731,8 +731,10 @@ class _LoansViewState extends State<LoansView>
   }
 
   Widget _buildDetteListTab(List<MedicamentLoan> loansList, String typeLabel) {
+    // Filtrer UNIQUEMENT les dettes non remboursées pour le total
     final pending = loansList.where((l) => !l.isReturned).toList();
     final returned = loansList.where((l) => l.isReturned).toList();
+    // Le total d'intérêt ne compte QUE les dettes encore actives (non remboursées)
     final totalPending = pending.fold(0.0, (s, l) => s + l.totalValue);
 
     return SingleChildScrollView(
@@ -780,6 +782,17 @@ class _LoansViewState extends State<LoansView>
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    if (returned.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '${returned.length} réglée(s) — non comptée(s)',
+                        style: GoogleFonts.inter(
+                          color: const Color(0xFF10B981),
+                          fontSize: 10,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1214,9 +1227,9 @@ class _LoansViewState extends State<LoansView>
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Valeur Totale du Prêt :',
+                            loan.isReturned ? 'Montant Réglé ✓' : 'Valeur Totale du Prêt :',
                             style: GoogleFonts.inter(
-                              color: state.textSecondary,
+                              color: loan.isReturned ? const Color(0xFF10B981) : state.textSecondary,
                               fontSize: 11.5,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1224,9 +1237,16 @@ class _LoansViewState extends State<LoansView>
                           Text(
                             _fmt.format(loan.totalValue),
                             style: GoogleFonts.outfit(
-                              color: themeColor,
+                              // Si remboursée → gris (non comptée dans le total), sinon vert actif
+                              color: loan.isReturned
+                                  ? state.textSecondaryLight
+                                  : themeColor,
                               fontSize: 14.5,
                               fontWeight: FontWeight.w800,
+                              decoration: loan.isReturned
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                              decorationColor: state.textSecondaryLight,
                             ),
                           ),
                         ],

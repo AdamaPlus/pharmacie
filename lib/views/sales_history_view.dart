@@ -117,7 +117,7 @@ class _SalesHistoryViewState extends State<SalesHistoryView> {
                     style: GoogleFonts.courierPrime(color: Colors.black),
                   ),
                   Text(
-                    'REÇU DE PAIEMENT\nN°: ${sale.id}\nDate: ${DateFormat('dd/MM/yyyy HH:mm').format(sale.date)}\nCaissier: ${sale.cashierName}\nClient: ${sale.patientName ?? 'Passage'}',
+                    'REÇU DE PAIEMENT\nN°: ${sale.id}\nDate: ${DateFormat("dd/MM/yyyy HH:mm").format(sale.date)}\n${(sale.cashierName.toLowerCase().contains("admin") || sale.cashierName.toLowerCase().contains("responsable") || state.users.any((u) => u.role == "ADMIN" && (u.username.toLowerCase() == sale.cashierName.toLowerCase() || u.fullName.toLowerCase() == sale.cashierName.toLowerCase()))) ? "Admin" : "Caissier"}: ${sale.cashierName}\nClient: ${sale.patientName ?? "Passage"}',
                     style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11),
                   ),
                   Text(
