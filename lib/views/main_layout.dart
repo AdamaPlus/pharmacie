@@ -322,8 +322,37 @@ class _MainLayoutState extends State<MainLayout> {
                   ),
                 ),
 
-
-
+                // Bouton Activer la licence (si non enregistré/activé)
+                if (!state.isLicensed)
+                  InkWell(
+                    onTap: () => _showLicenseActivationDialog(context, state),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: _isSidebarVisible ? 20 : 12, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.06),
+                        border: Border(top: BorderSide(color: Colors.amber.withOpacity(0.12))),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: _isSidebarVisible
+                            ? MainAxisAlignment.start
+                            : MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.vpn_key_rounded, color: Colors.amber, size: 20),
+                          if (_isSidebarVisible) ...[
+                            const SizedBox(width: 10),
+                            Text(
+                              'Activer la licence',
+                              style: GoogleFonts.inter(
+                                color: Colors.amber,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
 
                 // Bouton déconnexion séparé
                 InkWell(
@@ -2167,6 +2196,200 @@ class _MainLayoutState extends State<MainLayout> {
       quartier: state.pharmacyQuartier,
       contact1: state.pharmacyContact1,
       contact2: state.pharmacyContact2,
+    );
+  }
+
+  void _showLicenseActivationDialog(BuildContext context, AppStateProvider state) {
+    final licenseController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    String? errorMessage;
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            const themeColor = Color(0xFF10B981);
+            return AlertDialog(
+              backgroundColor: state.bgSecondary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: themeColor.withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.vpn_key_rounded, color: themeColor, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Activation de la Licence',
+                    style: GoogleFonts.outfit(
+                      color: state.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: isLoading ? null : () => Navigator.pop(context),
+                    icon: Icon(Icons.close, color: state.textSecondary, size: 20),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: 400,
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Saisissez votre clé de licence pour activer PharmaGuinée de façon définitive et masquer le bouton d\'activation.',
+                        style: GoogleFonts.inter(
+                          color: state.textSecondary,
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: licenseController,
+                        style: GoogleFonts.inter(color: state.textPrimary, fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: 'Clé de licence (ex: M@riame...)',
+                          hintStyle: GoogleFonts.inter(color: state.textSecondaryLight, fontSize: 13),
+                          prefixIcon: Icon(Icons.key_rounded, color: state.textSecondaryLight, size: 18),
+                          filled: true,
+                          fillColor: state.bgPrimary,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: state.borderTheme),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: themeColor, width: 1.5),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Veuillez saisir votre clé de licence';
+                          }
+                          return null;
+                        },
+                      ),
+                      if (errorMessage != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.redAccent.withOpacity(0.2)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  errorMessage!,
+                                  style: GoogleFonts.inter(
+                                    color: Colors.redAccent,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              actionsPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              actions: [
+                TextButton(
+                  onPressed: isLoading ? null : () => Navigator.pop(context),
+                  child: Text(
+                    'Annuler',
+                    style: GoogleFonts.inter(color: state.textSecondary, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: themeColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) return;
+                          setDialogState(() {
+                            isLoading = true;
+                            errorMessage = null;
+                          });
+
+                          // Simuler un léger chargement premium
+                          await Future.delayed(const Duration(milliseconds: 800));
+
+                          final isValid = state.validateLicense(licenseController.text);
+
+                          if (isValid) {
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Licence activée avec succès ! Merci pour votre confiance.',
+                                    style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                                  ),
+                                  backgroundColor: themeColor,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } else {
+                            setDialogState(() {
+                              isLoading = false;
+                              errorMessage = 'Clé de licence invalide. Veuillez réessayer.';
+                            });
+                          }
+                        },
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          'Activer',
+                          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                        ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }
