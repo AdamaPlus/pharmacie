@@ -1120,12 +1120,8 @@ class _StockViewState extends State<StockView>
                                             DateTime.now().add(
                                               const Duration(days: 365),
                                             ),
-                                        firstDate: DateTime.now().subtract(
-                                          const Duration(days: 365),
-                                        ),
-                                        lastDate: DateTime.now().add(
-                                          const Duration(days: 3650),
-                                        ),
+                                        firstDate: DateTime.now(),
+                                        lastDate: DateTime(9999, 12, 31),
                                       );
                                       if (picked != null) {
                                         expCtrl.text = DateFormat(

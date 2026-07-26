@@ -477,17 +477,20 @@ class _MainLayoutState extends State<MainLayout> {
                       ],
                       Spacer(),
 
-                      // Date au centre de la Navbar
-                      Text(
-                        DateFormat('d MMMM yyyy', 'fr_FR').format(DateTime.now()),
-                        style: GoogleFonts.inter(
-                          color: Theme.of(context).brightness == Brightness.dark ? state.textSecondary : Color(0xFF475569),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                      // Date au centre de la Navbar (encapsulée pour éviter l'overflow)
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            DateFormat('d MMMM yyyy', 'fr_FR').format(DateTime.now()),
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              color: Theme.of(context).brightness == Brightness.dark ? state.textSecondary : Color(0xFF475569),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
                       ),
-
-                      Spacer(),
 
                       if (state.notificationsEnabled && alertCount > 0) ...[
                         Tooltip(
@@ -587,54 +590,60 @@ class _MainLayoutState extends State<MainLayout> {
                           orElse: () => UserAccount(username: state.currentUsername, role: state.currentUserRole),
                         );
                         final hasImg = currentUser.profileImageBase64 != null && currentUser.profileImageBase64!.isNotEmpty;
-                        return GestureDetector(
-                          onTap: () => _showProfileDialog(context, state),
-                          child: MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: themeColor.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: themeColor.withOpacity(0.2)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  CircleAvatar(
-                                    radius: 14,
-                                    backgroundColor: themeColor.withOpacity(0.2),
-                                    backgroundImage: hasImg ? MemoryImage(base64Decode(currentUser.profileImageBase64!)) : null,
-                                    child: hasImg ? null : Text(
-                                      state.currentUsername.substring(0, 1).toUpperCase(),
-                                      style: GoogleFonts.outfit(color: themeColor, fontWeight: FontWeight.bold, fontSize: 12),
+                        return Flexible(
+                          child: GestureDetector(
+                            onTap: () => _showProfileDialog(context, state),
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: themeColor.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(color: themeColor.withOpacity(0.2)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 14,
+                                      backgroundColor: themeColor.withOpacity(0.2),
+                                      backgroundImage: hasImg ? MemoryImage(base64Decode(currentUser.profileImageBase64!)) : null,
+                                      child: hasImg ? null : Text(
+                                        state.currentUsername.substring(0, 1).toUpperCase(),
+                                        style: GoogleFonts.outfit(color: themeColor, fontWeight: FontWeight.bold, fontSize: 12),
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        state.currentUsername.toLowerCase(),
-                                        style: GoogleFonts.inter(
-                                          color: state.textPrimary,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            state.currentUsername.toLowerCase(),
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.inter(
+                                              color: state.textPrimary,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          Text(
+                                            state.currentUserRole,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.inter(
+                                              color: themeColor,
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      Text(
-                                        state.currentUserRole,
-                                        style: GoogleFonts.inter(
-                                          color: themeColor,
-                                          fontSize: 9.5,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
