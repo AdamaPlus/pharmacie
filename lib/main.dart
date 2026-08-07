@@ -29,7 +29,7 @@ class PharmaGuineeApp extends StatelessWidget {
     final isDark = state.isDarkMode;
 
     return MaterialApp(
-      title: 'PharmaGuinée - Gestion de Pharmacie & RH',
+      title: 'Pharma Guinée - Gestion de Pharmacie & RH',
       debugShowCheckedModeBanner: false,
       locale: const Locale('fr', 'FR'),
       supportedLocales: const [Locale('fr', 'FR')],

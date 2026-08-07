@@ -54,19 +54,9 @@ class DatabaseService {
         databaseFactory = databaseFactoryFfi;
       }
 
-      final appDir = await getApplicationSupportDirectory();
-      final dbDir = Directory(p.join(appDir.path, 'pharmaguinee'));
+      final dbDir = await _resolveDatabaseDirectory();
       if (!await dbDir.exists()) await dbDir.create(recursive: true);
-      final dbPath = p.join(dbDir.path, 'pharmaguinee.db');
-
-      final docsDir = await getApplicationDocumentsDirectory();
-      final backupDir = Directory(p.join(docsDir.path, 'pharmaguinee_backup'));
-      if (!await backupDir.exists()) await backupDir.create(recursive: true);
-      final backupPath = p.join(backupDir.path, 'pharmaguinee.db');
-
-      if (!await File(dbPath).exists() && await File(backupPath).exists()) {
-        await File(backupPath).copy(dbPath);
-      }
+      final dbPath = p.join(dbDir.path, 'pharma_guinee.db');
 
       _db = await openDatabase(
         dbPath,
@@ -86,6 +76,48 @@ class DatabaseService {
       _loadEmptyData();
       logAction('INIT_ERROR', 'Erreur initialisation SQLite: $e');
     }
+  }
+
+  Future<Directory> _resolveDatabaseDirectory() async {
+    final preferredRoots = <String>[];
+    final home = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
+    if (home != null && home.isNotEmpty) {
+      preferredRoots.add(p.join(home, 'Documents', 'Pharma Guinée'));
+    }
+
+    final windowsUserProfile = Platform.environment['USERPROFILE'] ?? '';
+    final windowsHomeDrive = Platform.environment['HOMEDRIVE'] ?? '';
+    final windowsHomePath = Platform.environment['HOMEPATH'] ?? '';
+    if (Platform.isWindows && windowsUserProfile.isNotEmpty) {
+      preferredRoots.add(p.join(windowsUserProfile, 'Documents', 'Pharma Guinée'));
+    } else if (Platform.isWindows && windowsHomeDrive.isNotEmpty && windowsHomePath.isNotEmpty) {
+      preferredRoots.add(p.join(windowsHomeDrive + windowsHomePath, 'Documents', 'Pharma Guinée'));
+    }
+
+    if (Platform.isMacOS && home != null && home.isNotEmpty) {
+      preferredRoots.add(p.join(home, 'Documents', 'Pharma Guinée'));
+    }
+
+    if (Platform.isLinux && home != null && home.isNotEmpty) {
+      preferredRoots.add(p.join(home, 'Documents', 'Pharma Guinée'));
+    }
+
+    final appDocsDir = await getApplicationDocumentsDirectory();
+    preferredRoots.add(p.join(appDocsDir.path, 'Pharma Guinée'));
+    preferredRoots.add(p.join(appDocsDir.path, 'pharmaguinee'));
+
+    for (final root in preferredRoots) {
+      final dir = Directory(root);
+      if (await dir.exists()) {
+        return dir;
+      }
+    }
+
+    final fallback = Directory(preferredRoots.first);
+    if (!await fallback.exists()) {
+      await fallback.create(recursive: true);
+    }
+    return fallback;
   }
 
   // ────────────────────────────────────────────────────────────────
@@ -236,28 +268,10 @@ class DatabaseService {
       }
 
       await batch.commit(noResult: true);
-      await _mirrorToBackupCopy();
       return true;
     } catch (e) {
       debugPrint('Erreur save DB: $e');
       return false;
-    }
-  }
-
-  Future<void> _mirrorToBackupCopy() async {
-    if (_db == null || kIsWeb) return;
-    try {
-      final docsDir = await getApplicationDocumentsDirectory();
-      final backupDir = Directory(p.join(docsDir.path, 'pharmaguinee_backup'));
-      if (!await backupDir.exists()) await backupDir.create(recursive: true);
-      final backupPath = p.join(backupDir.path, 'pharmaguinee.db');
-      final dbPath = _db!.path;
-      final currentDbFile = File(dbPath);
-      if (await currentDbFile.exists()) {
-        await currentDbFile.copy(backupPath);
-      }
-    } catch (e) {
-      debugPrint('Erreur sauvegarde de secours DB: $e');
     }
   }
 

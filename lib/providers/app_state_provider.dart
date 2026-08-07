@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:typed_data';
 import 'dart:convert';
 import '../models/pharmacy_models.dart';
 import '../services/database_service.dart';
+
+class _AlertEntry {
+  _AlertEntry({required this.message, required this.createdAt});
+
+  final String message;
+  final DateTime createdAt;
+}
 
 class AppStateProvider extends ChangeNotifier {
   final DatabaseService _db = DatabaseService();
@@ -50,11 +56,11 @@ class AppStateProvider extends ChangeNotifier {
   bool _notificationsEnabled = true;
   bool get notificationsEnabled => _notificationsEnabled;
 
-  final Map<String, DateTime> _alertTimestamps = {};
+  final List<_AlertEntry> _activeAlerts = [];
   List<String> get activeAlerts {
-    final cutoff = DateTime.now().subtract(const Duration(days: 30));
-    _alertTimestamps.removeWhere((_, timestamp) => timestamp.isBefore(cutoff));
-    return _alertTimestamps.keys.toList();
+    final now = DateTime.now();
+    _activeAlerts.removeWhere((entry) => now.difference(entry.createdAt).inDays > 30);
+    return _activeAlerts.map((entry) => entry.message).toList();
   }
   int get alertCount => activeAlerts.length;
 
@@ -89,8 +95,8 @@ class AppStateProvider extends ChangeNotifier {
   }
 
   void refreshSystemAlerts({bool shouldNotify = false}) {
-    final cutoff = DateTime.now().subtract(const Duration(days: 30));
-    _alertTimestamps.removeWhere((_, timestamp) => timestamp.isBefore(cutoff));
+    final now = DateTime.now();
+    _activeAlerts.removeWhere((entry) => now.difference(entry.createdAt).inDays > 30);
 
     final nextAlerts = <String>[];
 
@@ -103,25 +109,21 @@ class AppStateProvider extends ChangeNotifier {
     }
 
     for (final lot in _db.lots.where((lot) => lot.quantity > 0)) {
-      final diff = lot.expirationDate.difference(DateTime.now()).inDays;
-      if (lot.expirationDate.isBefore(DateTime.now())) {
+      final diff = lot.expirationDate.difference(now).inDays;
+      if (lot.expirationDate.isBefore(now)) {
         nextAlerts.add('Périmé : ${lot.productName} (${lot.lotNumber})');
       } else if (diff <= 30) {
         nextAlerts.add('Expiration proche : ${lot.productName} (${lot.lotNumber})');
       }
     }
 
-    for (final order in _db.suppliers.expand((supplier) => supplier.orders)) {
-      if (order.status == 'COMMANDE') {
-        nextAlerts.add('Commande fournisseur en attente : ${order.id}');
+    final existingMessages = _activeAlerts.map((entry) => entry.message).toSet();
+    final newAlerts = nextAlerts.where((message) => !existingMessages.contains(message)).toList();
+    for (final message in nextAlerts) {
+      if (!_activeAlerts.any((entry) => entry.message == message)) {
+        _activeAlerts.add(_AlertEntry(message: message, createdAt: now));
       }
     }
-
-    final previousAlerts = Set<String>.from(_alertTimestamps.keys);
-    for (final message in nextAlerts) {
-      _alertTimestamps.putIfAbsent(message, () => DateTime.now());
-    }
-    final newAlerts = nextAlerts.where((message) => !previousAlerts.contains(message)).toList();
 
     if (shouldNotify && _notificationsEnabled && newAlerts.isNotEmpty) {
       _playAlertSound();
