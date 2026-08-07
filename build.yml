@@ -19,6 +19,15 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Activer le support Windows pour Flutter
+        run: flutter config --enable-windows-desktop
+
+      - name: Précacher les artefacts Windows
+        run: flutter precache --windows
+
+      - name: Vérifier l'environnement Flutter
+        run: flutter doctor -v
+
       - name: Nettoyer le projet
         run: flutter clean
 
@@ -34,11 +43,20 @@ jobs:
       - name: Générer le fichier Setup.exe
         shell: pwsh
         run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer.iss"
+          $paths = @(
+            "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+            "C:\Program Files (x86)\Inno Setup 5\ISCC.exe"
+          )
+          $exe = $paths | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if ($null -eq $exe) {
+            Write-Error "ISCC.exe introuvable après installation d'Inno Setup"
+            exit 1
+          }
+          & $exe "installer.iss"
 
       - name: Publier l'installeur en artefact
         uses: actions/upload-artifact@v4
         with:
           name: pharmaguinee-windows-installer
-          path: Output/*.exe
+          path: '**/*.exe'
           retention-days: 30
