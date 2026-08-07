@@ -42,6 +42,7 @@ class _DashboardViewState extends State<DashboardView> {
     
     // Low stock count
     final lowStockCount = state.products.where((p) => p.totalQuantity <= p.minStock && !state.isProductOrdered(p.id)).length;
+    final alertCount = state.activeAlerts.length;
     
     // Total Revenue (let's sum the sales)
     final totalRevenue = state.sales.fold(0.0, (sum, s) => sum + s.netAmount);
@@ -116,8 +117,33 @@ class _DashboardViewState extends State<DashboardView> {
                 ),
               ],
             ),
-            const SizedBox(height: 32),
-            
+            const SizedBox(height: 24),
+            if (state.notificationsEnabled && alertCount > 0)
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.25)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.notifications_active_rounded, color: Color(0xFFF59E0B)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Alertes actives : ${state.activeAlerts.join(' • ')}',
+                        style: GoogleFonts.inter(
+                          color: state.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             // Bottom columns layout
             LayoutBuilder(
               builder: (context, constraints) {
@@ -414,21 +440,22 @@ class _DashboardViewState extends State<DashboardView> {
       return salesInMonth.fold(0.0, (sum, s) => sum + s.netAmount);
     });
 
-    final maxY = monthlySales.isEmpty ? 1000.0 : monthlySales.reduce(max);
-    final chartMaxY = maxY == 0 ? 1000.0 : maxY * 1.2;
+    final totalYearSales = monthlySales.fold<double>(0.0, (sum, v) => sum + v);
+    final maxMonthSales = monthlySales.isEmpty ? 0.0 : monthlySales.reduce(max);
+    final chartMaxY = maxMonthSales == 0 ? 1000.0 : maxMonthSales * 1.25;
 
     final months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         color: state.bgSecondary,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: state.borderTheme),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 16,
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
@@ -436,25 +463,75 @@ class _DashboardViewState extends State<DashboardView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Header Row with Title and Badge Stats
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                'Croissance des Activités ($year)',
-                style: GoogleFonts.outfit(
-                  color: state.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B82F6).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                child: const Icon(Icons.bar_chart_rounded, color: Color(0xFF3B82F6), size: 24),
+              ),
+              const SizedBox(width: 14),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Croissance des Activités ($year)',
+                    style: GoogleFonts.outfit(
+                      color: state.textPrimary,
+                      fontSize: 19,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'Histogramme des ventes mensuelles enregistrées',
+                    style: GoogleFonts.inter(
+                      color: state.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
               const Spacer(),
-              Icon(Icons.bar_chart_rounded, color: const Color(0xFF3B82F6), size: 24),
+              // KPI summary chip
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: state.bgPrimary,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: state.borderTheme),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Total Année : ',
+                      style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12),
+                    ),
+                    Text(
+                      _formatCurrency(totalYearSales, isMasked: state.maskRevenues),
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFF10B981),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          Divider(color: state.borderTheme, height: 1),
+          const SizedBox(height: 20),
+          Divider(color: state.borderTheme.withOpacity(0.6), height: 1),
           const SizedBox(height: 24),
+
+          // Histogram BarChart
           SizedBox(
-            height: 300,
+            height: 320,
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
@@ -463,10 +540,19 @@ class _DashboardViewState extends State<DashboardView> {
                   enabled: true,
                   touchTooltipData: BarTouchTooltipData(
                     getTooltipColor: (_) => const Color(0xFF1E293B),
+                    tooltipPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final monthName = months[group.x.toInt()];
+                      final valueStr = _formatCurrency(rod.toY, isMasked: state.maskRevenues);
                       return BarTooltipItem(
-                        '${months[group.x.toInt()]}\n${_formatCurrency(rod.toY, isMasked: state.maskRevenues)}',
-                        GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                        '$monthName $year\n',
+                        GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w500),
+                        children: [
+                          TextSpan(
+                            text: valueStr,
+                            style: GoogleFonts.outfit(color: const Color(0xFF38BDF8), fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                        ],
                       );
                     },
                   ),
@@ -476,66 +562,87 @@ class _DashboardViewState extends State<DashboardView> {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
+                      reservedSize: 32,
                       getTitlesWidget: (double value, TitleMeta meta) {
-                        final style = GoogleFonts.inter(
-                          color: state.textSecondary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11,
-                        );
+                        final idx = value.toInt();
+                        if (idx < 0 || idx >= months.length) return const SizedBox.shrink();
                         return SideTitleWidget(
                           meta: meta,
                           space: 8,
-                          child: Text(months[value.toInt()], style: style),
-                        );
-                      },
-                      reservedSize: 30,
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 60,
-                      getTitlesWidget: (double value, TitleMeta meta) {
-                        if (value == chartMaxY || value == 0) return Container();
-                        if (state.maskRevenues) {
-                          return Text('***', style: GoogleFonts.inter(color: state.textSecondary, fontSize: 11));
-                        }
-                        return Text(
-                          '${(value / 1000).toStringAsFixed(0)}k',
-                          style: GoogleFonts.inter(
-                            color: state.textSecondary,
-                            fontSize: 11,
+                          child: Text(
+                            months[idx],
+                            style: GoogleFonts.inter(
+                              color: state.textSecondary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
                           ),
                         );
                       },
                     ),
                   ),
-                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 65,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        if (value == chartMaxY || value == 0) return Container();
+                        if (state.maskRevenues) {
+                          return Text('***', style: GoogleFonts.inter(color: state.textSecondary, fontSize: 11));
+                        }
+                        String label;
+                        if (value >= 1000000) {
+                          label = '${(value / 1000000).toStringAsFixed(1)}M';
+                        } else if (value >= 1000) {
+                          label = '${(value / 1000).toStringAsFixed(0)}k';
+                        } else {
+                          label = value.toStringAsFixed(0);
+                        }
+                        return Text(
+                          label,
+                          style: GoogleFonts.inter(
+                            color: state.textSecondary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 ),
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
                   getDrawingHorizontalLine: (value) => FlLine(
-                    color: state.borderTheme.withOpacity(0.5),
+                    color: state.borderTheme.withOpacity(0.4),
                     strokeWidth: 1,
-                    dashArray: [5, 5],
+                    dashArray: [6, 6],
                   ),
                 ),
                 borderData: FlBorderData(show: false),
                 barGroups: List.generate(12, (i) {
+                  final val = monthlySales[i];
+                  final isPeak = val > 0 && val == maxMonthSales;
                   return BarChartGroupData(
                     x: i,
                     barRods: [
                       BarChartRodData(
-                        toY: monthlySales[i],
-                        color: const Color(0xFF3B82F6),
-                        width: 16,
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                        toY: val,
+                        gradient: LinearGradient(
+                          colors: isPeak
+                              ? [const Color(0xFF10B981), const Color(0xFF34D399)]
+                              : [const Color(0xFF2563EB), const Color(0xFF60A5FA)],
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                        ),
+                        width: 20,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
                         backDrawRodData: BackgroundBarChartRodData(
                           show: true,
                           toY: chartMaxY,
-                          color: state.borderTheme.withOpacity(0.2),
+                          color: state.bgPrimary.withOpacity(0.5),
                         ),
                       ),
                     ],

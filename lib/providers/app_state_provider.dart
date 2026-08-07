@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:typed_data';
 import 'dart:convert';
 import '../models/pharmacy_models.dart';
@@ -49,9 +50,88 @@ class AppStateProvider extends ChangeNotifier {
   bool _notificationsEnabled = true;
   bool get notificationsEnabled => _notificationsEnabled;
 
+  final Map<String, DateTime> _alertTimestamps = {};
+  List<String> get activeAlerts {
+    final cutoff = DateTime.now().subtract(const Duration(days: 30));
+    _alertTimestamps.removeWhere((_, timestamp) => timestamp.isBefore(cutoff));
+    return _alertTimestamps.keys.toList();
+  }
+  int get alertCount => activeAlerts.length;
+
+  bool canCreateNewMedicines() {
+    if (_db.currentUserRole == 'ADMIN') return true;
+    final currentUser = _db.users.firstWhere(
+      (u) => u.username == _db.currentUsername,
+      orElse: () => UserAccount(username: _db.currentUsername, role: _db.currentUserRole),
+    );
+    return currentUser.permissions.contains('add_product') ||
+        currentUser.permissions.contains('new_medicines');
+  }
+
+  bool canEditProductDetails() {
+    if (_db.currentUserRole == 'ADMIN') return true;
+    final currentUser = _db.users.firstWhere(
+      (u) => u.username == _db.currentUsername,
+      orElse: () => UserAccount(username: _db.currentUsername, role: _db.currentUserRole),
+    );
+    return currentUser.permissions.contains('add_product') &&
+        currentUser.permissions.contains('new_medicines');
+  }
+
+  void _playAlertSound() {
+    if (!_notificationsEnabled) return;
+    try {
+      SystemSound.play(SystemSoundType.alert);
+    } catch (_) {}
+    try {
+      HapticFeedback.vibrate();
+    } catch (_) {}
+  }
+
+  void refreshSystemAlerts({bool shouldNotify = false}) {
+    final cutoff = DateTime.now().subtract(const Duration(days: 30));
+    _alertTimestamps.removeWhere((_, timestamp) => timestamp.isBefore(cutoff));
+
+    final nextAlerts = <String>[];
+
+    for (final product in _db.products) {
+      if (product.totalQuantity <= 0) {
+        nextAlerts.add('Rupture : ${product.name}');
+      } else if (product.totalQuantity <= product.minStock && !isProductOrdered(product.id)) {
+        nextAlerts.add('Stock faible : ${product.name}');
+      }
+    }
+
+    for (final lot in _db.lots.where((lot) => lot.quantity > 0)) {
+      final diff = lot.expirationDate.difference(DateTime.now()).inDays;
+      if (lot.expirationDate.isBefore(DateTime.now())) {
+        nextAlerts.add('Périmé : ${lot.productName} (${lot.lotNumber})');
+      } else if (diff <= 30) {
+        nextAlerts.add('Expiration proche : ${lot.productName} (${lot.lotNumber})');
+      }
+    }
+
+    for (final order in _db.suppliers.expand((supplier) => supplier.orders)) {
+      if (order.status == 'COMMANDE') {
+        nextAlerts.add('Commande fournisseur en attente : ${order.id}');
+      }
+    }
+
+    final previousAlerts = Set<String>.from(_alertTimestamps.keys);
+    for (final message in nextAlerts) {
+      _alertTimestamps.putIfAbsent(message, () => DateTime.now());
+    }
+    final newAlerts = nextAlerts.where((message) => !previousAlerts.contains(message)).toList();
+
+    if (shouldNotify && _notificationsEnabled && newAlerts.isNotEmpty) {
+      _playAlertSound();
+    }
+    notifyListeners();
+  }
+
   void toggleNotifications() {
     _notificationsEnabled = !_notificationsEnabled;
-    notifyListeners();
+    refreshSystemAlerts();
   }
 
   void toggleTheme() {
@@ -92,28 +172,29 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Licence & Trial
+  // Licence & Trial (Mode test 6 jours puis clé requise)
   bool get isLicensed => _db.isLicensed;
   String get firstLaunchDate => _db.firstLaunchDate;
 
   int get trialDaysRemaining {
-    if (_db.firstLaunchDate.isEmpty) return 5;
-    try {
-      final launchDate = DateTime.parse(_db.firstLaunchDate);
-      final difference = DateTime.now().difference(launchDate).inDays;
-      final remaining = 5 - difference;
-      return remaining < 0 ? 0 : remaining;
-    } catch (e) {
-      return 0;
-    }
+    if (isLicensed) return 999999;
+    if (firstLaunchDate.isEmpty) return 6;
+    final firstLaunch = DateTime.tryParse(firstLaunchDate);
+    if (firstLaunch == null) return 6;
+    final difference = DateTime.now().difference(firstLaunch).inDays;
+    final remaining = 6 - difference;
+    return remaining < 0 ? 0 : remaining;
   }
 
-  bool get isTrialExpired => !isLicensed && trialDaysRemaining <= 0;
+  bool get isTrialExpired {
+    if (isLicensed) return false;
+    return trialDaysRemaining <= 0;
+  }
 
-  bool validateLicense(String key) {
+  Future<bool> validateLicense(String key) async {
     if (key.trim() == "M@riame@@##Ad@m!a62380//") {
       _db.isLicensed = true;
-      _db.save();
+      await _db.save();
       notifyListeners();
       return true;
     }
@@ -282,7 +363,7 @@ class AppStateProvider extends ChangeNotifier {
         debugPrint('Error decoding saved logo: $e');
       }
     }
-    notifyListeners();
+    refreshSystemAlerts();
   }
 
   void setActiveTab(int index) {
@@ -400,6 +481,7 @@ class AppStateProvider extends ChangeNotifier {
   void updateCurrentUserProfile({
     String? fullName,
     String? email,
+    String? phone,
     String? newPassword,
     String? profileImageBase64,
     String? newPinCode,
@@ -419,7 +501,10 @@ class AppStateProvider extends ChangeNotifier {
         permissions: old.permissions,
         profileImageBase64: profileImageBase64 ?? old.profileImageBase64,
       );
-      // Si admin, synchroniser aussi le mot de passe et le code PIN de la pharmacie
+      if (phone != null && phone.isNotEmpty) {
+        _db.pharmacyContact1 = phone;
+      }
+      // Si admin, synchroniser aussi le mot de passe, le code PIN et le téléphone de la pharmacie
       if (old.role == 'ADMIN') {
         if (newPassword != null && newPassword.isNotEmpty) {
           _db.pharmacyPassword = newPassword;
@@ -427,11 +512,20 @@ class AppStateProvider extends ChangeNotifier {
         if (newPinCode != null && newPinCode.isNotEmpty) {
           _db.pharmacyPinCode = newPinCode;
         }
+        if (phone != null && phone.isNotEmpty) {
+          _db.pharmacyContact1 = phone;
+        }
       }
       _db.logAction('PROFIL_MAJ', 'Profil de ${_db.currentUsername} mis à jour.');
       _db.save();
       notifyListeners();
     }
+  }
+
+  void logAction(String action, String details) {
+    _db.logAction(action, details);
+    _db.save();
+    notifyListeners();
   }
 
   void clearAuditLogs() {
@@ -473,7 +567,7 @@ class AppStateProvider extends ChangeNotifier {
     _db.products.add(product);
     _db.logAction('STOCK_ADD_PRODUCT', 'Nouveau produit ajouté : ${product.name} (Code: ${product.id}).');
     _db.save();
-    notifyListeners();
+    refreshSystemAlerts(shouldNotify: true);
   }
 
   void editProduct(Product updated) {
@@ -482,7 +576,7 @@ class AppStateProvider extends ChangeNotifier {
       _db.products[idx] = updated;
       _db.logAction('STOCK_EDIT_PRODUCT', 'Produit modifié : ${updated.name}.');
       _db.save();
-      notifyListeners();
+      refreshSystemAlerts(shouldNotify: true);
     }
   }
 
@@ -492,7 +586,7 @@ class AppStateProvider extends ChangeNotifier {
     _db.lots.removeWhere((l) => l.productId == productId);
     _db.logAction('STOCK_DELETE_PRODUCT', 'Produit supprimé : ${prod.name} et tous ses lots.');
     _db.save();
-    notifyListeners();
+    refreshSystemAlerts();
   }
 
   void addLot(Lot lot) {
@@ -512,7 +606,7 @@ class AppStateProvider extends ChangeNotifier {
     );
     _db.logAction('STOCK_ADD_LOT', 'Nouveau lot ajouté : ${lot.lotNumber} pour ${lot.productName}.');
     _db.save();
-    notifyListeners();
+    refreshSystemAlerts(shouldNotify: true);
   }
 
   void adjustLotQuantity(String lotId, int newQuantity, String reason) {
@@ -538,7 +632,7 @@ class AppStateProvider extends ChangeNotifier {
 
       _db.logAction('STOCK_ADJUST_LOT', 'Lot ${lot.lotNumber} ajusté de ${lot.quantity - difference} à $newQuantity. Raison: $reason');
       _db.save();
-      notifyListeners();
+      refreshSystemAlerts(shouldNotify: true);
     }
   }
 
@@ -1278,6 +1372,30 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateProductPurchasePrice(String productId, double newPrice) {
+    final pIdx = _db.products.indexWhere((p) => p.id.trim() == productId.trim());
+    if (pIdx != -1) {
+      final p = _db.products[pIdx];
+      _db.products[pIdx] = Product(
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        barcode: p.barcode,
+        purchasePrice: newPrice,
+        sellingPrice: p.sellingPrice,
+        vat: p.vat,
+        category: p.category,
+        supplierName: p.supplierName,
+        image: p.image,
+        minStock: p.minStock,
+        totalQuantity: p.totalQuantity,
+      );
+      _db.logAction('STOCK_PRICE_UPDATE', 'Prix d\'achat de ${p.name} mis à jour dans le stock : $newPrice GNF.');
+      _db.save();
+      notifyListeners();
+    }
+  }
+
   // Supplier orders builder
   void createSupplierOrder(String supplierId, List<OrderItem> items) {
     final supIdx = _db.suppliers.indexWhere((s) => s.id == supplierId);
@@ -1285,6 +1403,28 @@ class AppStateProvider extends ChangeNotifier {
       double total = 0.0;
       for (var item in items) {
         total += item.quantityOrdered * item.unitPrice;
+        // Update product purchase price directly in stock database
+        final pIdx = _db.products.indexWhere((p) => p.id.trim() == item.productId.trim());
+        if (pIdx != -1 && item.unitPrice > 0) {
+          final p = _db.products[pIdx];
+          if (p.purchasePrice != item.unitPrice) {
+            _db.products[pIdx] = Product(
+              id: p.id,
+              name: p.name,
+              description: p.description,
+              barcode: p.barcode,
+              purchasePrice: item.unitPrice,
+              sellingPrice: p.sellingPrice,
+              vat: p.vat,
+              category: p.category,
+              supplierName: p.supplierName,
+              image: p.image,
+              minStock: p.minStock,
+              totalQuantity: p.totalQuantity,
+            );
+            _db.logAction('STOCK_PRICE_UPDATE', 'Prix d\'achat de ${p.name} mis à jour dans le stock via la commande : ${item.unitPrice} GNF.');
+          }
+        }
       }
       final orderId = 'ORD-SUP-${DateTime.now().millisecondsSinceEpoch}';
       final newOrder = SupplierOrder(
@@ -1309,7 +1449,7 @@ class AppStateProvider extends ChangeNotifier {
 
       _db.logAction('SUPPLIER_ORDER_CREATE', 'Commande passée au fournisseur ${_db.suppliers[supIdx].name} (Total: $total GNF).');
       _db.save();
-      notifyListeners();
+      refreshSystemAlerts(shouldNotify: true);
     }
   }
 
@@ -1368,7 +1508,7 @@ class AppStateProvider extends ChangeNotifier {
 
         _db.logAction('SUPPLIER_ORDER_RECEIVE', 'Marchandises reçues pour la commande $orderId. Stocks mis à jour.');
         _db.save();
-        notifyListeners();
+        refreshSystemAlerts(shouldNotify: true);
       }
     }
   }

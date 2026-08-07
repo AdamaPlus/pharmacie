@@ -92,7 +92,8 @@ class _StockViewState extends State<StockView>
 
                 // Add Buttons
                 if (state.currentUserRole == 'ADMIN' ||
-                    state.currentUserRole == 'PHARMACIEN')
+                    state.currentUserRole == 'PHARMACIEN' ||
+                    state.canCreateNewMedicines())
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -180,7 +181,9 @@ class _StockViewState extends State<StockView>
                             ],
                           ),
                           ElevatedButton.icon(
-                            onPressed: () => _showAddLotDialog(context, state),
+                            onPressed: state.canCreateNewMedicines()
+                                ? () => _showAddLotDialog(context, state)
+                                : null,
                             icon: Icon(Icons.add_box_rounded, size: 18),
                             label: Text('Ajouter un produit'),
                             style: ElevatedButton.styleFrom(
@@ -196,7 +199,9 @@ class _StockViewState extends State<StockView>
                             ),
                           ),
                           ElevatedButton.icon(
-                            onPressed: () => _showAddProductDialog(context, state),
+                            onPressed: state.canCreateNewMedicines()
+                                ? () => _showAddProductDialog(context, state)
+                                : null,
                             icon: Icon(Icons.add_circle_outline_rounded, size: 18),
                             label: Text('Nouveau médicament'),
                             style: ElevatedButton.styleFrom(
@@ -521,9 +526,10 @@ class _StockViewState extends State<StockView>
                             color: Colors.blueAccent,
                             size: 18,
                           ),
-                          onPressed: () =>
-                              _showAddProductDialog(context, state, prod),
-                          tooltip: 'Modifier',
+                          onPressed: state.canEditProductDetails()
+                              ? () => _showAddProductDialog(context, state, prod)
+                              : null,
+                          tooltip: state.canEditProductDetails() ? 'Modifier' : 'Accès restreint',
                         ),
                         if (state.currentUserRole == 'ADMIN')
                           IconButton(

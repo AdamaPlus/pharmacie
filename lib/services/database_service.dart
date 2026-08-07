@@ -54,10 +54,19 @@ class DatabaseService {
         databaseFactory = databaseFactoryFfi;
       }
 
-      final appDir = await getApplicationDocumentsDirectory();
+      final appDir = await getApplicationSupportDirectory();
       final dbDir = Directory(p.join(appDir.path, 'pharmaguinee'));
       if (!await dbDir.exists()) await dbDir.create(recursive: true);
       final dbPath = p.join(dbDir.path, 'pharmaguinee.db');
+
+      final docsDir = await getApplicationDocumentsDirectory();
+      final backupDir = Directory(p.join(docsDir.path, 'pharmaguinee_backup'));
+      if (!await backupDir.exists()) await backupDir.create(recursive: true);
+      final backupPath = p.join(backupDir.path, 'pharmaguinee.db');
+
+      if (!await File(dbPath).exists() && await File(backupPath).exists()) {
+        await File(backupPath).copy(dbPath);
+      }
 
       _db = await openDatabase(
         dbPath,
@@ -227,10 +236,28 @@ class DatabaseService {
       }
 
       await batch.commit(noResult: true);
+      await _mirrorToBackupCopy();
       return true;
     } catch (e) {
       debugPrint('Erreur save DB: $e');
       return false;
+    }
+  }
+
+  Future<void> _mirrorToBackupCopy() async {
+    if (_db == null || kIsWeb) return;
+    try {
+      final docsDir = await getApplicationDocumentsDirectory();
+      final backupDir = Directory(p.join(docsDir.path, 'pharmaguinee_backup'));
+      if (!await backupDir.exists()) await backupDir.create(recursive: true);
+      final backupPath = p.join(backupDir.path, 'pharmaguinee.db');
+      final dbPath = _db!.path;
+      final currentDbFile = File(dbPath);
+      if (await currentDbFile.exists()) {
+        await currentDbFile.copy(backupPath);
+      }
+    } catch (e) {
+      debugPrint('Erreur sauvegarde de secours DB: $e');
     }
   }
 

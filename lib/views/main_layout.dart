@@ -152,7 +152,7 @@ class _MainLayoutState extends State<MainLayout> {
     // Get alerts counts
     final lowStockCount = state.products.where((p) => p.totalQuantity <= p.minStock && !state.isProductOrdered(p.id)).length;
     final expiredCount = state.lots.where((l) => l.isExpired && l.quantity > 0).length;
-    final alertCount = lowStockCount + expiredCount;
+    final alertCount = state.activeAlerts.length;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -1187,6 +1187,7 @@ class _MainLayoutState extends State<MainLayout> {
 
     final nameCtrl = TextEditingController(text: currentUser.fullName);
     final emailCtrl = TextEditingController(text: currentUser.email);
+    final phoneCtrl = TextEditingController(text: state.pharmacyContact1);
     final passCtrl = TextEditingController();
     bool obscurePass = true;
     Uint8List? newProfileImageBytes;
@@ -1384,6 +1385,29 @@ class _MainLayoutState extends State<MainLayout> {
                         ),
                         const SizedBox(height: 14),
 
+                        // Numéro de téléphone
+                        Text('Numéro de téléphone', style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: phoneCtrl,
+                          keyboardType: TextInputType.phone,
+                          style: GoogleFonts.inter(color: state.textPrimary),
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: state.bgPrimary,
+                            hintText: '622000000',
+                            hintStyle: GoogleFonts.inter(color: state.textSecondaryLight),
+                            prefixIcon: Icon(Icons.phone_rounded, color: state.textSecondaryLight, size: 18),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: themeColor, width: 1.5),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+
                         // Nouveau mot de passe
                         Text('Nouveau mot de passe (laisser vide pour ne pas changer)',
                             style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
@@ -1494,6 +1518,7 @@ class _MainLayoutState extends State<MainLayout> {
                       state.updateCurrentUserProfile(
                         fullName: nameCtrl.text.trim(),
                         email: emailCtrl.text.trim(),
+                        phone: phoneCtrl.text.trim(),
                         newPassword: passCtrl.text.isNotEmpty ? passCtrl.text : null,
                         profileImageBase64: newProfileImageBase64,
                       );
@@ -2213,6 +2238,7 @@ class _MainLayoutState extends State<MainLayout> {
     final formKey = GlobalKey<FormState>();
     String? errorMessage;
     bool isLoading = false;
+    bool obscureText = true;
 
     showDialog(
       context: context,
@@ -2268,11 +2294,20 @@ class _MainLayoutState extends State<MainLayout> {
                       const SizedBox(height: 20),
                       TextFormField(
                         controller: licenseController,
+                        obscureText: obscureText,
                         style: GoogleFonts.inter(color: state.textPrimary, fontSize: 14),
                         decoration: InputDecoration(
                           hintText: 'Clé de licence (ex: M@riame...)',
                           hintStyle: GoogleFonts.inter(color: state.textSecondaryLight, fontSize: 13),
                           prefixIcon: Icon(Icons.key_rounded, color: state.textSecondaryLight, size: 18),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                              color: state.textSecondaryLight,
+                              size: 18,
+                            ),
+                            onPressed: () => setDialogState(() => obscureText = !obscureText),
+                          ),
                           filled: true,
                           fillColor: state.bgPrimary,
                           contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
@@ -2357,7 +2392,7 @@ class _MainLayoutState extends State<MainLayout> {
                           // Simuler un léger chargement premium
                           await Future.delayed(const Duration(milliseconds: 800));
 
-                          final isValid = state.validateLicense(licenseController.text);
+                          final isValid = await state.validateLicense(licenseController.text);
 
                           if (isValid) {
                             if (context.mounted) {
