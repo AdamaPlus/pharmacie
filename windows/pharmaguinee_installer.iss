@@ -8,7 +8,7 @@
 #define AppPublisher "Adama Keita"
 #define AppURL "https://pharmaguinee.com"
 #define AppExeName "pharmaguinee.exe"
-#define BuildDir "build\windows\x64\runner\Release"
+#define BuildDir "..\build\windows\x64\runner\Release"
 
 [Setup]
 AppId={{8A3F2C1D-4B7E-4F2A-9C3D-1E5F6A7B8C9D}}
@@ -22,9 +22,9 @@ DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 AllowNoIcons=yes
 LicenseFile=
-OutputDir=output_setup
+OutputDir=..\output_setup
 OutputBaseFilename=PharmaGuinee_Setup_v{#AppVersion}_Windows
-SetupIconFile=assets\images\app_icon.png
+SetupIconFile=..\assets\images\app_icon.png
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
