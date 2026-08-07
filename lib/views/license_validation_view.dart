@@ -15,6 +15,7 @@ class _LicenseValidationViewState extends State<LicenseValidationView> {
   final _formKey = GlobalKey<FormState>();
   String? _errorMessage;
   bool _isLoading = false;
+  bool _obscureLicense = true;
 
   void _handleValidate() async {
     if (!_formKey.currentState!.validate()) return;
@@ -30,7 +31,7 @@ class _LicenseValidationViewState extends State<LicenseValidationView> {
     if (!mounted) return;
 
     final state = Provider.of<AppStateProvider>(context, listen: false);
-    final isValid = state.validateLicense(_licenseController.text);
+    final isValid = await state.validateLicense(_licenseController.text);
 
     setState(() {
       _isLoading = false;
@@ -150,7 +151,7 @@ class _LicenseValidationViewState extends State<LicenseValidationView> {
 
                       // Description
                       Text(
-                        'Votre période d\'essai de 5 jours est expirée. Saisissez votre clé de licence pour activer l\'application de façon définitive.',
+                        'Votre période d\'essai de 6 jours est expirée. Saisissez votre clé de licence pour activer l\'application de façon définitive.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
                           fontSize: 14,
@@ -163,11 +164,24 @@ class _LicenseValidationViewState extends State<LicenseValidationView> {
                       // License Input
                       TextFormField(
                         controller: _licenseController,
+                        obscureText: _obscureLicense,
                         style: GoogleFonts.inter(color: Colors.white, fontSize: 15),
                         decoration: InputDecoration(
                           hintText: 'Saisissez la clé de licence',
                           hintStyle: GoogleFonts.inter(color: const Color(0xFF64748B)),
                           prefixIcon: const Icon(Icons.key_rounded, color: Color(0xFF64748B), size: 18),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureLicense ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                              color: const Color(0xFF64748B),
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscureLicense = !_obscureLicense;
+                              });
+                            },
+                          ),
                           filled: true,
                           fillColor: primaryBg.withOpacity(0.6),
                           contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
