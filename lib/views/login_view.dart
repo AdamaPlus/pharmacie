@@ -185,24 +185,12 @@ class _LoginViewState extends State<LoginView>
     // Premier lancement = inscription, sinon connexion
     final bool showRegister = !pharmacyRegistered;
 
-    final screenHeight = MediaQuery.of(context).size.height;
-
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
           // ── Fond image pharmacie ──
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: screenHeight * 0.5,
-            child: Image.asset(
-              'assets/images/pharmacy_bg.png',
-              fit: BoxFit.contain,
-              alignment: Alignment.topCenter,
-            ),
-          ),
+          Image.asset('assets/images/pharmacy_bg.png', fit: BoxFit.cover),
 
           // ── Overlay sombre complet pour centrage ──
           Container(color: const Color(0xAA0F172A)),
