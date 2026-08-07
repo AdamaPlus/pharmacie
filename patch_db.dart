@@ -2,11 +2,14 @@ import 'dart:convert';
 import 'dart:io';
 
 void main() async {
-  final file = File('pharmaguinee_db.json');
+  const jsonFileName = 'pharmaguinee_db.json';
+  const backupFileName = '$jsonFileName.migrated.bak';
+  final file = await _resolveJsonFile(jsonFileName, backupFileName);
+
   if (await file.exists()) {
     final content = await file.readAsString();
     final data = jsonDecode(content);
-    
+
     final products = data['products'] as List;
     for (var p in products) {
       if (p['name'] == 'Huile Cosmétique' && p['id'] == 'P005') {
@@ -17,10 +20,24 @@ void main() async {
         p['id'] = 'P011';
       }
     }
-    
+
     await file.writeAsString(jsonEncode(data));
     print('Database patched successfully.');
   } else {
     print('No database file found, mock data will be used.');
   }
+}
+
+Future<File> _resolveJsonFile(String fileName, String backupFileName) async {
+  final file = File(fileName);
+  if (await file.exists()) {
+    return file;
+  }
+
+  final backupFile = File(backupFileName);
+  if (await backupFile.exists()) {
+    return backupFile;
+  }
+
+  return file;
 }
