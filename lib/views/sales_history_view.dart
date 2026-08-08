@@ -23,6 +23,7 @@ class _SalesHistoryViewState extends State<SalesHistoryView> {
   final TextEditingController _searchCtrl = TextEditingController();
   String _selectedPeriod = 'Tous'; // 'Tous', 'Aujourd\'hui', 'Ce Mois', 'Cette Année'
   String _selectedPaymentMethod = 'Tous'; // 'Tous', 'ESPECES', 'CARTE', 'CHEQUE'
+  String _activeTab = 'Ventes'; // 'Ventes' or 'Suppressions'
 
   String _formatCurrency(double amount) {
     return '${NumberFormat.decimalPattern('fr').format(amount)} GNF';
@@ -306,7 +307,7 @@ class _SalesHistoryViewState extends State<SalesHistoryView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Historique des Ventes',
+                    _activeTab == 'Ventes' ? 'Historique des Ventes' : 'Historique des Suppressions',
                     style: GoogleFonts.outfit(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -315,7 +316,9 @@ class _SalesHistoryViewState extends State<SalesHistoryView> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Consultez, recherchez et gérez les transactions de caisse',
+                    _activeTab == 'Ventes'
+                        ? 'Consultez, recherchez et gérez les transactions de caisse'
+                        : 'Journal complet de toutes les suppressions effectuées dans le système',
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       color: state.textSecondary,
@@ -323,21 +326,47 @@ class _SalesHistoryViewState extends State<SalesHistoryView> {
                   ),
                 ],
               ),
-              ElevatedButton.icon(
-                onPressed: () => _exportSalesPdf(state, filteredSales),
-                icon: Icon(Icons.picture_as_pdf_rounded, size: 18),
-                label: Text('Exporter PDF'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF10B981),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  elevation: 0,
-                ),
+              Row(
+                children: [
+                  // Tab toggle buttons
+                  Container(
+                    decoration: BoxDecoration(
+                      color: state.bgSecondary,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: state.borderTheme),
+                    ),
+                    child: Row(
+                      children: [
+                        _tabButton('Ventes', Icons.receipt_long_rounded, const Color(0xFF10B981)),
+                        _tabButton('Suppressions', Icons.delete_sweep_rounded, Colors.redAccent),
+                      ],
+                    ),
+                  ),
+                  if (_activeTab == 'Ventes') ...[
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      onPressed: () => _exportSalesPdf(state, filteredSales),
+                      icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                      label: const Text('Exporter PDF'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10B981),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        elevation: 0,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
           const SizedBox(height: 24),
+
+          // Show deletion history if that tab is active
+          if (_activeTab == 'Suppressions') ...[
+            Expanded(child: _buildDeletionHistory(state)),
+          ] else ...[
 
           // ==========================================
           // KPI METRIC CARDS
@@ -645,7 +674,191 @@ class _SalesHistoryViewState extends State<SalesHistoryView> {
                     ),
             ),
           ),
+          ],  // end else block
         ],
+      ),
+    );
+  }
+
+  Widget _tabButton(String label, IconData icon, Color activeColor) {
+    final isActive = _activeTab == label;
+    final st = Provider.of<AppStateProvider>(context, listen: false);
+    return GestureDetector(
+      onTap: () => setState(() => _activeTab = label),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? activeColor.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isActive ? activeColor : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: isActive ? activeColor : st.textSecondary),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                color: isActive ? activeColor : st.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeletionHistory(AppStateProvider state) {
+    // Keywords for filtering deletion/cancellation actions
+    const deleteKeywords = [
+      'DELETE', 'SUPPRESSION', 'ANNULER', 'REMOVE', 'PURGE',
+      'LOAN_DELETE', 'VENTE_DELETE', 'VENTE_ANNULER',
+      'STOCK_DELETE', 'PATIENT_DELETE', 'STAFF_DELETE',
+      'SUPPLIER_DELETE', 'ADMIN_USER_DELETE', 'STAFF_SHIFT_REMOVE',
+      'LOGS_PURGE',
+    ];
+
+    final deletionLogs = state.auditLogs.where((log) {
+      final actionUpper = log.action.toUpperCase();
+      return deleteKeywords.any((kw) => actionUpper.contains(kw));
+    }).toList();
+
+    // Sort most recent first
+    deletionLogs.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+    if (deletionLogs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.delete_sweep_outlined, color: state.textSecondaryLight, size: 52),
+            const SizedBox(height: 16),
+            Text(
+              'Aucune suppression enregistrée',
+              style: GoogleFonts.outfit(color: state.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Les suppressions effectuées dans le système apparaîtront ici.',
+              style: GoogleFonts.inter(color: state.textSecondaryLight, fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Badge colour by action type
+    Color _badgeColor(String action) {
+      final a = action.toUpperCase();
+      if (a.contains('VENTE')) return const Color(0xFFEF4444);
+      if (a.contains('STOCK')) return const Color(0xFFFF7043);
+      if (a.contains('PATIENT')) return const Color(0xFF8B5CF6);
+      if (a.contains('STAFF') || a.contains('SHIFT')) return const Color(0xFFF59E0B);
+      if (a.contains('SUPPLIER')) return const Color(0xFF3B82F6);
+      if (a.contains('LOAN') || a.contains('DETTE')) return const Color(0xFF14B8A6);
+      if (a.contains('ADMIN_USER')) return const Color(0xFFEC4899);
+      if (a.contains('PURGE') || a.contains('LOGS')) return Colors.blueGrey;
+      return Colors.redAccent;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: state.bgSecondary,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: state.borderTheme),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: deletionLogs.length,
+        separatorBuilder: (_, __) => Divider(color: state.borderTheme.withOpacity(0.4), height: 1),
+        itemBuilder: (context, idx) {
+          final log = deletionLogs[idx];
+          final timeStr = DateFormat('dd/MM/yyyy HH:mm').format(log.timestamp);
+          final badgeColor = _badgeColor(log.action);
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Icon badge
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.delete_forever_rounded, color: badgeColor, size: 20),
+                ),
+                const SizedBox(width: 14),
+
+                // Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: badgeColor.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              log.action,
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: badgeColor,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            timeStr,
+                            style: GoogleFonts.inter(
+                              fontSize: 11.5,
+                              color: state.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Icon(Icons.person_outline_rounded, size: 13, color: state.textSecondaryLight),
+                          const SizedBox(width: 4),
+                          Text(
+                            log.username,
+                            style: GoogleFonts.inter(
+                              fontSize: 11.5,
+                              color: state.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        log.details,
+                        style: GoogleFonts.inter(
+                          fontSize: 12.5,
+                          color: state.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

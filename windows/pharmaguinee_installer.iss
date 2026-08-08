@@ -44,7 +44,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "{#BuildDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Icône de l'application
-Source: "assets\images\app_icon.png"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\assets\images\app_icon.png"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; Raccourci dans le menu Démarrer

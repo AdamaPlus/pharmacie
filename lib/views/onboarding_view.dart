@@ -15,30 +15,30 @@ class _OnboardingViewState extends State<OnboardingView> {
 
   final List<_SlideData> _slides = [
     const _SlideData(
+      imagePath: 'assets/images/intro_1.jpg',
+      buttonColor: Color(0xFF10B981),
+      buttonText: 'Suivant',
+      caption: 'Bienvenue sur PharmaGuinée : la solution moderne et intuitive pour la gestion complète de votre pharmacie.',
+      highlightText: 'Bienvenue sur PharmaGuinée',
+      bottom: 24,
+      left: 24,
+    ),
+    const _SlideData(
       imagePath: 'assets/images/intro_2.jpg',
       buttonColor: Color(0xFF06B6D4),
       buttonText: 'Suivant',
-      caption: 'Suivez les stocks et les sorties rapidement.',
-      highlightText: 'Stock à portée de main',
+      caption: 'Suivez vos stocks en temps réel et contrôlez les entrées et sorties de médicaments en toute simplicité.',
+      highlightText: 'Gestion de stock intelligente',
       bottom: 24,
       left: 24,
     ),
     const _SlideData(
       imagePath: 'assets/images/intro_3.jpg',
       buttonColor: Color(0xFF8B5CF6),
-      buttonText: 'Suivant',
-      caption: 'Passez vos ventes sans perdre de temps.',
-      highlightText: 'Vente fluide',
-      top: 24,
-      right: 24,
-    ),
-    const _SlideData(
-      imagePath: 'assets/images/intro_4.jpg',
-      buttonColor: Color(0xFF3B82F6),
       buttonText: 'Commencer',
-      caption: 'Prêt à démarrer avec PharmaGuinée ?',
-      highlightText: 'C\u2019est parti',
-      bottom: 24,
+      caption: 'Enregistrez vos ventes rapidement, gérez les ordonnances et délivrez des reçus imprimables instantanés.',
+      highlightText: 'Ventes fluides & Reçus rapides',
+      top: 24,
       right: 24,
     ),
   ];
@@ -58,15 +58,12 @@ class _OnboardingViewState extends State<OnboardingView> {
   Widget build(BuildContext context) {
     final slide = _slides[_currentPage];
     final isLast = _currentPage == _slides.length - 1;
-    final size = MediaQuery.of(context).size;
-    final imageWidth = size.width * 0.9;
-    final imageHeight = size.height * 0.72;
 
     return Scaffold(
       backgroundColor: const Color(0xFF07111F),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Column(
             children: [
               Text(
@@ -77,67 +74,68 @@ class _OnboardingViewState extends State<OnboardingView> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 24),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 600),
-                child: Container(
-                  key: ValueKey<String>(slide.imagePath),
-                  width: imageWidth,
-                  height: imageHeight,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white.withOpacity(0.12), width: 1.2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 24,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.asset(
-                          slide.imagePath,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
+              const SizedBox(height: 16),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 600),
+                  child: Container(
+                    key: ValueKey<String>(slide.imagePath),
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.white.withOpacity(0.12), width: 1.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 24,
+                          offset: const Offset(0, 12),
                         ),
-                        if (slide.highlightText != null)
-                          AnimatedPositioned(
-                            duration: const Duration(milliseconds: 500),
-                            curve: Curves.easeInOut,
-                            top: slide.top,
-                            left: slide.left,
-                            right: slide.right,
-                            bottom: slide.bottom,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.55),
-                                borderRadius: BorderRadius.circular(999),
-                                border: Border.all(color: Colors.white.withOpacity(0.3)),
-                              ),
-                              child: Text(
-                                slide.highlightText!,
-                                style: GoogleFonts.inter(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.asset(
+                            slide.imagePath,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                          ),
+                          if (slide.highlightText != null)
+                            AnimatedPositioned(
+                              duration: const Duration(milliseconds: 500),
+                              curve: Curves.easeInOut,
+                              top: slide.top,
+                              left: slide.left,
+                              right: slide.right,
+                              bottom: slide.bottom,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.65),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                                ),
+                                child: Text(
+                                  slide.highlightText!,
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -151,13 +149,13 @@ class _OnboardingViewState extends State<OnboardingView> {
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                     height: 1.4,
                   ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

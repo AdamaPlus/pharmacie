@@ -55,6 +55,8 @@ class MedicamentLoan {
       items.isNotEmpty ? items.map((i) => i.productName).join(', ') : 'Aucun';
   int get quantity => items.fold(0, (sum, item) => sum + item.quantity);
   double get unitValue => items.isNotEmpty ? items.first.unitValue : 0.0;
+  String get borrowerName => lenderName;
+  double get amount => totalValue;
 }
 
 // ===== MAIN VIEW =====
@@ -1338,6 +1340,7 @@ class _LoansViewState extends State<LoansView>
                             setState(() {
                               _loans.removeWhere((l) => l.id == loan.id);
                             });
+                            state.logAction('LOAN_DELETE', 'Dette/Emprunt supprimé : ${loan.borrowerName} (Montant: ${loan.amount} GNF).');
                             Navigator.pop(dCtx);
                           },
                           child: const Text(
@@ -1668,48 +1671,51 @@ class _LoansViewState extends State<LoansView>
                         itemCount: dialogItems.length,
                         itemBuilder: (c, idx) {
                           final item = dialogItems[idx];
-                          return ListTile(
-                            dense: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 2,
-                            ),
-                            title: Text(
-                              item.productName,
-                              style: GoogleFonts.inter(
-                                color: state.textPrimary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12.5,
+                          return Material(
+                            color: Colors.transparent,
+                            child: ListTile(
+                              dense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 2,
                               ),
-                            ),
-                            subtitle: Text(
-                              'Quantité: ${item.quantity} × ${_fmt.format(item.unitValue)}',
-                              style: GoogleFonts.inter(
-                                color: state.textSecondary,
-                                fontSize: 11,
+                              title: Text(
+                                item.productName,
+                                style: GoogleFonts.inter(
+                                  color: state.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12.5,
+                                ),
                               ),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  _fmt.format(item.totalValue),
-                                  style: GoogleFonts.inter(
-                                    color: themeColor,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12.5,
-                                  ),
+                              subtitle: Text(
+                                'Quantité: ${item.quantity} × ${_fmt.format(item.unitValue)}',
+                                style: GoogleFonts.inter(
+                                  color: state.textSecondary,
+                                  fontSize: 11,
                                 ),
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.delete_outline_rounded,
-                                    color: Colors.redAccent,
-                                    size: 18,
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _fmt.format(item.totalValue),
+                                    style: GoogleFonts.inter(
+                                      color: themeColor,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12.5,
+                                    ),
                                   ),
-                                  onPressed: () =>
-                                      setS(() => dialogItems.removeAt(idx)),
-                                ),
-                              ],
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.delete_outline_rounded,
+                                      color: Colors.redAccent,
+                                      size: 18,
+                                    ),
+                                    onPressed: () =>
+                                        setS(() => dialogItems.removeAt(idx)),
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         },

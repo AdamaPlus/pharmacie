@@ -254,6 +254,7 @@ class ReplenishmentView extends StatelessWidget {
         ? autreSup
         : state.suppliers.firstWhere((s) => s.id != 'sup_autre', orElse: () => state.suppliers[0]);
     Product selProd = state.products[0];
+    final priceCtrl = TextEditingController(text: selProd.purchasePrice.toStringAsFixed(0));
     List<OrderItem> orderItems = [];
 
     showDialog(
@@ -264,6 +265,19 @@ class ReplenishmentView extends StatelessWidget {
             double totalOrderAmount = orderItems.fold(0.0, (sum, item) => sum + (item.quantityOrdered * item.unitPrice));
             // Always show custom name field if no suppliers exist OR if "Autre" is selected
             bool showCustomSup = noSuppliers || selSup.id == 'sup_autre';
+
+            final sortedSuppliers = List<Supplier>.from(state.suppliers);
+            sortedSuppliers.removeWhere((s) => s.id == 'sup_autre');
+            sortedSuppliers.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+            if (sortedSuppliers.isNotEmpty && !sortedSuppliers.any((s) => s.id == selSup.id)) {
+              selSup = sortedSuppliers.first;
+            }
+
+            final sortedProducts = List<Product>.from(state.products);
+            sortedProducts.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+            if (sortedProducts.isNotEmpty && !sortedProducts.any((p) => p.id == selProd.id)) {
+              selProd = sortedProducts.first;
+            }
 
             return AlertDialog(
               backgroundColor: state.bgSecondary,
@@ -325,21 +339,8 @@ class ReplenishmentView extends StatelessWidget {
                                 dropdownColor: state.bgSecondary,
                                 style: GoogleFonts.inter(color: state.textPrimary, fontSize: 13.5, fontWeight: FontWeight.bold),
                                 items: (() {
-                                  final sorted = List<Supplier>.from(state.suppliers);
-                                  Supplier? localAutre;
-                                  sorted.removeWhere((s) {
-                                    if (s.id == 'sup_autre') {
-                                      localAutre = s;
-                                      return true;
-                                    }
-                                    return false;
-                                  });
-                                  sorted.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-                                  if (localAutre != null) {
-                                    sorted.add(localAutre!);
-                                  } else {
-                                    sorted.add(autreSup);
-                                  }
+                                  final sorted = List<Supplier>.from(sortedSuppliers);
+                                  sorted.add(autreSup);
                                   return sorted.map((s) => DropdownMenuItem(value: s, child: Text(s.name))).toList();
                                 })(),
                                 onChanged: (val) {
@@ -421,9 +422,7 @@ class ReplenishmentView extends StatelessWidget {
                                         dropdownColor: state.bgSecondary,
                                         style: GoogleFonts.inter(color: state.textPrimary, fontSize: 13),
                                         items: (() {
-                                          final sorted = List<Product>.from(state.products);
-                                          sorted.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-                                          return sorted.map((p) {
+                                          return sortedProducts.map((p) {
                                             final isRupture = p.totalQuantity <= 0;
                                             return DropdownMenuItem(
                                               value: p, 
@@ -438,12 +437,31 @@ class ReplenishmentView extends StatelessWidget {
                                           }).toList();
                                         })(),
                                         onChanged: (val) {
-                                          if (val != null) setDialogState(() => selProd = val);
+                                          if (val != null) {
+                                            setDialogState(() {
+                                              selProd = val;
+                                              priceCtrl.text = val.purchasePrice.toStringAsFixed(0);
+                                            });
+                                          }
                                         },
                                       ),
                                     ),
                                   ),
                                 ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+
+                            // Prix d'achat
+                            Expanded(
+                              flex: 2,
+                              child: _dialogField(
+                                context: context,
+                                label: "Prix d'achat (GNF)", 
+                                controller: priceCtrl, 
+                                isNumber: true, 
+                                required: true,
+                                hintText: "10000"
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -466,6 +484,7 @@ class ReplenishmentView extends StatelessWidget {
                             ElevatedButton.icon(
                               onPressed: () {
                                 final qty = int.tryParse(qtyCtrl.text) ?? 0;
+                                final unitPrice = double.tryParse(priceCtrl.text) ?? selProd.purchasePrice;
                                 if (qty <= 0) return;
 
                                 setDialogState(() {
@@ -477,14 +496,14 @@ class ReplenishmentView extends StatelessWidget {
                                       productId: currentItem.productId,
                                       productName: currentItem.productName,
                                       quantityOrdered: currentItem.quantityOrdered + qty,
-                                      unitPrice: currentItem.unitPrice,
+                                      unitPrice: unitPrice,
                                     );
                                   } else {
                                     orderItems.add(OrderItem(
                                       productId: selProd.id,
                                       productName: selProd.name,
                                       quantityOrdered: qty,
-                                      unitPrice: selProd.purchasePrice,
+                                      unitPrice: unitPrice,
                                     ));
                                   }
                                   // Reset quantity input

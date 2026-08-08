@@ -937,6 +937,7 @@ class _SupplierViewState extends State<SupplierView> with SingleTickerProviderSt
     
     Supplier selSup = state.suppliers.firstWhere((s) => s.id != 'sup_autre', orElse: () => state.suppliers[0]);
     Product selProd = state.products[0];
+    final priceCtrl = TextEditingController(text: selProd.purchasePrice.toStringAsFixed(0));
     List<OrderItem> orderItems = [];
 
     showDialog(
@@ -1095,12 +1096,30 @@ class _SupplierViewState extends State<SupplierView> with SingleTickerProviderSt
                                           }).toList();
                                         })(),
                                         onChanged: (val) {
-                                          if (val != null) setDialogState(() => selProd = val);
+                                          if (val != null) {
+                                            setDialogState(() {
+                                              selProd = val;
+                                              priceCtrl.text = val.purchasePrice.toStringAsFixed(0);
+                                            });
+                                          }
                                         },
                                       ),
                                     ),
                                   ),
                                 ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+
+                            // Prix d'achat
+                            Expanded(
+                              flex: 2,
+                              child: _dialogField(
+                                label: "Prix d'achat (GNF)", 
+                                controller: priceCtrl, 
+                                isNumber: true, 
+                                required: true,
+                                hintText: "10000"
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -1122,6 +1141,7 @@ class _SupplierViewState extends State<SupplierView> with SingleTickerProviderSt
                             ElevatedButton.icon(
                               onPressed: () {
                                 final qty = int.tryParse(qtyCtrl.text) ?? 0;
+                                final unitPrice = double.tryParse(priceCtrl.text) ?? selProd.purchasePrice;
                                 if (qty <= 0) return;
 
                                 setDialogState(() {
@@ -1133,14 +1153,14 @@ class _SupplierViewState extends State<SupplierView> with SingleTickerProviderSt
                                       productId: currentItem.productId,
                                       productName: currentItem.productName,
                                       quantityOrdered: currentItem.quantityOrdered + qty,
-                                      unitPrice: currentItem.unitPrice,
+                                      unitPrice: unitPrice,
                                     );
                                   } else {
                                     orderItems.add(OrderItem(
                                       productId: selProd.id,
                                       productName: selProd.name,
                                       quantityOrdered: qty,
-                                      unitPrice: selProd.purchasePrice,
+                                      unitPrice: unitPrice,
                                     ));
                                   }
                                   // Reset quantity input
