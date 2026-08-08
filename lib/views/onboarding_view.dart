@@ -110,26 +110,30 @@ class _OnboardingViewState extends State<OnboardingView> {
           Positioned(
             top: -120,
             left: -100,
-            child: Container(
-              width: 380,
-              height: 380,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: slide.primaryColor.withOpacity(0.12),
-                filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
+            child: ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
+              child: Container(
+                width: 380,
+                height: 380,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: slide.primaryColor.withOpacity(0.12),
+                ),
               ),
             ),
           ),
           Positioned(
             bottom: -100,
             right: -80,
-            child: Container(
-              width: 350,
-              height: 350,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: slide.secondaryColor.withOpacity(0.14),
-                filter: ImageFilter.blur(sigmaX: 90, sigmaY: 90),
+            child: ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 90, sigmaY: 90),
+              child: Container(
+                width: 350,
+                height: 350,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: slide.secondaryColor.withOpacity(0.14),
+                ),
               ),
             ),
           ),

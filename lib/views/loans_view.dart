@@ -822,7 +822,7 @@ class _LoansViewState extends State<LoansView>
         spacing: 12,
         runSpacing: 12,
         alignment: WrapAlignment.spaceBetween,
-        cross: WrapCrossAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
