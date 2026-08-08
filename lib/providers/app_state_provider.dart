@@ -174,6 +174,12 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void resetOnboarding() {
+    _db.hasSeenOnboarding = false;
+    _db.save();
+    notifyListeners();
+  }
+
   // Licence & Trial (Mode test 6 jours puis clé requise)
   bool get isLicensed => _db.isLicensed;
   String get firstLaunchDate => _db.firstLaunchDate;

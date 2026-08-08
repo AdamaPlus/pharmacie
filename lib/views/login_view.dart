@@ -268,6 +268,37 @@ class _LoginViewState extends State<LoginView>
                                   ),
                                 ],
                               ),
+                              const Spacer(),
+                              Tooltip(
+                                message: "Revoir la présentation",
+                                child: InkWell(
+                                  onTap: () => state.resetOnboarding(),
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: Colors.white.withOpacity(0.12)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.play_circle_fill_rounded, color: themeColor, size: 16),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Présentation',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 28),
