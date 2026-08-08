@@ -15,15 +15,6 @@ class _OnboardingViewState extends State<OnboardingView> {
 
   final List<_SlideData> _slides = [
     const _SlideData(
-      imagePath: 'assets/images/intro_1.jpg',
-      buttonColor: Color(0xFF10B981),
-      buttonText: 'Suivant',
-      caption: 'Gérez votre pharmacie en toute simplicité.',
-      highlightText: 'Vue d’ensemble',
-      top: 24,
-      left: 24,
-    ),
-    const _SlideData(
       imagePath: 'assets/images/intro_2.jpg',
       buttonColor: Color(0xFF06B6D4),
       buttonText: 'Suivant',
@@ -46,7 +37,7 @@ class _OnboardingViewState extends State<OnboardingView> {
       buttonColor: Color(0xFF3B82F6),
       buttonText: 'Commencer',
       caption: 'Prêt à démarrer avec PharmaGuinée ?',
-      highlightText: 'C’est parti',
+      highlightText: 'C\u2019est parti',
       bottom: 24,
       right: 24,
     ),
@@ -112,7 +103,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                       children: [
                         Image.asset(
                           slide.imagePath,
-                          fit: BoxFit.contain,
+                          fit: BoxFit.cover,
                           width: double.infinity,
                           height: double.infinity,
                         ),
