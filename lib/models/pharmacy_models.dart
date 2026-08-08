@@ -849,3 +849,104 @@ class AuditLog {
     );
   }
 }
+
+// ==========================================
+// 10. DETTES & EMPRUNTS MODELS
+// ==========================================
+
+class LoanItem {
+  final String productName;
+  final int quantity;
+  final double unitValue;
+
+  LoanItem({
+    required this.productName,
+    required this.quantity,
+    required this.unitValue,
+  });
+
+  double get totalValue => quantity * unitValue;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'productName': productName,
+      'quantity': quantity,
+      'unitValue': unitValue,
+    };
+  }
+
+  factory LoanItem.fromMap(Map<String, dynamic> map) {
+    return LoanItem(
+      productName: map['productName'] ?? '',
+      quantity: (map['quantity'] as num?)?.toInt() ?? 0,
+      unitValue: (map['unitValue'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+}
+
+class MedicamentLoan {
+  final String id;
+  final List<LoanItem> items;
+  final String lenderType; // 'personne' or 'pharmacie'
+  final String lenderName;
+  final String lenderContact;
+  final String lenderAddress;
+  final DateTime loanDate;
+  bool isReturned;
+  final String notes;
+  final String? saleId;
+
+  MedicamentLoan({
+    required this.id,
+    required this.items,
+    required this.lenderType,
+    required this.lenderName,
+    required this.lenderContact,
+    required this.lenderAddress,
+    required this.loanDate,
+    this.isReturned = false,
+    this.notes = '',
+    this.saleId,
+  });
+
+  double get totalValue =>
+      items.fold(0.0, (sum, item) => sum + item.totalValue);
+
+  String get medicamentName =>
+      items.isNotEmpty ? items.map((i) => i.productName).join(', ') : 'Aucun';
+  int get quantity => items.fold(0, (sum, item) => sum + item.quantity);
+  double get unitValue => items.isNotEmpty ? items.first.unitValue : 0.0;
+  String get borrowerName => lenderName;
+  double get amount => totalValue;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'items': items.map((item) => item.toMap()).toList(),
+      'lenderType': lenderType,
+      'lenderName': lenderName,
+      'lenderContact': lenderContact,
+      'lenderAddress': lenderAddress,
+      'loanDate': loanDate.toIso8601String(),
+      'isReturned': isReturned,
+      'notes': notes,
+      'saleId': saleId,
+    };
+  }
+
+  factory MedicamentLoan.fromMap(Map<String, dynamic> map) {
+    var itemsList = map['items'] as List? ?? [];
+    return MedicamentLoan(
+      id: map['id'] ?? '',
+      items: itemsList.map((i) => LoanItem.fromMap(i)).toList(),
+      lenderType: map['lenderType'] ?? 'personne',
+      lenderName: map['lenderName'] ?? '',
+      lenderContact: map['lenderContact'] ?? '',
+      lenderAddress: map['lenderAddress'] ?? '',
+      loanDate: DateTime.parse(map['loanDate'] ?? DateTime.now().toIso8601String()),
+      isReturned: map['isReturned'] ?? false,
+      notes: map['notes'] ?? '',
+      saleId: map['saleId'],
+    );
+  }
+}

@@ -31,6 +31,7 @@ class AppStateProvider extends ChangeNotifier {
   List<Employee> get employees => _db.employees;
   List<Supplier> get suppliers => _db.suppliers;
   List<UserAccount> get users => _db.users;
+  List<MedicamentLoan> get loans => _db.loans;
   List<AuditLog> get auditLogs => _db.auditLogs;
 
   String get currentUsername => _db.currentUsername;
@@ -885,6 +886,30 @@ class AppStateProvider extends ChangeNotifier {
 
     _db.sales.insert(0, newSale);
 
+    // If payment method is Crédit, record a debt automatically in General Debts
+    final pmUpper = paymentMethod.toUpperCase();
+    if (pmUpper.contains('CRÉDIT') || pmUpper.contains('CREDIT')) {
+      final loanItems = _cart.map((item) => LoanItem(
+        productName: item.productName,
+        quantity: item.quantity,
+        unitValue: item.unitPrice,
+      )).toList();
+
+      final loan = MedicamentLoan(
+        id: 'DETTE-${DateTime.now().millisecondsSinceEpoch}',
+        items: loanItems,
+        lenderType: 'personne',
+        lenderName: _selectedCartPatient?.fullName ?? 'Client Crédit ($saleId)',
+        lenderContact: _selectedCartPatient?.phone ?? '',
+        lenderAddress: _selectedCartPatient?.quartier ?? '',
+        loanDate: DateTime.now(),
+        isReturned: false,
+        notes: 'Dette enregistrée automatiquement suite à la vente POS N° $saleId',
+        saleId: saleId,
+      );
+      _db.loans.insert(0, loan);
+    }
+
     // Apply loyalty points to patient
     if (_selectedCartPatient != null) {
       final patientIdx = _db.patients.indexWhere((p) => p.id == _selectedCartPatient!.id);
@@ -904,6 +929,64 @@ class AppStateProvider extends ChangeNotifier {
     _selectedCartPatient = null;
     notifyListeners();
     return true;
+  }
+
+  // ── DETTES & EMPRUNTS OPERATIONS ──────────────────────────────────────────
+  void addLoan(MedicamentLoan loan) {
+    _db.loans.insert(0, loan);
+    _db.logAction('LOAN_ADD', 'Dette enregistrée : ${loan.lenderName} (${loan.totalValue} GNF)');
+    _db.save();
+    notifyListeners();
+  }
+
+  void updateLoan(MedicamentLoan loan) {
+    final idx = _db.loans.indexWhere((l) => l.id == loan.id);
+    if (idx != -1) {
+      _db.loans[idx] = loan;
+      _db.logAction('LOAN_UPDATE', 'Dette mise à jour : ${loan.lenderName}');
+      _db.save();
+      notifyListeners();
+    }
+  }
+
+  void deleteLoan(String loanId) {
+    final idx = _db.loans.indexWhere((l) => l.id == loanId);
+    if (idx != -1) {
+      final l = _db.loans[idx];
+      _db.loans.removeAt(idx);
+      _db.deleteRecord('loans', loanId);
+      _db.logAction('LOAN_DELETE', 'Dette supprimée : ${l.lenderName}');
+      _db.save();
+      notifyListeners();
+    }
+  }
+
+  void clearLoans({bool onlyReturned = false}) {
+    if (onlyReturned) {
+      final returnedIds = _db.loans.where((l) => l.isReturned).map((l) => l.id).toList();
+      for (final id in returnedIds) {
+        _db.deleteRecord('loans', id);
+      }
+      _db.loans.removeWhere((l) => l.isReturned);
+    } else {
+      for (final l in _db.loans) {
+        _db.deleteRecord('loans', l.id);
+      }
+      _db.loans.clear();
+    }
+    _db.logAction('LOAN_CLEAR', onlyReturned ? 'Dettes réglées effacées' : 'Toutes les dettes effacées');
+    _db.save();
+    notifyListeners();
+  }
+
+  void updatePatientLoyaltyPoints(String patientId, int newPoints) {
+    final idx = _db.patients.indexWhere((p) => p.id == patientId);
+    if (idx != -1) {
+      _db.patients[idx].loyaltyPoints = newPoints < 0 ? 0 : newPoints;
+      _db.logAction('PATIENT_POINTS_UPDATE', 'Points de ${patients[idx].fullName} mis à jour : $newPoints');
+      _db.save();
+      notifyListeners();
+    }
   }
 
   // Refund / Returns

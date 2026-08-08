@@ -24,6 +24,7 @@ class DatabaseService {
   List<Employee> employees = [];
   List<Supplier> suppliers = [];
   List<UserAccount> users = [];
+  List<MedicamentLoan> loans = [];
   List<AuditLog> auditLogs = [];
 
   // Utilisateur connecté
@@ -143,6 +144,7 @@ class DatabaseService {
       'employees',
       'suppliers',
       'users',
+      'loans',
     ]) {
       batch.execute('''
         CREATE TABLE IF NOT EXISTS $table (
@@ -198,6 +200,7 @@ class DatabaseService {
     employees      = await _loadTable('employees',      (m) => Employee.fromMap(m));
     suppliers      = await _loadTable('suppliers',      (m) => Supplier.fromMap(m));
     users          = await _loadTable('users',          (m) => UserAccount.fromMap(m));
+    loans          = await _loadTable('loans',          (m) => MedicamentLoan.fromMap(m));
 
     // Logs d'audit (ordre décroissant, limité à 2000)
     final logRows = await _db!.query(
@@ -253,6 +256,7 @@ class DatabaseService {
       _upsertAll(batch, 'employees',      employees,      (e) => e.id,       (e) => e.toMap());
       _upsertAll(batch, 'suppliers',      suppliers,      (e) => e.id,       (e) => e.toMap());
       _upsertAll(batch, 'users',          users,          (e) => e.username, (e) => e.toMap());
+      _upsertAll(batch, 'loans',          loans,          (e) => e.id,       (e) => e.toMap());
 
       // Logs d'audit
       for (final log in auditLogs.take(2000)) {
@@ -368,6 +372,7 @@ class DatabaseService {
     employees      = [];
     suppliers      = [];
     users          = [];
+    loans          = [];
     auditLogs      = [];
     pharmacyName       = '';
     pharmacyQuartier   = '';
@@ -415,6 +420,7 @@ class DatabaseService {
         'employees':      employees.map((e) => e.toMap()).toList(),
         'suppliers':      suppliers.map((e) => e.toMap()).toList(),
         'users':          users.map((e) => e.toMap()).toList(),
+        'loans':          loans.map((e) => e.toMap()).toList(),
         'auditLogs':      auditLogs.map((e) => e.toMap()).toList(),
         'pharmacyName':       pharmacyName,
         'pharmacyQuartier':   pharmacyQuartier,
@@ -445,7 +451,7 @@ class DatabaseService {
         for (final t in [
           'products', 'lots', 'stock_movements', 'sales',
           'prescriptions', 'patients', 'employees', 'suppliers',
-          'users', 'audit_logs', 'pharmacy_settings',
+          'users', 'loans', 'audit_logs', 'pharmacy_settings',
         ]) {
           batch.delete(t);
         }
@@ -462,6 +468,7 @@ class DatabaseService {
       employees      = (data['employees']      as List? ?? []).map((e) => Employee.fromMap(e)).toList();
       suppliers      = (data['suppliers']      as List? ?? []).map((e) => Supplier.fromMap(e)).toList();
       users          = (data['users']          as List? ?? []).map((e) => UserAccount.fromMap(e)).toList();
+      loans          = (data['loans']          as List? ?? []).map((e) => MedicamentLoan.fromMap(e)).toList();
       auditLogs      = (data['auditLogs']      as List? ?? []).map((e) => AuditLog.fromMap(e)).toList();
       pharmacyName       = data['pharmacyName']       ?? '';
       pharmacyQuartier   = data['pharmacyQuartier']   ?? '';

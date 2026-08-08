@@ -14,6 +14,8 @@ class InvoicePrinter {
     String contact1 = '+224 622 34 56 78',
     String contact2 = '',
     bool share = false,
+    int? patientLoyaltyPoints,
+    int? loyaltyPointsEarned,
   }) async {
     final doc = pw.Document();
     final fmt = NumberFormat.decimalPattern('fr');
@@ -167,6 +169,18 @@ class InvoicePrinter {
         fontWeight: pw.FontWeight.bold,
       ),
     );
+    // Loyalty points section (if patient linked)
+    if (patientLoyaltyPoints != null && sale.patientName != null) {
+      content.add(pw.SizedBox(height: 2));
+      content.add(
+        buildRow(
+          'Points fidélité:',
+          '${patientLoyaltyPoints} pts ${loyaltyPointsEarned != null && loyaltyPointsEarned > 0 ? '(+$loyaltyPointsEarned ce jour)' : ''}',
+          color: PdfColors.teal700,
+          fontWeight: pw.FontWeight.bold,
+        ),
+      );
+    }
     content.add(pw.SizedBox(height: 8));
 
     // ITEMS HEADER

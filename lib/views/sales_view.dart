@@ -801,6 +801,32 @@ class _SalesViewState extends State<SalesView> {
                               ),
                             ),
                             Spacer(),
+                            // Loyalty points badge if patient selected
+                            if (state.selectedCartPatient != null) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.star_rounded, color: Color(0xFF10B981), size: 14),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${state.selectedCartPatient!.loyaltyPoints} pts',
+                                      style: GoogleFonts.inter(
+                                        color: const Color(0xFF10B981),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
                             TextButton(
                               onPressed: () {
                                 state.clearCart();
@@ -1424,6 +1450,12 @@ class _SalesViewState extends State<SalesView> {
 
   Future<void> _printInvoice(Sale sale) async {
     final state = Provider.of<AppStateProvider>(context, listen: false);
+    final patient = sale.patientId != null
+        ? state.patients.firstWhere((p) => p.id == sale.patientId,
+            orElse: () => state.patients.first)
+        : null;
+    final int? loyaltyPoints = patient?.loyaltyPoints;
+    final int? earned = sale.netAmount > 0 ? (sale.netAmount / 10000).floor() : null;
     await InvoicePrinter.printInvoice(
       sale,
       state.pharmacyLogo,
@@ -1431,11 +1463,17 @@ class _SalesViewState extends State<SalesView> {
       quartier: state.pharmacyQuartier,
       contact1: state.pharmacyContact1,
       contact2: state.pharmacyContact2,
+      patientLoyaltyPoints: loyaltyPoints,
+      loyaltyPointsEarned: earned,
     );
   }
 
   Future<void> _exportInvoice(Sale sale) async {
     final state = Provider.of<AppStateProvider>(context, listen: false);
+    final patient = sale.patientId != null
+        ? state.patients.firstWhere((p) => p.id == sale.patientId,
+            orElse: () => state.patients.first)
+        : null;
     await InvoicePrinter.printInvoice(
       sale,
       state.pharmacyLogo,
@@ -1444,6 +1482,7 @@ class _SalesViewState extends State<SalesView> {
       contact1: state.pharmacyContact1,
       contact2: state.pharmacyContact2,
       share: true,
+      patientLoyaltyPoints: patient?.loyaltyPoints,
     );
   }
 }
