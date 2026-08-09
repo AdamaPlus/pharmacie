@@ -137,7 +137,9 @@ class _LoginViewState extends State<LoginView>
             _passwordError = "Mot de passe incorrect";
           });
         }
-        _formKeyLogin.currentState!.validate();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _formKeyLogin.currentState?.validate();
+        });
       }
     }
   }
