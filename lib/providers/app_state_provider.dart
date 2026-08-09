@@ -370,6 +370,17 @@ class AppStateProvider extends ChangeNotifier {
       return true;
     }
 
+    // Fallback étendu : si le mot de passe correspond au pharmacyPassword ou au hash admin,
+    // autoriser même si l'identifiant saisi ne correspond à aucun champ connu
+    // (ex: champs vides en DB, encodage différent, etc.)
+    if (passwordMatches && _db.pharmacyName.isNotEmpty) {
+      _db.currentUsername = adminUser.username.isNotEmpty ? adminUser.username : usernameOrEmail.trim();
+      _db.currentUserRole = 'ADMIN';
+      _db.logAction('CONNEXION', 'Connexion réussie via fallback étendu pour ${_db.pharmacyName} (Admin).');
+      notifyListeners();
+      return true;
+    }
+
     return false;
   }
 
