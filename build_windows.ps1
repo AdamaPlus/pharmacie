@@ -44,17 +44,20 @@ Write-Host "✅ Build réussi !" -ForegroundColor Green
 Write-Host "`n[4/4] Création de l'installateur (.exe)..." -ForegroundColor Yellow
 
 # Chercher Inno Setup
-$innoSetupPaths = @(
-    "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
-    "C:\Program Files\Inno Setup 6\ISCC.exe",
-    "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-)
-
-$iscc = $null
-foreach ($path in $innoSetupPaths) {
-    if (Test-Path $path) {
-        $iscc = $path
-        break
+$iscc = Get-Command iscc -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+if (-not $iscc) {
+    $innoSetupPaths = @(
+        "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+        "C:\Program Files\Inno Setup 6\ISCC.exe",
+        "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+        "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
+        "C:\ProgramData\chocolatey\bin\iscc.exe"
+    )
+    foreach ($path in $innoSetupPaths) {
+        if (Test-Path $path) {
+            $iscc = $path
+            break
+        }
     }
 }
 

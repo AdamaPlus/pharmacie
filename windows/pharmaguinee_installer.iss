@@ -19,9 +19,11 @@ AppUpdatesURL={#AppURL}
 DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 AllowNoIcons=yes
-OutputDir=..\output_setup
+SourceDir=..
+OutputDir=output_setup
 OutputBaseFilename=PharmaGuinee_Setup_v{#AppVersion}
-SetupIconFile=runner\resources\app_icon.ico
+SetupIconFile=windows\runner\resources\app_icon.ico
+UninstallDisplayIcon={app}\{#AppExeName}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -33,7 +35,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 Name: "french"; MessagesFile: "compiler:Languages\French.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
 Source: "build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -48,3 +50,4 @@ Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#AppName}}"; F
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
+

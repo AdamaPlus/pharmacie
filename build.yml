@@ -40,20 +40,30 @@ jobs:
       - name: Installer Inno Setup
         run: choco install innosetup -y
 
+      - name: Créer le dossier output_setup
+        run: New-Item -ItemType Directory -Force -Path "output_setup"
+
       - name: Générer le fichier Setup.exe
         shell: pwsh
         run: |
-          $paths = @(
-            "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
-            "C:\Program Files (x86)\Inno Setup 5\ISCC.exe"
-          )
-          $exe = $paths | Where-Object { Test-Path $_ } | Select-Object -First 1
-          if ($null -eq $exe) {
+          $iscc = Get-Command iscc -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+          if (-not $iscc) {
+            $paths = @(
+              "C:\ProgramData\chocolatey\bin\iscc.exe",
+              "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+              "C:\Program Files\Inno Setup 6\ISCC.exe",
+              "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+              "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
+            )
+            $iscc = $paths | Where-Object { Test-Path $_ } | Select-Object -First 1
+          }
+          if ($null -eq $iscc) {
             Write-Error "ISCC.exe introuvable après installation d'Inno Setup"
             exit 1
           }
-          New-Item -ItemType Directory -Force -Path "output_setup" | Out-Null
-          & $exe "windows\pharmaguinee_installer.iss"
+          Write-Host "ISCC trouvé : $iscc"
+          & $iscc "windows\pharmaguinee_installer.iss"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Publier l'installeur en artefact
         uses: actions/upload-artifact@v4
