@@ -85,63 +85,54 @@ class _LoginViewState extends State<LoginView>
   }
 
   void _handleLogin() {
-    // Effacer les erreurs précédentes avant de valider
+    // Réinitialiser toutes les erreurs sans setState pour ne pas perturber le form
     _usernameError = null;
     _passwordError = null;
-    setState(() {
-      _errorMessage = null;
-      _successMessage = null;
-    });
+    _errorMessage = null;
+    _successMessage = null;
 
-    if (_formKeyLogin.currentState!.validate()) {
-      final provider = Provider.of<AppStateProvider>(context, listen: false);
-      final username = _usernameController.text.trim();
-      final password = _passwordController.text;
+    // Forcer la revalidation propre du formulaire
+    if (!(_formKeyLogin.currentState?.validate() ?? false)) return;
 
-      // Tenter la connexion directement via les méthodes d'authentification
-      bool success = provider.loginPharmacy(username, password, '');
-      if (!success) success = provider.login(username, password, '');
+    final provider = Provider.of<AppStateProvider>(context, listen: false);
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text;
 
-      if (!success) {
-        // Identifier si c'est l'identifiant ou le mot de passe qui est incorrect
-        final input = username.toLowerCase();
-        final dbEmail = provider.pharmacyContact2.trim().toLowerCase();
-        final dbPhone = provider.pharmacyContact1.trim().toLowerCase();
-        final adminUser = provider.users.firstWhere(
-          (u) => u.role == 'ADMIN',
-          orElse: () => UserAccount(username: '', role: 'ADMIN'),
-        );
-        final adminFullName = (adminUser.fullName ?? '').trim().toLowerCase();
-        final adminUsername = adminUser.username.trim().toLowerCase();
-        final adminEmail = (adminUser.email ?? '').trim().toLowerCase();
+    bool success = provider.loginPharmacy(username, password, '');
+    if (!success) success = provider.login(username, password, '');
 
-        final isAdminMatch =
-            (adminUsername.isNotEmpty && input == adminUsername) ||
-            (adminEmail.isNotEmpty && input == adminEmail) ||
-            (dbEmail.isNotEmpty && input == dbEmail) ||
-            (dbPhone.isNotEmpty && input == dbPhone) ||
-            (adminFullName.isNotEmpty && input == adminFullName);
+    if (!success) {
+      final input = username.toLowerCase();
+      final adminUser = provider.users.firstWhere(
+        (u) => u.role == 'ADMIN',
+        orElse: () => UserAccount(username: '', role: 'ADMIN'),
+      );
+      final isAdminMatch =
+          (adminUser.username.trim().toLowerCase().isNotEmpty &&
+              input == adminUser.username.trim().toLowerCase()) ||
+          ((adminUser.email ?? '').trim().toLowerCase().isNotEmpty &&
+              input == (adminUser.email ?? '').trim().toLowerCase()) ||
+          (provider.pharmacyContact2.trim().toLowerCase().isNotEmpty &&
+              input == provider.pharmacyContact2.trim().toLowerCase()) ||
+          (provider.pharmacyContact1.trim().toLowerCase().isNotEmpty &&
+              input == provider.pharmacyContact1.trim().toLowerCase());
 
-        final isUserMatch = provider.users.any(
-          (u) =>
-              u.role != 'ADMIN' &&
-              (u.username.toLowerCase() == input ||
-                  (u.email ?? '').toLowerCase() == input),
-        );
+      final isUserMatch = provider.users.any(
+        (u) =>
+            u.role != 'ADMIN' &&
+            (u.username.toLowerCase() == input ||
+                (u.email ?? '').toLowerCase() == input),
+      );
 
-        if (!isAdminMatch && !isUserMatch) {
-          setState(() {
-            _usernameError = "Identifiant incorrect ou inexistant";
-          });
-        } else {
-          setState(() {
-            _passwordError = "Mot de passe incorrect";
-          });
-        }
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _formKeyLogin.currentState?.validate();
-        });
+      if (!isAdminMatch && !isUserMatch) {
+        _usernameError = 'Identifiant incorrect ou inexistant';
+      } else {
+        _passwordError = 'Mot de passe incorrect';
       }
+      setState(() {});
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _formKeyLogin.currentState?.validate();
+      });
     }
   }
 
