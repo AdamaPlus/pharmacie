@@ -349,13 +349,27 @@ class AppStateProvider extends ChangeNotifier {
         (dbPhone.isNotEmpty && input == dbPhone) ||
         (adminFullName.isNotEmpty && input == adminFullName);
 
-    if (inputMatches && (password == _db.pharmacyPassword || (adminUser.passwordHash.isNotEmpty && password == adminUser.passwordHash))) {
-      _db.currentUsername = adminUser.username.isNotEmpty ? adminUser.username : adminUsername;
+    final passwordMatches = _db.pharmacyPassword.isNotEmpty && password == _db.pharmacyPassword ||
+        (adminUser.passwordHash.isNotEmpty && password == adminUser.passwordHash);
+
+    if (inputMatches && passwordMatches) {
+      _db.currentUsername = adminUser.username.isNotEmpty ? adminUser.username : input;
       _db.currentUserRole = 'ADMIN';
       _db.logAction('CONNEXION', 'Connexion réussie pour la pharmacie ${_db.pharmacyName} (Admin).');
       notifyListeners();
       return true;
     }
+
+    // Fallback : si la liste users est vide mais que pharmacyPassword correspond,
+    // autoriser l'accès (cas de corruption partielle de la DB)
+    if (_db.users.isEmpty && _db.pharmacyPassword.isNotEmpty && password == _db.pharmacyPassword) {
+      _db.currentUsername = usernameOrEmail.trim();
+      _db.currentUserRole = 'ADMIN';
+      _db.logAction('CONNEXION', 'Connexion réussie via fallback pour la pharmacie ${_db.pharmacyName} (Admin).');
+      notifyListeners();
+      return true;
+    }
+
     return false;
   }
 

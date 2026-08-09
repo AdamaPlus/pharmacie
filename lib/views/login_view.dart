@@ -97,48 +97,46 @@ class _LoginViewState extends State<LoginView>
       final username = _usernameController.text.trim();
       final password = _passwordController.text;
 
-      final input = username.toLowerCase();
-
-      // Check if username/email/phone exists in admin or standard users
-      final dbEmail = provider.pharmacyContact2.trim().toLowerCase();
-      final dbPhone = provider.pharmacyContact1.trim().toLowerCase();
-      final adminUser = provider.users.firstWhere(
-        (u) => u.role == 'ADMIN',
-        orElse: () => UserAccount(username: '', role: 'ADMIN'),
-      );
-      final adminFullName = (adminUser.fullName ?? '').trim().toLowerCase();
-      final adminUsername = adminUser.username.trim().toLowerCase();
-      final adminEmail = (adminUser.email ?? '').trim().toLowerCase();
-
-      final isAdminMatch =
-          (adminUsername.isNotEmpty && input == adminUsername) ||
-          (adminEmail.isNotEmpty && input == adminEmail) ||
-          (dbEmail.isNotEmpty && input == dbEmail) ||
-          (dbPhone.isNotEmpty && input == dbPhone) ||
-          (adminFullName.isNotEmpty && input == adminFullName);
-
-      final isUserMatch = provider.users.any(
-        (u) =>
-            u.role != 'ADMIN' &&
-            (u.username.toLowerCase() == input ||
-                (u.email ?? '').toLowerCase() == input),
-      );
-
-      if (!isAdminMatch && !isUserMatch) {
-        setState(() {
-          _usernameError = "Identifiant incorrect ou inexistant";
-        });
-        _formKeyLogin.currentState!.validate();
-        return;
-      }
-
+      // Tenter la connexion directement via les méthodes d'authentification
       bool success = provider.loginPharmacy(username, password, '');
       if (!success) success = provider.login(username, password, '');
 
       if (!success) {
-        setState(() {
-          _passwordError = "Mot de passe incorrect";
-        });
+        // Identifier si c'est l'identifiant ou le mot de passe qui est incorrect
+        final input = username.toLowerCase();
+        final dbEmail = provider.pharmacyContact2.trim().toLowerCase();
+        final dbPhone = provider.pharmacyContact1.trim().toLowerCase();
+        final adminUser = provider.users.firstWhere(
+          (u) => u.role == 'ADMIN',
+          orElse: () => UserAccount(username: '', role: 'ADMIN'),
+        );
+        final adminFullName = (adminUser.fullName ?? '').trim().toLowerCase();
+        final adminUsername = adminUser.username.trim().toLowerCase();
+        final adminEmail = (adminUser.email ?? '').trim().toLowerCase();
+
+        final isAdminMatch =
+            (adminUsername.isNotEmpty && input == adminUsername) ||
+            (adminEmail.isNotEmpty && input == adminEmail) ||
+            (dbEmail.isNotEmpty && input == dbEmail) ||
+            (dbPhone.isNotEmpty && input == dbPhone) ||
+            (adminFullName.isNotEmpty && input == adminFullName);
+
+        final isUserMatch = provider.users.any(
+          (u) =>
+              u.role != 'ADMIN' &&
+              (u.username.toLowerCase() == input ||
+                  (u.email ?? '').toLowerCase() == input),
+        );
+
+        if (!isAdminMatch && !isUserMatch) {
+          setState(() {
+            _usernameError = "Identifiant incorrect ou inexistant";
+          });
+        } else {
+          setState(() {
+            _passwordError = "Mot de passe incorrect";
+          });
+        }
         _formKeyLogin.currentState!.validate();
       }
     }
