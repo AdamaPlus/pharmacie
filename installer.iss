@@ -27,7 +27,7 @@ PrivilegesRequired=admin
 PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=Output
 OutputBaseFilename=Setup-{#AppName}-{#AppVersion}
-;SetupIconFile=windows\runner\resources\app_icon.ico
+SetupIconFile=windows\runner\resources\app_icon.ico
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -59,9 +59,9 @@ Source: "C:\Windows\System32\msvcp140.dll"; DestDir: "{app}"; Flags: external sk
 Source: "C:\Windows\System32\vcruntime140_1.dll"; DestDir: "{app}"; Flags: external skipifsourcedoesntexist
 
 [Icons]
-Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"
+Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\data\flutter_assets\assets\images\app_icon.png"; WorkingDir: "{app}"
 Name: "{group}\Désinstaller {#AppName}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\data\flutter_assets\assets\images\app_icon.png"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
 ; ✅ RÈGLES FIREWALL (autoriser réseau local)
