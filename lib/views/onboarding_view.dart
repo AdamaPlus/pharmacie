@@ -268,7 +268,12 @@ class _OnboardingViewState extends State<OnboardingView> {
                                   itemCount: _slides.length,
                                   itemBuilder: (context, index) {
                                     final item = _slides[index];
-                                    return _buildSlideCard(item);
+                                    final isLastSlide = index == _slides.length - 1;
+                                    return _buildSlideCard(
+                                      item,
+                                      showNextButton: !isLastSlide,
+                                      onNext: _goNext,
+                                    );
                                   },
                                 ),
                               ),
@@ -420,51 +425,52 @@ class _OnboardingViewState extends State<OnboardingView> {
                                 ),
 
                                 // Next / Action Button
-                                InkWell(
-                                  onTap: _goNext,
-                                  borderRadius: BorderRadius.circular(30),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 22, vertical: 12),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          slide.primaryColor,
-                                          slide.secondaryColor,
+                                if (isLast)
+                                  InkWell(
+                                    onTap: _finishOnboarding,
+                                    borderRadius: BorderRadius.circular(30),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 22, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            slide.primaryColor,
+                                            slide.secondaryColor,
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(30),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: slide.primaryColor.withOpacity(0.4),
+                                            blurRadius: 14,
+                                            offset: const Offset(0, 4),
+                                          ),
                                         ],
                                       ),
-                                      borderRadius: BorderRadius.circular(30),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: slide.primaryColor.withOpacity(0.4),
-                                          blurRadius: 14,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          slide.buttonText,
-                                          style: GoogleFonts.inter(
-                                            color: Colors.white,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            "Accéder",
+                                            style: GoogleFonts.inter(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Icon(
-                                          isLast
-                                              ? Icons.how_to_reg_rounded
-                                              : Icons.arrow_forward_rounded,
-                                          color: Colors.white,
-                                          size: 18,
-                                        ),
-                                      ],
+                                          const SizedBox(width: 8),
+                                          const Icon(
+                                            Icons.how_to_reg_rounded,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ),
+                                  )
+                                else
+                                  const SizedBox(width: 80),
                               ],
                             ),
                           ],
@@ -494,7 +500,11 @@ class _OnboardingViewState extends State<OnboardingView> {
     }
   }
 
-  Widget _buildSlideCard(_SlideData slide) {
+  Widget _buildSlideCard(
+    _SlideData slide, {
+    bool showNextButton = false,
+    VoidCallback? onNext,
+  }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       decoration: BoxDecoration(
@@ -517,7 +527,7 @@ class _OnboardingViewState extends State<OnboardingView> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Image with contain/cover fit
+            // Image plein cadre
             Image.asset(
               slide.imagePath,
               fit: BoxFit.cover,
@@ -525,7 +535,7 @@ class _OnboardingViewState extends State<OnboardingView> {
               height: double.infinity,
             ),
 
-            // Top and Bottom gradient overlays for visual depth
+            // Gradient haut + bas pour la profondeur visuelle
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -533,17 +543,17 @@ class _OnboardingViewState extends State<OnboardingView> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withOpacity(0.4),
+                      Colors.black.withOpacity(0.35),
                       Colors.transparent,
-                      Colors.black.withOpacity(0.55),
+                      Colors.black.withOpacity(0.72),
                     ],
-                    stops: const [0.0, 0.5, 1.0],
+                    stops: const [0.0, 0.45, 1.0],
                   ),
                 ),
               ),
             ),
 
-            // Floating highlight badge elegantly aligned inside padding
+            // Badge highlight en haut ou bas selon slide
             Align(
               alignment: slide.badgeAlignment,
               child: Padding(
@@ -551,7 +561,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.75),
+                    color: Colors.black.withOpacity(0.72),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: slide.primaryColor.withOpacity(0.6),
@@ -595,6 +605,66 @@ class _OnboardingViewState extends State<OnboardingView> {
                 ),
               ),
             ),
+
+            // ── Bouton Suivant intégré dans l'image (slides 0 et 1 seulement) ──
+            if (showNextButton)
+              Positioned(
+                bottom: 18,
+                right: 18,
+                child: GestureDetector(
+                  onTap: onNext,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(32),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 13),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              slide.primaryColor.withOpacity(0.85),
+                              slide.secondaryColor.withOpacity(0.9),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(32),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.25),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: slide.primaryColor.withOpacity(0.55),
+                              blurRadius: 18,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              slide.buttonText,
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(
+                              Icons.arrow_forward_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
