@@ -99,18 +99,22 @@ class _LoginViewState extends State<LoginView>
 
       final input = username.toLowerCase();
 
-      // Check if username/email exists in admin or standard users
+      // Check if username/email/phone exists in admin or standard users
       final dbEmail = provider.pharmacyContact2.trim().toLowerCase();
+      final dbPhone = provider.pharmacyContact1.trim().toLowerCase();
       final adminUser = provider.users.firstWhere(
         (u) => u.role == 'ADMIN',
         orElse: () => UserAccount(username: '', role: 'ADMIN'),
       );
       final adminFullName = (adminUser.fullName ?? '').trim().toLowerCase();
       final adminUsername = adminUser.username.trim().toLowerCase();
+      final adminEmail = (adminUser.email ?? '').trim().toLowerCase();
 
       final isAdminMatch =
-          input == adminUsername ||
-          input == dbEmail ||
+          (adminUsername.isNotEmpty && input == adminUsername) ||
+          (adminEmail.isNotEmpty && input == adminEmail) ||
+          (dbEmail.isNotEmpty && input == dbEmail) ||
+          (dbPhone.isNotEmpty && input == dbPhone) ||
           (adminFullName.isNotEmpty && input == adminFullName);
 
       final isUserMatch = provider.users.any(
@@ -159,20 +163,6 @@ class _LoginViewState extends State<LoginView>
         contact2: _regContact2Controller.text.trim(),
         logo: _regLogoBytes,
       );
-      setState(() {
-        _successMessage =
-            'Compte créé avec succès ! Connectez-vous maintenant.';
-        // Ne pas pré-remplir les champs de connexion
-        _regNameController.clear();
-        _regQuartierController.clear();
-        _regAdminNameController.clear();
-        _regUsernameController.clear();
-        _regPasswordController.clear();
-        _regConfirmPasswordController.clear();
-        _regContact1Controller.clear();
-        _regContact2Controller.clear();
-        _regLogoBytes = null;
-      });
     }
   }
 

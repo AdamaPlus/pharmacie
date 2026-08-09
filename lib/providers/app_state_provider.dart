@@ -270,6 +270,10 @@ class AppStateProvider extends ChangeNotifier {
       ));
     }
 
+    // Connecter automatiquement l'administrateur après l'inscription
+    _db.currentUsername = username.isNotEmpty ? username : 'admin';
+    _db.currentUserRole = 'ADMIN';
+
     _db.save();
     _db.logAction('INSCRIPTION', 'Nouvelle pharmacie enregistrée : $name par $username ($quartier).');
     notifyListeners();
@@ -330,16 +334,22 @@ class AppStateProvider extends ChangeNotifier {
   bool loginPharmacy(String usernameOrEmail, String password, String pinCode) {
     final input = usernameOrEmail.trim().toLowerCase();
     final dbEmail = _db.pharmacyContact2.trim().toLowerCase();
+    final dbPhone = _db.pharmacyContact1.trim().toLowerCase();
     final adminUser = _db.users.firstWhere(
       (u) => u.role == 'ADMIN',
       orElse: () => UserAccount(username: '', role: 'ADMIN'),
     );
     final adminFullName = (adminUser.fullName ?? '').trim().toLowerCase();
     final adminUsername = adminUser.username.trim().toLowerCase();
-    final inputMatches = input == adminUsername ||
-        input == dbEmail ||
+    final adminEmail = (adminUser.email ?? '').trim().toLowerCase();
+
+    final inputMatches = (adminUsername.isNotEmpty && input == adminUsername) ||
+        (adminEmail.isNotEmpty && input == adminEmail) ||
+        (dbEmail.isNotEmpty && input == dbEmail) ||
+        (dbPhone.isNotEmpty && input == dbPhone) ||
         (adminFullName.isNotEmpty && input == adminFullName);
-    if (inputMatches && password == _db.pharmacyPassword) {
+
+    if (inputMatches && (password == _db.pharmacyPassword || (adminUser.passwordHash.isNotEmpty && password == adminUser.passwordHash))) {
       _db.currentUsername = adminUser.username.isNotEmpty ? adminUser.username : adminUsername;
       _db.currentUserRole = 'ADMIN';
       _db.logAction('CONNEXION', 'Connexion réussie pour la pharmacie ${_db.pharmacyName} (Admin).');
