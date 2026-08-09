@@ -85,9 +85,10 @@ class _LoginViewState extends State<LoginView>
   }
 
   void _handleLogin() {
+    // Effacer les erreurs précédentes avant de valider
+    _usernameError = null;
+    _passwordError = null;
     setState(() {
-      _usernameError = null;
-      _passwordError = null;
       _errorMessage = null;
       _successMessage = null;
     });
