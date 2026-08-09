@@ -333,50 +333,66 @@ class AppStateProvider extends ChangeNotifier {
 
   bool loginPharmacy(String usernameOrEmail, String password, String pinCode) {
     final input = usernameOrEmail.trim().toLowerCase();
+    final inputRaw = usernameOrEmail.trim();
+    final passRaw = password;
+    final passTrim = password.trim();
+
     final dbEmail = _db.pharmacyContact2.trim().toLowerCase();
     final dbPhone = _db.pharmacyContact1.trim().toLowerCase();
-    final adminUser = _db.users.firstWhere(
-      (u) => u.role == 'ADMIN',
-      orElse: () => UserAccount(username: '', role: 'ADMIN'),
-    );
-    final adminFullName = (adminUser.fullName ?? '').trim().toLowerCase();
-    final adminUsername = adminUser.username.trim().toLowerCase();
-    final adminEmail = (adminUser.email ?? '').trim().toLowerCase();
+    final dbName  = _db.pharmacyName.trim().toLowerCase();
+    final dbPassword = _db.pharmacyPassword;
 
-    final inputMatches = (adminUsername.isNotEmpty && input == adminUsername) ||
-        (adminEmail.isNotEmpty && input == adminEmail) ||
-        (dbEmail.isNotEmpty && input == dbEmail) ||
-        (dbPhone.isNotEmpty && input == dbPhone) ||
-        (adminFullName.isNotEmpty && input == adminFullName);
+    // 1. Chercher parmi tous les comptes ADMIN existants
+    for (final u in _db.users.where((user) => user.role == 'ADMIN')) {
+      final adminUser = u.username.trim().toLowerCase();
+      final adminEmail = (u.email ?? '').trim().toLowerCase();
+      final adminFull = (u.fullName ?? '').trim().toLowerCase();
 
-    final passwordMatches = _db.pharmacyPassword.isNotEmpty && password == _db.pharmacyPassword ||
-        (adminUser.passwordHash.isNotEmpty && password == adminUser.passwordHash);
+      final inputMatches = input.isEmpty ||
+          (adminUser.isNotEmpty && input == adminUser) ||
+          (adminEmail.isNotEmpty && input == adminEmail) ||
+          (adminFull.isNotEmpty && input == adminFull) ||
+          (dbEmail.isNotEmpty && input == dbEmail) ||
+          (dbPhone.isNotEmpty && input == dbPhone) ||
+          (dbName.isNotEmpty && input == dbName);
 
-    if (inputMatches && passwordMatches) {
-      _db.currentUsername = adminUser.username.isNotEmpty ? adminUser.username : input;
+      final passwordMatches = (passRaw.isNotEmpty && dbPassword.isNotEmpty && passRaw == dbPassword) ||
+          (passTrim.isNotEmpty && dbPassword.isNotEmpty && passTrim == dbPassword.trim()) ||
+          (passRaw.isNotEmpty && u.passwordHash.isNotEmpty && passRaw == u.passwordHash) ||
+          (passTrim.isNotEmpty && u.passwordHash.isNotEmpty && passTrim == u.passwordHash.trim()) ||
+          (passRaw.isNotEmpty && u.password.isNotEmpty && passRaw == u.password) ||
+          (passTrim.isNotEmpty && u.password.isNotEmpty && passTrim == u.password.trim());
+
+      if (inputMatches && passwordMatches) {
+        _db.currentUsername = u.username.isNotEmpty ? u.username : (inputRaw.isNotEmpty ? inputRaw : 'admin');
+        _db.currentUserRole = 'ADMIN';
+        _db.logAction('CONNEXION', 'Connexion réussie pour la pharmacie ${_db.pharmacyName} (Admin ${u.username}).');
+        notifyListeners();
+        return true;
+      }
+    }
+
+    // 2. Si mot de passe correspond au mot de passe de la pharmacie globale
+    final passwordMatchesGlobal = (passRaw.isNotEmpty && dbPassword.isNotEmpty && passRaw == dbPassword) ||
+        (passTrim.isNotEmpty && dbPassword.isNotEmpty && passTrim == dbPassword.trim());
+
+    if (passwordMatchesGlobal && _db.pharmacyName.isNotEmpty) {
+      final adminUser = _db.users.firstWhere(
+        (u) => u.role == 'ADMIN',
+        orElse: () => UserAccount(username: inputRaw.isNotEmpty ? inputRaw : 'admin', role: 'ADMIN'),
+      );
+      _db.currentUsername = adminUser.username.isNotEmpty ? adminUser.username : (inputRaw.isNotEmpty ? inputRaw : 'admin');
       _db.currentUserRole = 'ADMIN';
-      _db.logAction('CONNEXION', 'Connexion réussie pour la pharmacie ${_db.pharmacyName} (Admin).');
+      _db.logAction('CONNEXION', 'Connexion réussie (Admin global) pour ${_db.pharmacyName}.');
       notifyListeners();
       return true;
     }
 
-    // Fallback : si la liste users est vide mais que pharmacyPassword correspond,
-    // autoriser l'accès (cas de corruption partielle de la DB)
-    if (_db.users.isEmpty && _db.pharmacyPassword.isNotEmpty && password == _db.pharmacyPassword) {
-      _db.currentUsername = usernameOrEmail.trim();
+    // 3. Fallback : Si les listes sont vides ou mot de passe global valide
+    if (_db.users.isEmpty && passwordMatchesGlobal) {
+      _db.currentUsername = inputRaw.isNotEmpty ? inputRaw : 'admin';
       _db.currentUserRole = 'ADMIN';
-      _db.logAction('CONNEXION', 'Connexion réussie via fallback pour la pharmacie ${_db.pharmacyName} (Admin).');
-      notifyListeners();
-      return true;
-    }
-
-    // Fallback étendu : si le mot de passe correspond au pharmacyPassword ou au hash admin,
-    // autoriser même si l'identifiant saisi ne correspond à aucun champ connu
-    // (ex: champs vides en DB, encodage différent, etc.)
-    if (passwordMatches && _db.pharmacyName.isNotEmpty) {
-      _db.currentUsername = adminUser.username.isNotEmpty ? adminUser.username : usernameOrEmail.trim();
-      _db.currentUserRole = 'ADMIN';
-      _db.logAction('CONNEXION', 'Connexion réussie via fallback étendu pour ${_db.pharmacyName} (Admin).');
+      _db.logAction('CONNEXION', 'Connexion réussie via fallback pour la pharmacie ${_db.pharmacyName}.');
       notifyListeners();
       return true;
     }
@@ -437,15 +453,23 @@ class AppStateProvider extends ChangeNotifier {
 
   bool login(String usernameOrEmail, String password, String pinCode) {
     final input = usernameOrEmail.trim().toLowerCase();
+    final passRaw = password;
+    final passTrim = password.trim();
+
     final userIndex = _db.users.indexWhere(
-      (u) => (u.username.toLowerCase() == input || (u.email ?? '').toLowerCase() == input)
-          && u.passwordHash == password
-          && u.role != 'ADMIN'
+      (u) => (u.username.trim().toLowerCase() == input || (u.email ?? '').trim().toLowerCase() == input || (u.fullName ?? '').trim().toLowerCase() == input)
+          && ((passRaw.isNotEmpty && u.passwordHash.isNotEmpty && passRaw == u.passwordHash) ||
+              (passTrim.isNotEmpty && u.passwordHash.isNotEmpty && passTrim == u.passwordHash.trim()) ||
+              (passRaw.isNotEmpty && u.password.isNotEmpty && passRaw == u.password) ||
+              (passTrim.isNotEmpty && u.password.isNotEmpty && passTrim == u.password.trim()) ||
+              (passRaw.isNotEmpty && _db.pharmacyPassword.isNotEmpty && passRaw == _db.pharmacyPassword) ||
+              (passTrim.isNotEmpty && _db.pharmacyPassword.isNotEmpty && passTrim == _db.pharmacyPassword.trim()))
     );
+
     if (userIndex != -1) {
       final user = _db.users[userIndex];
       _db.currentUsername = user.username;
-      _db.currentUserRole = user.role;
+      _db.currentUserRole = user.role.isNotEmpty ? user.role : 'ADMIN';
       _db.logAction('CONNEXION', 'Utilisateur ${user.username} s\'est connecté avec le rôle ${user.role}.');
       notifyListeners();
       return true;

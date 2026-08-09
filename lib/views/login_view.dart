@@ -314,6 +314,7 @@ class _LoginViewState extends State<LoginView>
             hint: "username ou email@gmail.com",
             themeColor: themeColor,
             forceLowerCase: true,
+            onSubmit: (_) => _handleLogin(),
             validator: (v) {
               if (v == null || v.trim().isEmpty) return 'Champ requis';
               if (_usernameError != null) return _usernameError;
@@ -333,6 +334,7 @@ class _LoginViewState extends State<LoginView>
             hint: 'Votre mot de passe',
             themeColor: themeColor,
             obscure: _obscurePassword,
+            onSubmit: (_) => _handleLogin(),
             suffixIcon: IconButton(
               icon: Icon(
                 _obscurePassword
