@@ -22,6 +22,8 @@ class _OnboardingViewState extends State<OnboardingView> {
       subtitle: 'Une plateforme moderne pour votre officine',
       caption:
           'Bienvenue sur PharmaGuinée : la solution intégrée pour gérer vos ventes, vos stocks et votre officine avec précision.',
+      comment:
+          '🏥 Une officine bien gérée, c’est une santé mieux prise en charge.\nPharmaGuinée vous accompagne au quotidien.',
       highlightText: 'Bienvenue sur PharmaGuinée',
       highlightIcon: Icons.verified_rounded,
       primaryColor: Color(0xFF10B981),
@@ -35,6 +37,8 @@ class _OnboardingViewState extends State<OnboardingView> {
       subtitle: 'Suivi en temps réel & contrôle des péremptions',
       caption:
           'Suivez vos stocks en temps réel, soyez alerté des produits en seuil critique et facilitez les réapprovisionnements.',
+      comment:
+          '📦 Plus de ruptures de stock ! Visualisez, anticipez\net réapprovisionnez en toute simplicité.',
       highlightText: 'Gestion de stock en temps réel',
       highlightIcon: Icons.inventory_2_rounded,
       primaryColor: Color(0xFF06B6D4),
@@ -48,6 +52,8 @@ class _OnboardingViewState extends State<OnboardingView> {
       subtitle: 'Encaissement instantané & bilans clairs',
       caption:
           'Enregistrez vos ventes en quelques clics, imprimez des reçus instantanés et obtenez une synthèse quotidienne de votre activité.',
+      comment:
+          '💊 Chaque ordonnance traitée est une vie protégée.\nAvec PharmaGuinée, transformez votre officine en pilier\nde santé pour toute la communauté.',
       highlightText: 'Ventes fluides & Reçus rapides',
       highlightIcon: Icons.point_of_sale_rounded,
       primaryColor: Color(0xFF8B5CF6),
@@ -606,6 +612,41 @@ class _OnboardingViewState extends State<OnboardingView> {
               ),
             ),
 
+            // ── Commentaire sur l'image (slides 0 et 1 seulement) ──
+            if (slide.comment != null)
+              Positioned(
+                bottom: showNextButton ? 72 : 16,
+                left: 16,
+                right: showNextButton ? 150 : 16,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.55),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: slide.primaryColor.withOpacity(0.35),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        slide.comment!,
+                        style: GoogleFonts.inter(
+                          color: Colors.white.withOpacity(0.92),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
             // ── Bouton Suivant intégré dans l'image (slides 0 et 1 seulement) ──
             if (showNextButton)
               Positioned(
@@ -677,6 +718,7 @@ class _SlideData {
   final String title;
   final String subtitle;
   final String caption;
+  final String? comment;
   final String highlightText;
   final IconData highlightIcon;
   final Color primaryColor;
@@ -689,6 +731,7 @@ class _SlideData {
     required this.title,
     required this.subtitle,
     required this.caption,
+    this.comment,
     required this.highlightText,
     required this.highlightIcon,
     required this.primaryColor,

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'package:file_picker/file_picker.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -874,7 +875,9 @@ class _StockViewState extends State<StockView>
       if (lots.isNotEmpty) firstLot = lots.first;
     }
 
-    final lotCtrl = TextEditingController(text: firstLot?.lotNumber ?? '');
+    final lotCtrl = TextEditingController(
+      text: firstLot?.lotNumber ?? _generateUniqueLotNumber(state.lots),
+    );
     final qtyCtrl = TextEditingController(
       text:
           firstLot?.quantity.toString() ??
@@ -1053,8 +1056,9 @@ class _StockViewState extends State<StockView>
                           children: [
                             Expanded(
                               child: _dialogField(
-                                label: 'Lot (optionnel)',
+                                label: 'N° de Lot (auto-généré)',
                                 controller: lotCtrl,
+                                readOnly: true,
                               ),
                             ),
                             SizedBox(width: 16),
@@ -1386,7 +1390,7 @@ class _StockViewState extends State<StockView>
                             productName: newProd.name,
                             lotNumber: lotCtrl.text.isNotEmpty
                                 ? lotCtrl.text
-                                : 'LOT-001',
+                                : _generateUniqueLotNumber(state.lots),
                             expirationDate: parsedDate,
                             quantity: finalQty,
                           );
@@ -1401,7 +1405,7 @@ class _StockViewState extends State<StockView>
                           productName: newProd.name,
                           lotNumber: lotCtrl.text.isNotEmpty
                               ? lotCtrl.text
-                              : 'LOT-001',
+                              : _generateUniqueLotNumber(state.lots),
                           expirationDate: parsedDate,
                           quantity: finalQty,
                         );
@@ -1421,12 +1425,26 @@ class _StockViewState extends State<StockView>
     );
   }
 
+  // Génère un numéro de lot unique au format LOT-YYYYMMDD-XXXX
+  String _generateUniqueLotNumber(List<dynamic> existingLots) {
+    final rng = Random();
+    final dateStr = DateFormat('yyyyMMdd').format(DateTime.now());
+    String candidate;
+    do {
+      final suffix = rng.nextInt(9000) + 1000; // 1000–9999
+      candidate = 'LOT-$dateStr-$suffix';
+    } while (existingLots.any((l) => l.lotNumber == candidate));
+    return candidate;
+  }
+
   // Add Lot Dialog
   void _showAddLotDialog(BuildContext context, AppStateProvider state) {
     if (state.products.isEmpty) return;
 
     final formKey = GlobalKey<FormState>();
-    final numCtrl = TextEditingController();
+    final numCtrl = TextEditingController(
+      text: _generateUniqueLotNumber(state.lots),
+    );
     final qtyCtrl = TextEditingController();
     final dateCtrl = TextEditingController(
       text: DateFormat(
