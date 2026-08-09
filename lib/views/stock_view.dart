@@ -1425,16 +1425,16 @@ class _StockViewState extends State<StockView>
     );
   }
 
-  // Génère un numéro de lot unique au format LOT-YYYYMMDD-XXXX
+  // Génère un numéro de lot séquentiel unique : 1, 2, 3...
   String _generateUniqueLotNumber(List<dynamic> existingLots) {
-    final rng = Random();
-    final dateStr = DateFormat('yyyyMMdd').format(DateTime.now());
-    String candidate;
-    do {
-      final suffix = rng.nextInt(9000) + 1000; // 1000–9999
-      candidate = 'LOT-$dateStr-$suffix';
-    } while (existingLots.any((l) => l.lotNumber == candidate));
-    return candidate;
+    int next = 1;
+    final existing = existingLots
+        .map((l) => int.tryParse(l.lotNumber) ?? 0)
+        .toSet();
+    while (existing.contains(next)) {
+      next++;
+    }
+    return '$next';
   }
 
   // Add Lot Dialog

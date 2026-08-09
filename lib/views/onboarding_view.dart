@@ -18,12 +18,12 @@ class _OnboardingViewState extends State<OnboardingView> {
   final List<_SlideData> _slides = [
     const _SlideData(
       imagePath: 'assets/images/intro_1.jpg',
-      title: 'Solution Médicale Complète',
-      subtitle: 'Une plateforme moderne pour votre officine',
+      title: 'Gérez votre pharmacie avec puissance',
+      subtitle: 'Ventes, stocks et rapports en un seul endroit',
       caption:
-          'Bienvenue sur PharmaGuinée : la solution intégrée pour gérer vos ventes, vos stocks et votre officine avec précision.',
+          'PharmaGuinée centralise toute la gestion de votre officine : ventes, stocks, fournisseurs et bilans — simple, rapide, fiable.',
       comment:
-          '🏥 Votre officine mérite le meilleur outil.\nPharmaGuinée — la gestion qui sauve du temps, et des vies.',
+          '🏥 Chaque seconde compte en pharmacie.\nPharmaGuinée vous libère du temps pour soigner mieux.',
       highlightText: 'Bienvenue sur PharmaGuinée',
       highlightIcon: Icons.verified_rounded,
       primaryColor: Color(0xFF10B981),
@@ -33,33 +33,18 @@ class _OnboardingViewState extends State<OnboardingView> {
     ),
     const _SlideData(
       imagePath: 'assets/images/intro_2.jpg',
-      title: 'Gestion de Stock Intelligente',
-      subtitle: 'Suivi en temps réel & contrôle des péremptions',
+      title: 'Stock maîtrisé, officine performante',
+      subtitle: 'Alertes automatiques & suivi des péremptions',
       caption:
-          'Suivez vos stocks en temps réel, soyez alerté des produits en seuil critique et facilitez les réapprovisionnements.',
+          'Suivez vos stocks en temps réel, recevez des alertes avant toute rupture et gérez vos lots avec une précision totale.',
       comment:
-          '📦 Zéro rupture. Zéro perte. Zéro stress.\nAnticipez chaque besoin avant qu\'il ne devienne urgent.',
-      highlightText: 'Gestion de stock en temps réel',
+          '📦 Zéro rupture. Zéro perte. Zéro surprise.\nAnticipez, commandez, et gardez toujours une longueur d\'avance.',
+      highlightText: 'Stock intelligent en temps réel',
       highlightIcon: Icons.inventory_2_rounded,
       primaryColor: Color(0xFF06B6D4),
       secondaryColor: Color(0xFF0284C7),
-      buttonText: 'Suivant',
-      badgeAlignment: Alignment.bottomLeft,
-    ),
-    const _SlideData(
-      imagePath: 'assets/images/intro_3.jpg',
-      title: 'Ventes Fluides & Reçus Rapides',
-      subtitle: 'Encaissement instantané & bilans clairs',
-      caption:
-          'Enregistrez vos ventes en quelques clics, imprimez des reçus instantanés et obtenez une synthèse quotidienne de votre activité.',
-      comment:
-          '💊 Chaque ordonnance traitée est une vie protégée.\nAvec PharmaGuinée, transformez votre officine en pilier\nde santé pour toute la communauté.',
-      highlightText: 'Ventes fluides & Reçus rapides',
-      highlightIcon: Icons.point_of_sale_rounded,
-      primaryColor: Color(0xFF8B5CF6),
-      secondaryColor: Color(0xFF6D28D9),
       buttonText: 'Accéder à l\'inscription',
-      badgeAlignment: Alignment.topRight,
+      badgeAlignment: Alignment.bottomLeft,
     ),
   ];
 
@@ -499,8 +484,6 @@ class _OnboardingViewState extends State<OnboardingView> {
         return Icons.health_and_safety_rounded;
       case 1:
         return Icons.inventory_rounded;
-      case 2:
-        return Icons.point_of_sale_rounded;
       default:
         return Icons.star_rounded;
     }
