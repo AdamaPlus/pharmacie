@@ -21,6 +21,7 @@ DefaultGroupName={#AppName}
 AllowNoIcons=yes
 OutputDir=output_setup
 OutputBaseFilename=PharmaGuinee_Setup_v{#AppVersion}
+SetupIconFile=windows\runner\resources\app_icon.ico
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
