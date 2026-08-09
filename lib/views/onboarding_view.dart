@@ -23,7 +23,7 @@ class _OnboardingViewState extends State<OnboardingView> {
       caption:
           'Bienvenue sur PharmaGuinée : la solution intégrée pour gérer vos ventes, vos stocks et votre officine avec précision.',
       comment:
-          '🏥 Une officine bien gérée, c’est une santé mieux prise en charge.\nPharmaGuinée vous accompagne au quotidien.',
+          '🏥 Votre officine mérite le meilleur outil.\nPharmaGuinée — la gestion qui sauve du temps, et des vies.',
       highlightText: 'Bienvenue sur PharmaGuinée',
       highlightIcon: Icons.verified_rounded,
       primaryColor: Color(0xFF10B981),
@@ -38,7 +38,7 @@ class _OnboardingViewState extends State<OnboardingView> {
       caption:
           'Suivez vos stocks en temps réel, soyez alerté des produits en seuil critique et facilitez les réapprovisionnements.',
       comment:
-          '📦 Plus de ruptures de stock ! Visualisez, anticipez\net réapprovisionnez en toute simplicité.',
+          '📦 Zéro rupture. Zéro perte. Zéro stress.\nAnticipez chaque besoin avant qu\'il ne devienne urgent.',
       highlightText: 'Gestion de stock en temps réel',
       highlightIcon: Icons.inventory_2_rounded,
       primaryColor: Color(0xFF06B6D4),
