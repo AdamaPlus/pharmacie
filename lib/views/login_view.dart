@@ -85,54 +85,55 @@ class _LoginViewState extends State<LoginView>
   }
 
   void _handleLogin() {
-    // Réinitialiser toutes les erreurs sans setState pour ne pas perturber le form
     _usernameError = null;
     _passwordError = null;
     _errorMessage = null;
     _successMessage = null;
 
-    // Forcer la revalidation propre du formulaire
     if (!(_formKeyLogin.currentState?.validate() ?? false)) return;
 
     final provider = Provider.of<AppStateProvider>(context, listen: false);
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
 
-    bool success = provider.loginPharmacy(username, password, '');
-    if (!success) success = provider.login(username, password, '');
+    final bool success = provider.loginPharmacy(username, password, '');
 
-    if (!success) {
-      final input = username.toLowerCase();
-      final bool isUserOrAdminMatch = provider.users.any((u) {
-        final uName = u.username.trim().toLowerCase();
-        final uEmail = (u.email ?? '').trim().toLowerCase();
-        final uFull = (u.fullName ?? '').trim().toLowerCase();
-        final uPin = u.pinCode.trim().toLowerCase();
-        final uEmpId = u.employeeId.trim().toLowerCase();
-
-        return (uName.isNotEmpty && (input == uName || uName.contains(input))) ||
-            (uEmail.isNotEmpty && (input == uEmail || uEmail.contains(input))) ||
-            (uFull.isNotEmpty && (input == uFull || uFull.startsWith(input) || uFull.split(' ').contains(input))) ||
-            (uPin.isNotEmpty && input == uPin) ||
-            (uEmpId.isNotEmpty && input == uEmpId);
-      }) ||
-      (provider.pharmacyContact2.trim().toLowerCase().isNotEmpty &&
-          (input == provider.pharmacyContact2.trim().toLowerCase() || provider.pharmacyContact2.trim().toLowerCase().contains(input))) ||
-      (provider.pharmacyContact1.trim().toLowerCase().isNotEmpty &&
-          (input == provider.pharmacyContact1.trim().toLowerCase() || provider.pharmacyContact1.trim().toLowerCase().contains(input))) ||
-      (provider.pharmacyName.trim().toLowerCase().isNotEmpty &&
-          (input == provider.pharmacyName.trim().toLowerCase() || provider.pharmacyName.trim().toLowerCase().contains(input)));
-
-      if (!isUserOrAdminMatch && provider.users.isNotEmpty) {
-        _usernameError = 'Identifiant incorrect ou inexistant';
-      } else {
-        _passwordError = 'Mot de passe incorrect';
-      }
-      setState(() {});
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _formKeyLogin.currentState?.validate();
-      });
+    if (success) {
+      // Login réussi : réinitialiser le form pour éviter toute interférence
+      _formKeyLogin.currentState?.reset();
+      return;
     }
+
+    final input = username.toLowerCase();
+    final bool isUserOrAdminMatch = provider.users.any((u) {
+      final uName = u.username.trim().toLowerCase();
+      final uEmail = (u.email ?? '').trim().toLowerCase();
+      final uFull = (u.fullName ?? '').trim().toLowerCase();
+      final uPin = u.pinCode.trim().toLowerCase();
+      final uEmpId = u.employeeId.trim().toLowerCase();
+
+      return (uName.isNotEmpty && (input == uName || uName.contains(input))) ||
+          (uEmail.isNotEmpty && (input == uEmail || uEmail.contains(input))) ||
+          (uFull.isNotEmpty && (input == uFull || uFull.startsWith(input) || uFull.split(' ').contains(input))) ||
+          (uPin.isNotEmpty && input == uPin) ||
+          (uEmpId.isNotEmpty && input == uEmpId);
+    }) ||
+    (provider.pharmacyContact2.trim().toLowerCase().isNotEmpty &&
+        (input == provider.pharmacyContact2.trim().toLowerCase() || provider.pharmacyContact2.trim().toLowerCase().contains(input))) ||
+    (provider.pharmacyContact1.trim().toLowerCase().isNotEmpty &&
+        (input == provider.pharmacyContact1.trim().toLowerCase() || provider.pharmacyContact1.trim().toLowerCase().contains(input))) ||
+    (provider.pharmacyName.trim().toLowerCase().isNotEmpty &&
+        (input == provider.pharmacyName.trim().toLowerCase() || provider.pharmacyName.trim().toLowerCase().contains(input)));
+
+    if (!isUserOrAdminMatch && provider.users.isNotEmpty) {
+      _usernameError = 'Identifiant incorrect ou inexistant';
+    } else {
+      _passwordError = 'Mot de passe incorrect';
+    }
+    setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _formKeyLogin.currentState?.validate();
+    });
   }
 
   void _handlePharmacyRegistration() {
