@@ -85,7 +85,7 @@ class _LoansViewState extends State<LoansView>
                               ),
                               pw.Text(
                                 'Système de Gestion de Pharmacie',
-                                style: const pw.TextStyle(
+                                style: pw.TextStyle(
                                   fontSize: 8,
                                   color: PdfColors.grey700,
                                 ),
@@ -107,7 +107,7 @@ class _LoansViewState extends State<LoansView>
                           ),
                           pw.Text(
                             'Système de Gestion de Pharmacie',
-                            style: const pw.TextStyle(
+                            style: pw.TextStyle(
                               fontSize: 8,
                               color: PdfColors.grey700,
                             ),
@@ -127,7 +127,7 @@ class _LoansViewState extends State<LoansView>
                     ),
                     pw.Text(
                       'Imprimé le: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}',
-                      style: const pw.TextStyle(
+                      style: pw.TextStyle(
                         fontSize: 8,
                         color: PdfColors.grey700,
                       ),
@@ -183,11 +183,11 @@ class _LoansViewState extends State<LoansView>
                     children: [
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(5),
-                        child: pw.Text(loan.id, style: const pw.TextStyle(fontSize: 7.5)),
+                        child: pw.Text(loan.id, style: pw.TextStyle(fontSize: 7.5)),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(5),
-                        child: pw.Text(DateFormat('dd/MM/yyyy').format(loan.loanDate), style: const pw.TextStyle(fontSize: 7.5)),
+                        child: pw.Text(DateFormat('dd/MM/yyyy').format(loan.loanDate), style: pw.TextStyle(fontSize: 7.5)),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(5),
@@ -196,7 +196,7 @@ class _LoansViewState extends State<LoansView>
                           children: [
                             pw.Text(loan.lenderName, style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
                             if (loan.lenderContact.isNotEmpty)
-                              pw.Text('Tél: ${loan.lenderContact}', style: const pw.TextStyle(fontSize: 6.5, color: PdfColors.grey700)),
+                              pw.Text('Tél: ${loan.lenderContact}', style: pw.TextStyle(fontSize: 6.5, color: PdfColors.grey700)),
                           ],
                         ),
                       ),
@@ -209,7 +209,7 @@ class _LoansViewState extends State<LoansView>
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(5),
-                        child: pw.Text(loan.medicamentName, style: const pw.TextStyle(fontSize: 7.5)),
+                        child: pw.Text(loan.medicamentName, style: pw.TextStyle(fontSize: 7.5)),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(5),
@@ -304,7 +304,7 @@ class _LoansViewState extends State<LoansView>
                   crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
                     pw.Text('EXPORTE - LISTE GÉNÉRALE DES DETTES', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-                    pw.Text('Date: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+                    pw.Text('Date: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
                   ],
                 ),
               ],
@@ -338,18 +338,18 @@ class _LoansViewState extends State<LoansView>
                 ...loans.map((loan) {
                   final patient = _findMatchingPatient(state, loan);
                   return pw.TableRow(children: [
-                    pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(loan.id, style: const pw.TextStyle(fontSize: 7.5))),
-                    pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(DateFormat('dd/MM/yy').format(loan.loanDate), style: const pw.TextStyle(fontSize: 7.5))),
+                    pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(loan.id, style: pw.TextStyle(fontSize: 7.5))),
+                    pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(DateFormat('dd/MM/yy').format(loan.loanDate), style: pw.TextStyle(fontSize: 7.5))),
                     pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
                         pw.Text(loan.lenderName, style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
                         if (loan.lenderContact.isNotEmpty)
-                          pw.Text(loan.lenderContact, style: const pw.TextStyle(fontSize: 6.5, color: PdfColors.grey600)),
+                          pw.Text(loan.lenderContact, style: pw.TextStyle(fontSize: 6.5, color: PdfColors.grey600)),
                       ],
                     )),
-                    pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(patient != null ? '${patient.loyaltyPoints} pts' : '—', style: const pw.TextStyle(fontSize: 7.5))),
-                    pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(loan.medicamentName, style: const pw.TextStyle(fontSize: 7.5))),
+                    pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(patient != null ? '${patient.loyaltyPoints} pts' : '—', style: pw.TextStyle(fontSize: 7.5))),
+                    pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(loan.medicamentName, style: pw.TextStyle(fontSize: 7.5))),
                     pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(_fmt.format(loan.totalValue), textAlign: pw.TextAlign.right, style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.teal700))),
                     pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(loan.isReturned ? 'Réglé' : 'En cours', style: pw.TextStyle(fontSize: 7.5, color: loan.isReturned ? PdfColors.green700 : PdfColors.orange700))),
                   ]);
@@ -472,7 +472,7 @@ class _LoansViewState extends State<LoansView>
                       ),
                       pw.Text(
                         'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(loan.loanDate)}',
-                        style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                        style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
                       ),
                     ],
                   ),
@@ -527,7 +527,7 @@ class _LoansViewState extends State<LoansView>
                     ),
                     pw.Text(
                       'Contact : ${loan.lenderContact.isNotEmpty ? loan.lenderContact : "N/A"} | Adresse: ${loan.lenderAddress.isNotEmpty ? loan.lenderAddress : "N/A"}',
-                      style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey800),
+                      style: pw.TextStyle(fontSize: 8, color: PdfColors.grey800),
                     ),
                     if (patient != null) ...[
                       pw.SizedBox(height: 2),
@@ -539,7 +539,7 @@ class _LoansViewState extends State<LoansView>
                     if (loan.notes.isNotEmpty)
                       pw.Text(
                         'Note: ${loan.notes}',
-                        style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700),
+                        style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700),
                       ),
                   ],
                 ),
@@ -589,10 +589,10 @@ class _LoansViewState extends State<LoansView>
                   ...loan.items.map(
                     (item) => pw.TableRow(
                       children: [
-                        pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(item.productName, style: const pw.TextStyle(fontSize: 7.5))),
-                        pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text('${item.quantity}', style: const pw.TextStyle(fontSize: 7.5), textAlign: pw.TextAlign.center)),
-                        pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(_fmt.format(item.unitValue), style: const pw.TextStyle(fontSize: 7.5), textAlign: pw.TextAlign.right)),
-                        pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(_fmt.format(item.totalValue), style: const pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
+                        pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(item.productName, style: pw.TextStyle(fontSize: 7.5))),
+                        pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text('${item.quantity}', style: pw.TextStyle(fontSize: 7.5), textAlign: pw.TextAlign.center)),
+                        pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(_fmt.format(item.unitValue), style: pw.TextStyle(fontSize: 7.5), textAlign: pw.TextAlign.right)),
+                        pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(_fmt.format(item.totalValue), style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
                       ],
                     ),
                   ).toList(),
@@ -627,16 +627,16 @@ class _LoansViewState extends State<LoansView>
                 children: [
                   pw.Column(
                     children: [
-                      pw.Text('Signature du Client', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey700)),
+                      pw.Text('Signature du Client', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey700)),
                       pw.SizedBox(height: 20),
-                      pw.Text('____________________', style: const pw.TextStyle(fontSize: 7)),
+                      pw.Text('____________________', style: pw.TextStyle(fontSize: 7)),
                     ],
                   ),
                   pw.Column(
                     children: [
-                      pw.Text('Pour la Pharmacie', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey700)),
+                      pw.Text('Pour la Pharmacie', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey700)),
                       pw.SizedBox(height: 20),
-                      pw.Text('____________________', style: const pw.TextStyle(fontSize: 7)),
+                      pw.Text('____________________', style: pw.TextStyle(fontSize: 7)),
                     ],
                   ),
                 ],
