@@ -98,11 +98,7 @@ class _LoginViewState extends State<LoginView>
 
     final bool success = provider.loginPharmacy(username, password, '');
 
-    if (success) {
-      // Login réussi : réinitialiser le form pour éviter toute interférence
-      _formKeyLogin.currentState?.reset();
-      return;
-    }
+    if (success) return;
 
     final input = username.toLowerCase();
     final bool isUserOrAdminMatch = provider.users.any((u) {
