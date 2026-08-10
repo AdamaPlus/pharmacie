@@ -103,28 +103,27 @@ class _LoginViewState extends State<LoginView>
 
     if (!success) {
       final input = username.toLowerCase();
-      final adminUser = provider.users.firstWhere(
-        (u) => u.role == 'ADMIN',
-        orElse: () => UserAccount(username: '', role: 'ADMIN'),
-      );
-      final isAdminMatch =
-          (adminUser.username.trim().toLowerCase().isNotEmpty &&
-              input == adminUser.username.trim().toLowerCase()) ||
-          ((adminUser.email ?? '').trim().toLowerCase().isNotEmpty &&
-              input == (adminUser.email ?? '').trim().toLowerCase()) ||
-          (provider.pharmacyContact2.trim().toLowerCase().isNotEmpty &&
-              input == provider.pharmacyContact2.trim().toLowerCase()) ||
-          (provider.pharmacyContact1.trim().toLowerCase().isNotEmpty &&
-              input == provider.pharmacyContact1.trim().toLowerCase());
+      final bool isUserOrAdminMatch = provider.users.any((u) {
+        final uName = u.username.trim().toLowerCase();
+        final uEmail = (u.email ?? '').trim().toLowerCase();
+        final uFull = (u.fullName ?? '').trim().toLowerCase();
+        final uPin = u.pinCode.trim().toLowerCase();
+        final uEmpId = u.employeeId.trim().toLowerCase();
 
-      final isUserMatch = provider.users.any(
-        (u) =>
-            u.role != 'ADMIN' &&
-            (u.username.toLowerCase() == input ||
-                (u.email ?? '').toLowerCase() == input),
-      );
+        return (uName.isNotEmpty && (input == uName || uName.contains(input))) ||
+            (uEmail.isNotEmpty && (input == uEmail || uEmail.contains(input))) ||
+            (uFull.isNotEmpty && (input == uFull || uFull.startsWith(input) || uFull.split(' ').contains(input))) ||
+            (uPin.isNotEmpty && input == uPin) ||
+            (uEmpId.isNotEmpty && input == uEmpId);
+      }) ||
+      (provider.pharmacyContact2.trim().toLowerCase().isNotEmpty &&
+          (input == provider.pharmacyContact2.trim().toLowerCase() || provider.pharmacyContact2.trim().toLowerCase().contains(input))) ||
+      (provider.pharmacyContact1.trim().toLowerCase().isNotEmpty &&
+          (input == provider.pharmacyContact1.trim().toLowerCase() || provider.pharmacyContact1.trim().toLowerCase().contains(input))) ||
+      (provider.pharmacyName.trim().toLowerCase().isNotEmpty &&
+          (input == provider.pharmacyName.trim().toLowerCase() || provider.pharmacyName.trim().toLowerCase().contains(input)));
 
-      if (!isAdminMatch && !isUserMatch) {
+      if (!isUserOrAdminMatch && provider.users.isNotEmpty) {
         _usernameError = 'Identifiant incorrect ou inexistant';
       } else {
         _passwordError = 'Mot de passe incorrect';

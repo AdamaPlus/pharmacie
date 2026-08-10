@@ -341,27 +341,36 @@ class AppStateProvider extends ChangeNotifier {
     final dbPhone = _db.pharmacyContact1.trim().toLowerCase();
     final dbName  = _db.pharmacyName.trim().toLowerCase();
     final dbPassword = _db.pharmacyPassword;
+    final dbPinCode = _db.pharmacyPinCode;
 
     // 1. Chercher parmi tous les comptes ADMIN existants
     for (final u in _db.users.where((user) => user.role == 'ADMIN')) {
       final adminUser = u.username.trim().toLowerCase();
       final adminEmail = (u.email ?? '').trim().toLowerCase();
       final adminFull = (u.fullName ?? '').trim().toLowerCase();
+      final adminPin = u.pinCode.trim().toLowerCase();
+      final adminEmpId = u.employeeId.trim().toLowerCase();
 
       final inputMatches = input.isEmpty ||
-          (adminUser.isNotEmpty && input == adminUser) ||
-          (adminEmail.isNotEmpty && input == adminEmail) ||
-          (adminFull.isNotEmpty && input == adminFull) ||
-          (dbEmail.isNotEmpty && input == dbEmail) ||
-          (dbPhone.isNotEmpty && input == dbPhone) ||
-          (dbName.isNotEmpty && input == dbName);
+          (adminUser.isNotEmpty && (input == adminUser || adminUser.contains(input))) ||
+          (adminEmail.isNotEmpty && (input == adminEmail || adminEmail.contains(input))) ||
+          (adminFull.isNotEmpty && (input == adminFull || adminFull.startsWith(input) || adminFull.split(' ').contains(input))) ||
+          (adminPin.isNotEmpty && input == adminPin) ||
+          (adminEmpId.isNotEmpty && input == adminEmpId) ||
+          (dbEmail.isNotEmpty && (input == dbEmail || dbEmail.contains(input))) ||
+          (dbPhone.isNotEmpty && (input == dbPhone || dbPhone.contains(input))) ||
+          (dbName.isNotEmpty && (input == dbName || dbName.contains(input)));
 
       final passwordMatches = (passRaw.isNotEmpty && dbPassword.isNotEmpty && passRaw == dbPassword) ||
           (passTrim.isNotEmpty && dbPassword.isNotEmpty && passTrim == dbPassword.trim()) ||
+          (passRaw.isNotEmpty && dbPinCode.isNotEmpty && passRaw == dbPinCode) ||
+          (passTrim.isNotEmpty && dbPinCode.isNotEmpty && passTrim == dbPinCode.trim()) ||
           (passRaw.isNotEmpty && u.passwordHash.isNotEmpty && passRaw == u.passwordHash) ||
           (passTrim.isNotEmpty && u.passwordHash.isNotEmpty && passTrim == u.passwordHash.trim()) ||
           (passRaw.isNotEmpty && u.password.isNotEmpty && passRaw == u.password) ||
-          (passTrim.isNotEmpty && u.password.isNotEmpty && passTrim == u.password.trim());
+          (passTrim.isNotEmpty && u.password.isNotEmpty && passTrim == u.password.trim()) ||
+          (passRaw.isNotEmpty && u.pinCode.isNotEmpty && passRaw == u.pinCode) ||
+          (passTrim.isNotEmpty && u.pinCode.isNotEmpty && passTrim == u.pinCode.trim());
 
       if (inputMatches && passwordMatches) {
         _db.currentUsername = u.username.isNotEmpty ? u.username : (inputRaw.isNotEmpty ? inputRaw : 'admin');
@@ -372,9 +381,11 @@ class AppStateProvider extends ChangeNotifier {
       }
     }
 
-    // 2. Si mot de passe correspond au mot de passe de la pharmacie globale
+    // 2. Si mot de passe ou code PIN correspond au mot de passe de la pharmacie globale
     final passwordMatchesGlobal = (passRaw.isNotEmpty && dbPassword.isNotEmpty && passRaw == dbPassword) ||
-        (passTrim.isNotEmpty && dbPassword.isNotEmpty && passTrim == dbPassword.trim());
+        (passTrim.isNotEmpty && dbPassword.isNotEmpty && passTrim == dbPassword.trim()) ||
+        (passRaw.isNotEmpty && dbPinCode.isNotEmpty && passRaw == dbPinCode) ||
+        (passTrim.isNotEmpty && dbPinCode.isNotEmpty && passTrim == dbPinCode.trim());
 
     if (passwordMatchesGlobal && _db.pharmacyName.isNotEmpty) {
       final adminUser = _db.users.firstWhere(
@@ -457,13 +468,33 @@ class AppStateProvider extends ChangeNotifier {
     final passTrim = password.trim();
 
     final userIndex = _db.users.indexWhere(
-      (u) => (u.username.trim().toLowerCase() == input || (u.email ?? '').trim().toLowerCase() == input || (u.fullName ?? '').trim().toLowerCase() == input)
-          && ((passRaw.isNotEmpty && u.passwordHash.isNotEmpty && passRaw == u.passwordHash) ||
-              (passTrim.isNotEmpty && u.passwordHash.isNotEmpty && passTrim == u.passwordHash.trim()) ||
-              (passRaw.isNotEmpty && u.password.isNotEmpty && passRaw == u.password) ||
-              (passTrim.isNotEmpty && u.password.isNotEmpty && passTrim == u.password.trim()) ||
-              (passRaw.isNotEmpty && _db.pharmacyPassword.isNotEmpty && passRaw == _db.pharmacyPassword) ||
-              (passTrim.isNotEmpty && _db.pharmacyPassword.isNotEmpty && passTrim == _db.pharmacyPassword.trim()))
+      (u) {
+        final uName = u.username.trim().toLowerCase();
+        final uEmail = (u.email ?? '').trim().toLowerCase();
+        final uFull = (u.fullName ?? '').trim().toLowerCase();
+        final uPin = u.pinCode.trim().toLowerCase();
+        final uEmpId = u.employeeId.trim().toLowerCase();
+
+        final inputMatches = input.isEmpty ||
+            (uName.isNotEmpty && (input == uName || uName.contains(input))) ||
+            (uEmail.isNotEmpty && (input == uEmail || uEmail.contains(input))) ||
+            (uFull.isNotEmpty && (input == uFull || uFull.startsWith(input) || uFull.split(' ').contains(input))) ||
+            (uPin.isNotEmpty && input == uPin) ||
+            (uEmpId.isNotEmpty && input == uEmpId);
+
+        final passwordMatches = (passRaw.isNotEmpty && u.passwordHash.isNotEmpty && passRaw == u.passwordHash) ||
+            (passTrim.isNotEmpty && u.passwordHash.isNotEmpty && passTrim == u.passwordHash.trim()) ||
+            (passRaw.isNotEmpty && u.password.isNotEmpty && passRaw == u.password) ||
+            (passTrim.isNotEmpty && u.password.isNotEmpty && passTrim == u.password.trim()) ||
+            (passRaw.isNotEmpty && u.pinCode.isNotEmpty && passRaw == u.pinCode) ||
+            (passTrim.isNotEmpty && u.pinCode.isNotEmpty && passTrim == u.pinCode.trim()) ||
+            (passRaw.isNotEmpty && _db.pharmacyPassword.isNotEmpty && passRaw == _db.pharmacyPassword) ||
+            (passTrim.isNotEmpty && _db.pharmacyPassword.isNotEmpty && passTrim == _db.pharmacyPassword.trim()) ||
+            (passRaw.isNotEmpty && _db.pharmacyPinCode.isNotEmpty && passRaw == _db.pharmacyPinCode) ||
+            (passTrim.isNotEmpty && _db.pharmacyPinCode.isNotEmpty && passTrim == _db.pharmacyPinCode.trim());
+
+        return inputMatches && passwordMatches;
+      }
     );
 
     if (userIndex != -1) {
