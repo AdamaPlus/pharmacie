@@ -184,6 +184,8 @@ class DatabaseService {
     hasSeenOnboarding   = settings['hasSeenOnboarding']   == 'true';
     firstLaunchDate     = settings['firstLaunchDate']     ?? '';
     isLicensed          = settings['isLicensed']          == 'true';
+    currentUsername     = settings['currentUsername']     ?? 'anonymous';
+    currentUserRole     = settings['currentUserRole']     ?? 'GUEST';
 
     if (firstLaunchDate.isEmpty) {
       firstLaunchDate = DateTime.now().toIso8601String();
@@ -245,6 +247,8 @@ class DatabaseService {
       upsertSetting('hasSeenOnboarding',  hasSeenOnboarding.toString());
       upsertSetting('firstLaunchDate',    firstLaunchDate);
       upsertSetting('isLicensed',         isLicensed.toString());
+      upsertSetting('currentUsername',    currentUsername);
+      upsertSetting('currentUserRole',    currentUserRole);
 
       // Collections
       _upsertAll(batch, 'products',       products,       (e) => e.id,       (e) => e.toMap());

@@ -274,9 +274,8 @@ class AppStateProvider extends ChangeNotifier {
     _db.currentUsername = username.isNotEmpty ? username : 'admin';
     _db.currentUserRole = 'ADMIN';
 
-    _db.save();
     _db.logAction('INSCRIPTION', 'Nouvelle pharmacie enregistrée : $name par $username ($quartier).');
-    notifyListeners();
+    _db.save().then((_) => notifyListeners());
   }
 
   bool resetPasswordByPhone(String phone, String newPassword) {
@@ -385,7 +384,7 @@ class AppStateProvider extends ChangeNotifier {
         _db.currentUsername = u.username.isNotEmpty ? u.username : (inputRaw.isNotEmpty ? inputRaw : 'admin');
         _db.currentUserRole = u.role.isNotEmpty && u.role != 'GUEST' ? u.role : 'ADMIN';
         _db.logAction('CONNEXION', 'Connexion réussie pour la pharmacie ${_db.pharmacyName} (${_db.currentUserRole} ${u.username}).');
-        notifyListeners();
+        _db.save().then((_) => notifyListeners());
         return true;
       }
     }
@@ -405,7 +404,7 @@ class AppStateProvider extends ChangeNotifier {
       _db.currentUsername = adminUser.username.isNotEmpty ? adminUser.username : (inputRaw.isNotEmpty ? inputRaw : 'admin');
       _db.currentUserRole = 'ADMIN';
       _db.logAction('CONNEXION', 'Connexion réussie (Admin global) pour ${_db.pharmacyName}.');
-      notifyListeners();
+      _db.save().then((_) => notifyListeners());
       return true;
     }
 
