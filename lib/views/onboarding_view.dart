@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pharmaguinee/providers/app_state_provider.dart';
-import 'package:pharmaguinee/views/login_view.dart';
 
 class OnboardingView extends StatefulWidget {
   const OnboardingView({super.key});
@@ -40,9 +39,6 @@ class _OnboardingViewState extends State<OnboardingView> {
       );
     } else {
       Provider.of<AppStateProvider>(context, listen: false).markOnboardingSeen();
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginView()),
-      );
     }
   }
 
@@ -165,9 +161,6 @@ class _OnboardingViewState extends State<OnboardingView> {
               child: TextButton(
                 onPressed: () {
                   Provider.of<AppStateProvider>(context, listen: false).markOnboardingSeen();
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const LoginView()),
-                  );
                 },
                 child: const Text(
                   'Passer',

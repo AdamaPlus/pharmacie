@@ -13,6 +13,10 @@ class DatabaseService {
   DatabaseService._internal();
 
   Database? _db;
+  // Les appels à save() sont souvent déclenchés sans await depuis l'interface.
+  // Avec sqflite FFI, deux batchs exécutés en même temps peuvent provoquer une
+  // DatabaseException. Cette file garantit une seule écriture à la fois.
+  Future<bool> _saveQueue = Future<bool>.value(true);
 
   // ── Collections en mémoire (même API qu'avant) ──────────────────
   List<Product> products = [];
@@ -228,6 +232,14 @@ class DatabaseService {
   // ────────────────────────────────────────────────────────────────
   Future<bool> save() async {
     if (kIsWeb || _db == null) return true;
+    _saveQueue = _saveQueue.then(
+      (_) => _saveNow(),
+      onError: (_) => _saveNow(),
+    );
+    return _saveQueue;
+  }
+
+  Future<bool> _saveNow() async {
     try {
       final batch = _db!.batch();
 
