@@ -188,8 +188,8 @@ class DatabaseService {
     hasSeenOnboarding   = settings['hasSeenOnboarding']   == 'true';
     firstLaunchDate     = settings['firstLaunchDate']     ?? '';
     isLicensed          = settings['isLicensed']          == 'true';
-    currentUsername     = settings['currentUsername']     ?? 'anonymous';
-    currentUserRole     = settings['currentUserRole']     ?? 'GUEST';
+    currentUsername     = 'anonymous';
+    currentUserRole     = 'GUEST';
 
     if (firstLaunchDate.isEmpty) {
       firstLaunchDate = DateTime.now().toIso8601String();
