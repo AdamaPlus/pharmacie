@@ -1412,7 +1412,7 @@ class _SalesViewState extends State<SalesView> {
               },
               icon: Icon(Icons.print_rounded, size: 18),
               label: Text(
-                'Imprimer Facture',
+                'Imprimer',
                 style: GoogleFonts.inter(fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(

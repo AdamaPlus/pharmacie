@@ -19,6 +19,11 @@ class InvoicePrinter {
   }) async {
     final doc = pw.Document();
     final fmt = NumberFormat.decimalPattern('fr');
+    final qrData = [
+      'RECU: ${sale.id}',
+      'PRODUITS ACHETES:',
+      ...sale.items.map((item) => '${item.quantity} x ${item.productName}'),
+    ].join('\n');
 
     // ── Helpers ─────────────────────────────────────────────────────────────
     pw.Widget buildRow(
@@ -48,10 +53,10 @@ class InvoicePrinter {
     }
 
     pw.Widget buildDivider({bool dashed = false}) => pw.Divider(
-      thickness: 0.6,
-      color: PdfColors.grey500,
-      borderStyle: dashed ? pw.BorderStyle.dashed : pw.BorderStyle.solid,
-    );
+          thickness: 0.6,
+          color: PdfColors.grey500,
+          borderStyle: dashed ? pw.BorderStyle.dashed : pw.BorderStyle.solid,
+        );
 
     // ── Build content list ───────────────────────────────────────────────────
     final List<pw.Widget> content = [];
@@ -152,9 +157,9 @@ class InvoicePrinter {
     content.add(
       buildRow(
         (sale.cashierName.toLowerCase().contains('admin') ||
-         sale.cashierName.toLowerCase().contains('responsable') ||
-         sale.cashierName.toLowerCase().contains('le-responsable') ||
-         sale.cashierName.toLowerCase().contains('administrateur'))
+                sale.cashierName.toLowerCase().contains('responsable') ||
+                sale.cashierName.toLowerCase().contains('le-responsable') ||
+                sale.cashierName.toLowerCase().contains('administrateur'))
             ? 'Admin:'
             : 'Caissier:',
         sale.cashierName.toUpperCase(),
@@ -175,7 +180,7 @@ class InvoicePrinter {
       content.add(
         buildRow(
           'Points fidélité:',
-          '${patientLoyaltyPoints} pts ${loyaltyPointsEarned != null && loyaltyPointsEarned > 0 ? '(+$loyaltyPointsEarned ce jour)' : ''}',
+          '$patientLoyaltyPoints pts ${loyaltyPointsEarned != null && loyaltyPointsEarned > 0 ? '(+$loyaltyPointsEarned ce jour)' : ''}',
           color: PdfColors.teal700,
           fontWeight: pw.FontWeight.bold,
         ),
@@ -206,9 +211,9 @@ class InvoicePrinter {
               ),
             ),
             pw.SizedBox(
-              width: 20,
+              width: 24,
               child: pw.Text(
-                'Quantité',
+                'Qté',
                 textAlign: pw.TextAlign.center,
                 style: pw.TextStyle(
                   fontSize: 7,
@@ -259,7 +264,7 @@ class InvoicePrinter {
                 ),
               ),
               pw.SizedBox(
-                width: 20,
+                width: 24,
                 child: pw.Text(
                   '${item.quantity}',
                   textAlign: pw.TextAlign.center,
@@ -355,6 +360,37 @@ class InvoicePrinter {
 
     content.add(pw.SizedBox(height: 10));
     content.add(buildDivider(dashed: true));
+    content.add(pw.SizedBox(height: 8));
+
+    // QR code: a scan displays the names and quantities of purchased products.
+    content.add(
+      pw.Center(
+        child: pw.Column(
+          children: [
+            pw.Text(
+              'PRODUITS ACHETÉS',
+              style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 4),
+            pw.BarcodeWidget(
+              barcode: pw.Barcode.qrCode(),
+              data: qrData,
+              width: 64,
+              height: 64,
+              drawText: false,
+            ),
+            pw.SizedBox(height: 3),
+            pw.Text(
+              'Scannez pour voir la liste des produits',
+              style: const pw.TextStyle(fontSize: 6, color: PdfColors.grey700),
+              textAlign: pw.TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+    content.add(pw.SizedBox(height: 8));
+    content.add(buildDivider(dashed: true));
     content.add(pw.SizedBox(height: 6));
 
     // FOOTER
@@ -378,10 +414,7 @@ class InvoicePrinter {
       ),
     );
 
-    // ── Build the page with DYNAMIC height ──────────────────────────────────
-    // Use a fixed-width roll (80mm) but compute height from content
-    const double pageWidthPt = 80 * PdfPageFormat.mm;
-
+    // Fixed 80 mm thermal-receipt width; the roll height follows the content.
     final dynamicFormat = PdfPageFormat.roll80.copyWith(
       marginBottom: 12.0,
       marginTop: 12.0,
