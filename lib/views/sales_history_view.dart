@@ -257,7 +257,7 @@ class _SalesHistoryViewState extends State<SalesHistoryView> {
     final currencyFmt = NumberFormat.currency(locale: 'fr_FR', symbol: 'GNF', decimalDigits: 0);
 
     // Apply period and filter logic
-    final now = DateTime.now();
+    final now = state.workingDate;
     final filteredSales = state.sales.where((s) {
       // 1. Period filter
       if (_selectedPeriod == 'Aujourd\'hui') {

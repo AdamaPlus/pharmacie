@@ -40,6 +40,19 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "✅ Build réussi !" -ForegroundColor Green
 
+# ── Embarquer le runtime Microsoft Visual C++ ────────────────────
+Write-Host "Téléchargement des composants Microsoft requis..." -ForegroundColor Yellow
+New-Item -ItemType Directory -Force -Path "installer_assets" | Out-Null
+try {
+    Invoke-WebRequest -Uri "https://aka.ms/vc14/vc_redist.x64.exe" `
+                      -OutFile "installer_assets\vc_redist.x64.exe" `
+                      -ErrorAction Stop
+} catch {
+    Write-Host "❌ Impossible de télécharger le composant Microsoft officiel." -ForegroundColor Red
+    pause
+    exit 1
+}
+
 # ── Créer l'installateur avec Inno Setup ─────────────────────────
 Write-Host "`n[4/4] Création de l'installateur (.exe)..." -ForegroundColor Yellow
 
@@ -74,9 +87,9 @@ if ($iscc -eq $null) {
     Write-Host "`nCréation d'un ZIP portable..." -ForegroundColor Yellow
     New-Item -ItemType Directory -Force -Path "output_setup" | Out-Null
     Compress-Archive -Path "build\windows\x64\runner\Release\*" `
-                     -DestinationPath "output_setup\PharmaGuinee_Windows_v1.0.0_Portable.zip" `
+                     -DestinationPath "output_setup\PharmaGuinee_Windows_v1.0.1_Portable.zip" `
                      -Force
-    Write-Host "✅ Archive ZIP créée : output_setup\PharmaGuinee_Windows_v1.0.0_Portable.zip" -ForegroundColor Green
+    Write-Host "✅ Archive ZIP créée : output_setup\PharmaGuinee_Windows_v1.0.1_Portable.zip" -ForegroundColor Green
 } else {
     Write-Host "✅ Inno Setup trouvé : $iscc" -ForegroundColor Green
     New-Item -ItemType Directory -Force -Path "output_setup" | Out-Null
@@ -87,7 +100,7 @@ if ($iscc -eq $null) {
         Write-Host "========================================" -ForegroundColor Green
         Write-Host "  ✅ INSTALLATEUR CRÉÉ AVEC SUCCÈS !" -ForegroundColor Green
         Write-Host "========================================" -ForegroundColor Green
-        Write-Host "  📦 Fichier : output_setup\PharmaGuinee_Setup_v1.0.0_Windows.exe" -ForegroundColor White
+        Write-Host "  📦 Fichier : output_setup\PharmaGuinee_Setup_v1.0.1.exe" -ForegroundColor White
         Write-Host ""
     } else {
         Write-Host "❌ Erreur Inno Setup" -ForegroundColor Red

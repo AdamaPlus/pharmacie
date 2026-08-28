@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state_provider.dart';
+import '../utils/license_key.dart';
 
 class LicenseValidationView extends StatefulWidget {
   const LicenseValidationView({super.key});
@@ -151,7 +152,7 @@ class _LicenseValidationViewState extends State<LicenseValidationView> {
 
                       // Description
                       Text(
-                        'Votre période d\'essai de 6 jours est expirée. Saisissez votre clé de licence pour activer l\'application de façon définitive.',
+                        'Votre période d\'essai de 7 jours est expirée. Saisissez votre clé de licence pour activer l\'application de façon définitive.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
                           fontSize: 14,
@@ -165,14 +166,21 @@ class _LicenseValidationViewState extends State<LicenseValidationView> {
                       TextFormField(
                         controller: _licenseController,
                         obscureText: _obscureLicense,
-                        style: GoogleFonts.inter(color: Colors.white, fontSize: 15),
+                        inputFormatters: const [LicenseKeyFormatter()],
+                        textCapitalization: TextCapitalization.characters,
+                        style: GoogleFonts.inter(
+                            color: Colors.white, fontSize: 15),
                         decoration: InputDecoration(
-                          hintText: 'Saisissez la clé de licence',
-                          hintStyle: GoogleFonts.inter(color: const Color(0xFF64748B)),
-                          prefixIcon: const Icon(Icons.key_rounded, color: Color(0xFF64748B), size: 18),
+                          hintText: 'XXXX-XXXX-XXXX-XXXX',
+                          hintStyle:
+                              GoogleFonts.inter(color: const Color(0xFF64748B)),
+                          prefixIcon: const Icon(Icons.key_rounded,
+                              color: Color(0xFF64748B), size: 18),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscureLicense ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                              _obscureLicense
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
                               color: const Color(0xFF64748B),
                               size: 20,
                             ),
@@ -184,23 +192,29 @@ class _LicenseValidationViewState extends State<LicenseValidationView> {
                           ),
                           filled: true,
                           fillColor: primaryBg.withOpacity(0.6),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 16, horizontal: 20),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white.withOpacity(0.05)),
+                            borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.05)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: themeColor, width: 1.5),
+                            borderSide:
+                                const BorderSide(color: themeColor, width: 1.5),
                           ),
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Veuillez saisir votre clé de licence';
+                          }
+                          if (!LicenseKey.hasValidFormat(value)) {
+                            return 'Format requis : XXXX-XXXX-XXXX-XXXX (lettres et chiffres)';
                           }
                           return null;
                         },
@@ -210,15 +224,18 @@ class _LicenseValidationViewState extends State<LicenseValidationView> {
                       if (_errorMessage != null) ...[
                         const SizedBox(height: 16),
                         Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 10, horizontal: 16),
                           decoration: BoxDecoration(
                             color: Colors.redAccent.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.redAccent.withOpacity(0.2)),
+                            border: Border.all(
+                                color: Colors.redAccent.withOpacity(0.2)),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 18),
+                              const Icon(Icons.error_outline_rounded,
+                                  color: Colors.redAccent, size: 18),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
@@ -273,7 +290,8 @@ class _LicenseValidationViewState extends State<LicenseValidationView> {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    const Icon(Icons.arrow_forward_rounded, size: 16),
+                                    const Icon(Icons.arrow_forward_rounded,
+                                        size: 16),
                                   ],
                                 ),
                         ),

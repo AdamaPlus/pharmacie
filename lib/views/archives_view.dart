@@ -42,7 +42,7 @@ class _ArchivesViewState extends State<ArchivesView> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<AppStateProvider>(context);
-    final now = DateTime.now();
+    final now = state.workingDate;
     final fmt = NumberFormat.currency(locale: 'fr_FR', symbol: 'GNF', decimalDigits: 0);
 
     // Filter sales by period and search
@@ -477,9 +477,10 @@ class _ArchivesViewState extends State<ArchivesView> with SingleTickerProviderSt
   }
 
   Widget _buildSaleRow(Sale sale, AppStateProvider state, NumberFormat fmt, BuildContext ctx) {
-    final isToday = sale.date.year == DateTime.now().year &&
-        sale.date.month == DateTime.now().month &&
-        sale.date.day == DateTime.now().day;
+    final referenceDate = state.workingDate;
+    final isToday = sale.date.year == referenceDate.year &&
+        sale.date.month == referenceDate.month &&
+        sale.date.day == referenceDate.day;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),

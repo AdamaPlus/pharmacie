@@ -1,5 +1,3 @@
-
-
 // ==========================================
 // 1. PRODUCT & LOT MODELS
 // ==========================================
@@ -86,7 +84,9 @@ class Lot {
   });
 
   bool get isExpired => expirationDate.isBefore(DateTime.now());
-  bool get isNearExpiration => expirationDate.isBefore(DateTime.now().add(const Duration(days: 90))) && !isExpired;
+  bool get isNearExpiration =>
+      expirationDate.isBefore(DateTime.now().add(const Duration(days: 90))) &&
+      !isExpired;
 
   Map<String, dynamic> toMap() {
     return {
@@ -105,7 +105,8 @@ class Lot {
       productId: map['productId'] ?? '',
       productName: map['productName'] ?? '',
       lotNumber: map['lotNumber'] ?? '',
-      expirationDate: DateTime.parse(map['expirationDate'] ?? DateTime.now().toIso8601String()),
+      expirationDate: DateTime.parse(
+          map['expirationDate'] ?? DateTime.now().toIso8601String()),
       quantity: (map['quantity'] as num?)?.toInt() ?? 0,
     );
   }
@@ -359,10 +360,13 @@ class Prescription {
       doctorName: map['doctorName'] ?? '',
       patientId: map['patientId'] ?? '',
       patientName: map['patientName'] ?? '',
-      medicines: medicinesList.map((item) => PrescriptionItem.fromMap(item)).toList(),
+      medicines:
+          medicinesList.map((item) => PrescriptionItem.fromMap(item)).toList(),
       dosageInstructions: map['dosageInstructions'] ?? '',
       isDispensed: map['isDispensed'] ?? false,
-      dispensedDate: map['dispensedDate'] != null ? DateTime.parse(map['dispensedDate']) : null,
+      dispensedDate: map['dispensedDate'] != null
+          ? DateTime.parse(map['dispensedDate'])
+          : null,
       safetyAlerts: map['safetyAlerts'] ?? '',
       illnessType: map['illnessType'] ?? '',
     );
@@ -576,7 +580,8 @@ class Employee {
       hireDate: map['hireDate'] ?? '',
       contractInfo: map['contractInfo'] ?? '',
       hourlyRate: (map['hourlyRate'] as num?)?.toDouble() ?? 10.0,
-      hoursWorkedThisMonth: (map['hoursWorkedThisMonth'] as num?)?.toDouble() ?? 0.0,
+      hoursWorkedThisMonth:
+          (map['hoursWorkedThisMonth'] as num?)?.toDouble() ?? 0.0,
       planning: planningList.map((s) => Shift.fromMap(s)).toList(),
       leaveRequests: leavesList.map((l) => LeaveRequest.fromMap(l)).toList(),
     );
@@ -696,6 +701,46 @@ class SupplierInvoice {
   }
 }
 
+class Expense {
+  final String id;
+  final String label;
+  final String category;
+  final double amount;
+  final DateTime date;
+  final String paymentMethod;
+  final String notes;
+
+  const Expense({
+    required this.id,
+    required this.label,
+    required this.category,
+    required this.amount,
+    required this.date,
+    required this.paymentMethod,
+    this.notes = '',
+  });
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'label': label,
+        'category': category,
+        'amount': amount,
+        'date': date.toIso8601String(),
+        'paymentMethod': paymentMethod,
+        'notes': notes,
+      };
+
+  factory Expense.fromMap(Map<String, dynamic> map) => Expense(
+        id: map['id'] ?? '',
+        label: map['label'] ?? '',
+        category: map['category'] ?? 'Autres',
+        amount: (map['amount'] as num?)?.toDouble() ?? 0,
+        date: DateTime.tryParse(map['date'] ?? '') ?? DateTime.now(),
+        paymentMethod: map['paymentMethod'] ?? 'Espèces',
+        notes: map['notes'] ?? '',
+      );
+}
+
 class Supplier {
   final String id;
   final String name;
@@ -758,11 +803,13 @@ class UserAccount {
   final String username;
   final String passwordHash; // simple representation
   final String employeeId;
-  final String role; // 'PHARMACIEN', 'PREPARATEUR', 'CAISSIER', 'ADMIN', 'VENDEUR'
+  final String
+      role; // 'PHARMACIEN', 'PREPARATEUR', 'CAISSIER', 'ADMIN', 'VENDEUR'
   final String fullName;
   final String email;
   final String password;
-  final String pinCode; // Code PIN propre à chaque utilisateur (attribué par l'admin pour les vendeurs)
+  final String
+      pinCode; // Code PIN propre à chaque utilisateur (attribué par l'admin pour les vendeurs)
   final List<String> permissions;
   final String? profileImageBase64;
 
@@ -777,11 +824,23 @@ class UserAccount {
     this.pinCode = '',
     List<String>? permissions,
     this.profileImageBase64,
-  }) : this.passwordHash = passwordHash ?? password,
-       this.employeeId = employeeId ?? 'E001',
-       this.permissions = permissions ?? (role == 'ADMIN'
-           ? ['dashboard', 'pos', 'add_product', 'new_medicines', 'reports', 'archives', 'loans', 'replenish', 'suppliers', 'history']
-           : ['dashboard', 'pos', 'archives']);
+  })  : this.passwordHash = passwordHash ?? password,
+        this.employeeId = employeeId ?? 'E001',
+        this.permissions = permissions ??
+            (role == 'ADMIN'
+                ? [
+                    'dashboard',
+                    'pos',
+                    'add_product',
+                    'new_medicines',
+                    'reports',
+                    'archives',
+                    'loans',
+                    'replenish',
+                    'suppliers',
+                    'history'
+                  ]
+                : ['dashboard', 'pos', 'archives']);
 
   Map<String, dynamic> toMap() {
     return {
@@ -808,7 +867,9 @@ class UserAccount {
       email: map['email'] ?? '',
       password: map['password'] ?? (map['passwordHash'] ?? ''),
       pinCode: map['pinCode'] ?? '',
-      permissions: map['permissions'] != null ? List<String>.from(map['permissions']) : null,
+      permissions: map['permissions'] != null
+          ? List<String>.from(map['permissions'])
+          : null,
       profileImageBase64: map['profileImageBase64'],
     );
   }
@@ -842,7 +903,8 @@ class AuditLog {
   factory AuditLog.fromMap(Map<String, dynamic> map) {
     return AuditLog(
       id: map['id'] ?? '',
-      timestamp: DateTime.parse(map['timestamp'] ?? DateTime.now().toIso8601String()),
+      timestamp:
+          DateTime.parse(map['timestamp'] ?? DateTime.now().toIso8601String()),
       username: map['username'] ?? 'System',
       action: map['action'] ?? '',
       details: map['details'] ?? '',
@@ -943,7 +1005,8 @@ class MedicamentLoan {
       lenderName: map['lenderName'] ?? '',
       lenderContact: map['lenderContact'] ?? '',
       lenderAddress: map['lenderAddress'] ?? '',
-      loanDate: DateTime.parse(map['loanDate'] ?? DateTime.now().toIso8601String()),
+      loanDate:
+          DateTime.parse(map['loanDate'] ?? DateTime.now().toIso8601String()),
       isReturned: map['isReturned'] ?? false,
       notes: map['notes'] ?? '',
       saleId: map['saleId'],

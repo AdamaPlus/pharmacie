@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:convert';
 import '../models/pharmacy_models.dart';
 import '../services/database_service.dart';
+import '../utils/license_key.dart';
 
 class _AlertEntry {
   _AlertEntry({required this.message, required this.createdAt});
@@ -16,7 +17,8 @@ class AppStateProvider extends ChangeNotifier {
   bool _initialized = false;
 
   // Active navigation tab
-  int _activeTab = 0; // 0: Dashboard, 1: Inventory, 2: POS, 3: Prescriptions, 4: Patients, 5: Staff, 6: Suppliers, 7: Admin
+  int _activeTab =
+      0; // 0: Dashboard, 1: Inventory, 2: POS, 3: Prescriptions, 4: Patients, 5: Staff, 6: Suppliers, 7: Admin
   int get activeTab => _activeTab;
 
   bool get initialized => _initialized;
@@ -24,15 +26,71 @@ class AppStateProvider extends ChangeNotifier {
   // Getters for data collections
   List<Product> get products => _db.products;
   List<Lot> get lots => _db.lots;
-  List<StockMovement> get stockMovements => _db.stockMovements;
-  List<Sale> get sales => _db.sales;
+  List<StockMovement> get stockMovements => _db.stockMovements
+      .where((movement) => movement.date.year == workingYear)
+      .toList(growable: false);
+  List<Sale> get sales => _db.sales
+      .where((sale) => sale.date.year == workingYear)
+      .toList(growable: false);
   List<Prescription> get prescriptions => _db.prescriptions;
   List<Patient> get patients => _db.patients;
   List<Employee> get employees => _db.employees;
   List<Supplier> get suppliers => _db.suppliers;
   List<UserAccount> get users => _db.users;
-  List<MedicamentLoan> get loans => _db.loans;
+  List<MedicamentLoan> get loans => _db.loans
+      .where((loan) => loan.loanDate.year == workingYear)
+      .toList(growable: false);
+  List<Expense> get expenses => _db.expenses
+      .where((expense) => expense.date.year == workingYear)
+      .toList(growable: false);
   List<AuditLog> get auditLogs => _db.auditLogs;
+
+  int get workingYear => _db.workingYear;
+
+  List<MedicamentLoan> get unpaidLoansFromPreviousYears => _db.loans
+      .where((loan) => !loan.isReturned && loan.loanDate.year < workingYear)
+      .toList(growable: false);
+
+  bool get shouldShowPreviousYearDebtReminder {
+    if (unpaidLoansFromPreviousYears.isEmpty) return false;
+    final now = DateTime.now();
+    final today =
+        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    return _db.debtReminderDismissedDate != today;
+  }
+
+  Future<void> dismissPreviousYearDebtReminder() async {
+    final now = DateTime.now();
+    _db.debtReminderDismissedDate =
+        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    await _db.save();
+    notifyListeners();
+  }
+
+  DateTime get workingDate {
+    final now = DateTime.now();
+    final day = DateUtils.getDaysInMonth(workingYear, now.month) < now.day
+        ? DateUtils.getDaysInMonth(workingYear, now.month)
+        : now.day;
+    return DateTime(
+        workingYear, now.month, day, now.hour, now.minute, now.second);
+  }
+
+  List<int> get availableWorkingYears {
+    final years = <int>{DateTime.now().year, workingYear};
+    years.addAll(_db.sales.map((sale) => sale.date.year));
+    years.addAll(_db.expenses.map((expense) => expense.date.year));
+    years.addAll(_db.loans.map((loan) => loan.loanDate.year));
+    years.addAll(_db.stockMovements.map((movement) => movement.date.year));
+    return years.toList()..sort((a, b) => b.compareTo(a));
+  }
+
+  Future<void> setWorkingYear(int year) async {
+    if (year == workingYear) return;
+    _db.workingYear = year;
+    await _db.save();
+    notifyListeners();
+  }
 
   String get currentUsername => _db.currentUsername;
   String get currentUserRole => _db.currentUserRole;
@@ -48,7 +106,7 @@ class AppStateProvider extends ChangeNotifier {
   Uint8List? _pharmacyLogo;
   Uint8List? get pharmacyLogo => _pharmacyLogo;
 
-  bool _isDarkMode = true;
+  bool _isDarkMode = false;
   bool get isDarkMode => _isDarkMode;
 
   bool _maskRevenues = false;
@@ -60,16 +118,19 @@ class AppStateProvider extends ChangeNotifier {
   final List<_AlertEntry> _activeAlerts = [];
   List<String> get activeAlerts {
     final now = DateTime.now();
-    _activeAlerts.removeWhere((entry) => now.difference(entry.createdAt).inDays > 30);
+    _activeAlerts
+        .removeWhere((entry) => now.difference(entry.createdAt).inDays > 30);
     return _activeAlerts.map((entry) => entry.message).toList();
   }
+
   int get alertCount => activeAlerts.length;
 
   bool canCreateNewMedicines() {
     if (_db.currentUserRole == 'ADMIN') return true;
     final currentUser = _db.users.firstWhere(
       (u) => u.username == _db.currentUsername,
-      orElse: () => UserAccount(username: _db.currentUsername, role: _db.currentUserRole),
+      orElse: () =>
+          UserAccount(username: _db.currentUsername, role: _db.currentUserRole),
     );
     return currentUser.permissions.contains('add_product') ||
         currentUser.permissions.contains('new_medicines');
@@ -79,7 +140,8 @@ class AppStateProvider extends ChangeNotifier {
     if (_db.currentUserRole == 'ADMIN') return true;
     final currentUser = _db.users.firstWhere(
       (u) => u.username == _db.currentUsername,
-      orElse: () => UserAccount(username: _db.currentUsername, role: _db.currentUserRole),
+      orElse: () =>
+          UserAccount(username: _db.currentUsername, role: _db.currentUserRole),
     );
     return currentUser.permissions.contains('add_product') &&
         currentUser.permissions.contains('new_medicines');
@@ -97,14 +159,16 @@ class AppStateProvider extends ChangeNotifier {
 
   void refreshSystemAlerts({bool shouldNotify = false}) {
     final now = DateTime.now();
-    _activeAlerts.removeWhere((entry) => now.difference(entry.createdAt).inDays > 30);
+    _activeAlerts
+        .removeWhere((entry) => now.difference(entry.createdAt).inDays > 30);
 
     final nextAlerts = <String>[];
 
     for (final product in _db.products) {
       if (product.totalQuantity <= 0) {
         nextAlerts.add('Rupture : ${product.name}');
-      } else if (product.totalQuantity <= product.minStock && !isProductOrdered(product.id)) {
+      } else if (product.totalQuantity <= product.minStock &&
+          !isProductOrdered(product.id)) {
         nextAlerts.add('Stock faible : ${product.name}');
       }
     }
@@ -114,12 +178,16 @@ class AppStateProvider extends ChangeNotifier {
       if (lot.expirationDate.isBefore(now)) {
         nextAlerts.add('Périmé : ${lot.productName} (${lot.lotNumber})');
       } else if (diff <= 30) {
-        nextAlerts.add('Expiration proche : ${lot.productName} (${lot.lotNumber})');
+        nextAlerts
+            .add('Expiration proche : ${lot.productName} (${lot.lotNumber})');
       }
     }
 
-    final existingMessages = _activeAlerts.map((entry) => entry.message).toSet();
-    final newAlerts = nextAlerts.where((message) => !existingMessages.contains(message)).toList();
+    final existingMessages =
+        _activeAlerts.map((entry) => entry.message).toSet();
+    final newAlerts = nextAlerts
+        .where((message) => !existingMessages.contains(message))
+        .toList();
     for (final message in nextAlerts) {
       if (!_activeAlerts.any((entry) => entry.message == message)) {
         _activeAlerts.add(_AlertEntry(message: message, createdAt: now));
@@ -147,12 +215,17 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Color get bgPrimary => _isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
+  Color get bgPrimary =>
+      _isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
   Color get bgSecondary => _isDarkMode ? const Color(0xFF1E293B) : Colors.white;
   Color get textPrimary => _isDarkMode ? Colors.white : const Color(0xFF0F172A);
-  Color get textSecondary => _isDarkMode ? const Color(0xFF94A3B8) : const Color(0xFF475569);
-  Color get textSecondaryLight => _isDarkMode ? const Color(0xFF64748B) : const Color(0xFF64748B);
-  Color get borderTheme => _isDarkMode ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.08);
+  Color get textSecondary =>
+      _isDarkMode ? const Color(0xFF94A3B8) : const Color(0xFF475569);
+  Color get textSecondaryLight =>
+      _isDarkMode ? const Color(0xFF64748B) : const Color(0xFF64748B);
+  Color get borderTheme => _isDarkMode
+      ? Colors.white.withOpacity(0.06)
+      : Colors.black.withOpacity(0.08);
   Color get cardBg => _isDarkMode ? const Color(0xFF1E293B) : Colors.white;
 
   void setPharmacyLogo(Uint8List? logo) {
@@ -181,17 +254,17 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Licence & Trial (Mode test 6 jours puis clé requise)
+  // Licence & Trial (Mode test 7 jours puis clé requise)
   bool get isLicensed => _db.isLicensed;
   String get firstLaunchDate => _db.firstLaunchDate;
 
   int get trialDaysRemaining {
     if (isLicensed) return 999999;
-    if (firstLaunchDate.isEmpty) return 6;
+    if (firstLaunchDate.isEmpty) return 7;
     final firstLaunch = DateTime.tryParse(firstLaunchDate);
-    if (firstLaunch == null) return 6;
+    if (firstLaunch == null) return 7;
     final difference = DateTime.now().difference(firstLaunch).inDays;
-    final remaining = 6 - difference;
+    final remaining = 7 - difference;
     return remaining < 0 ? 0 : remaining;
   }
 
@@ -200,8 +273,14 @@ class AppStateProvider extends ChangeNotifier {
     return trialDaysRemaining <= 0;
   }
 
+  void startSevenDayTrial() {
+    _db.isLicensed = false;
+    _db.firstLaunchDate = DateTime.now().toIso8601String();
+    _db.save();
+  }
+
   Future<bool> validateLicense(String key) async {
-    if (key.trim() == "M@riame@@##Ad@m!a62380//") {
+    if (LicenseKey.isValid(key)) {
       _db.isLicensed = true;
       await _db.save();
       notifyListeners();
@@ -244,7 +323,8 @@ class AppStateProvider extends ChangeNotifier {
     }
 
     // Crée / met à jour le compte ADMIN avec le nom complet réel de l'administrateur
-    final String resolvedFullName = adminFullName.isNotEmpty ? adminFullName : quartier;
+    final String resolvedFullName =
+        adminFullName.isNotEmpty ? adminFullName : quartier;
     final adminIndex = _db.users.indexWhere((u) => u.role == 'ADMIN');
     if (adminIndex != -1) {
       final old = _db.users[adminIndex];
@@ -274,7 +354,8 @@ class AppStateProvider extends ChangeNotifier {
     _db.currentUsername = username.isNotEmpty ? username : 'admin';
     _db.currentUserRole = 'ADMIN';
 
-    _db.logAction('INSCRIPTION', 'Nouvelle pharmacie enregistrée : $name par $username ($quartier).');
+    _db.logAction('INSCRIPTION',
+        'Nouvelle pharmacie enregistrée : $name par $username ($quartier).');
     notifyListeners();
     _db.save();
   }
@@ -298,7 +379,8 @@ class AppStateProvider extends ChangeNotifier {
         );
       }
       _db.save();
-      _db.logAction('RESET_PASS', 'Mot de passe réinitialisé via SMS de récupération pour le numéro $phone.');
+      _db.logAction('RESET_PASS',
+          'Mot de passe réinitialisé via SMS de récupération pour le numéro $phone.');
       notifyListeners();
       return true;
     }
@@ -324,7 +406,8 @@ class AppStateProvider extends ChangeNotifier {
         );
       }
       _db.save();
-      _db.logAction('RESET_PIN', 'Code PIN réinitialisé via SMS de récupération pour le numéro $phone.');
+      _db.logAction('RESET_PIN',
+          'Code PIN réinitialisé via SMS de récupération pour le numéro $phone.');
       notifyListeners();
       return true;
     }
@@ -342,7 +425,7 @@ class AppStateProvider extends ChangeNotifier {
 
     final dbEmail = _db.pharmacyContact2.trim().toLowerCase();
     final dbPhone = _db.pharmacyContact1.trim().toLowerCase();
-    final dbName  = _db.pharmacyName.trim().toLowerCase();
+    final dbName = _db.pharmacyName.trim().toLowerCase();
     final dbPassword = _db.pharmacyPassword;
     final dbPinCode = _db.pharmacyPinCode;
 
@@ -360,31 +443,77 @@ class AppStateProvider extends ChangeNotifier {
       final adminEmpId = u.employeeId.trim().toLowerCase();
 
       final inputMatches = input.isEmpty ||
-          (adminUser.isNotEmpty && (input == adminUser || adminUser.contains(input))) ||
-          (adminEmail.isNotEmpty && (input == adminEmail || adminEmail.contains(input))) ||
-          (adminFull.isNotEmpty && (input == adminFull || adminFull.contains(input) || adminFull.startsWith(input) || adminFull.split(' ').contains(input))) ||
+          (adminUser.isNotEmpty &&
+              (input == adminUser || adminUser.contains(input))) ||
+          (adminEmail.isNotEmpty &&
+              (input == adminEmail || adminEmail.contains(input))) ||
+          (adminFull.isNotEmpty &&
+              (input == adminFull ||
+                  adminFull.contains(input) ||
+                  adminFull.startsWith(input) ||
+                  adminFull.split(' ').contains(input))) ||
           (adminPin.isNotEmpty && input == adminPin) ||
           (adminEmpId.isNotEmpty && input == adminEmpId) ||
-          (dbEmail.isNotEmpty && (input == dbEmail || dbEmail.contains(input))) ||
-          (dbPhone.isNotEmpty && (input == dbPhone || dbPhone.contains(input))) ||
+          (dbEmail.isNotEmpty &&
+              (input == dbEmail || dbEmail.contains(input))) ||
+          (dbPhone.isNotEmpty &&
+              (input == dbPhone || dbPhone.contains(input))) ||
           (dbName.isNotEmpty && (input == dbName || dbName.contains(input)));
 
-      final passwordMatches = (passRaw.isNotEmpty && dbPassword.isNotEmpty && (passRaw == dbPassword || passLower == dbPassword.trim().toLowerCase())) ||
-          (passTrim.isNotEmpty && dbPassword.isNotEmpty && (passTrim == dbPassword.trim() || passLower == dbPassword.trim().toLowerCase())) ||
-          (passRaw.isNotEmpty && dbPinCode.isNotEmpty && (passRaw == dbPinCode || passLower == dbPinCode.trim().toLowerCase())) ||
-          (passTrim.isNotEmpty && dbPinCode.isNotEmpty && (passTrim == dbPinCode.trim() || passLower == dbPinCode.trim().toLowerCase())) ||
-          (passRaw.isNotEmpty && u.passwordHash.isNotEmpty && (passRaw == u.passwordHash || passLower == u.passwordHash.trim().toLowerCase())) ||
-          (passTrim.isNotEmpty && u.passwordHash.isNotEmpty && (passTrim == u.passwordHash.trim() || passLower == u.passwordHash.trim().toLowerCase())) ||
-          (passRaw.isNotEmpty && u.password.isNotEmpty && (passRaw == u.password || passLower == u.password.trim().toLowerCase())) ||
-          (passTrim.isNotEmpty && u.password.isNotEmpty && (passTrim == u.password.trim() || passLower == u.password.trim().toLowerCase())) ||
-          (passRaw.isNotEmpty && u.pinCode.isNotEmpty && (passRaw == u.pinCode || passLower == u.pinCode.trim().toLowerCase())) ||
-          (passTrim.isNotEmpty && u.pinCode.isNotEmpty && (passTrim == u.pinCode.trim() || passLower == u.pinCode.trim().toLowerCase())) ||
-          (passLower == 'admin' || passLower == '1234' || passLower == '0000' || passLower == 'adama' || passLower == 'adama624');
+      final passwordMatches = (passRaw.isNotEmpty &&
+              dbPassword.isNotEmpty &&
+              (passRaw == dbPassword ||
+                  passLower == dbPassword.trim().toLowerCase())) ||
+          (passTrim.isNotEmpty &&
+              dbPassword.isNotEmpty &&
+              (passTrim == dbPassword.trim() ||
+                  passLower == dbPassword.trim().toLowerCase())) ||
+          (passRaw.isNotEmpty &&
+              dbPinCode.isNotEmpty &&
+              (passRaw == dbPinCode ||
+                  passLower == dbPinCode.trim().toLowerCase())) ||
+          (passTrim.isNotEmpty &&
+              dbPinCode.isNotEmpty &&
+              (passTrim == dbPinCode.trim() ||
+                  passLower == dbPinCode.trim().toLowerCase())) ||
+          (passRaw.isNotEmpty &&
+              u.passwordHash.isNotEmpty &&
+              (passRaw == u.passwordHash ||
+                  passLower == u.passwordHash.trim().toLowerCase())) ||
+          (passTrim.isNotEmpty &&
+              u.passwordHash.isNotEmpty &&
+              (passTrim == u.passwordHash.trim() ||
+                  passLower == u.passwordHash.trim().toLowerCase())) ||
+          (passRaw.isNotEmpty &&
+              u.password.isNotEmpty &&
+              (passRaw == u.password ||
+                  passLower == u.password.trim().toLowerCase())) ||
+          (passTrim.isNotEmpty &&
+              u.password.isNotEmpty &&
+              (passTrim == u.password.trim() ||
+                  passLower == u.password.trim().toLowerCase())) ||
+          (passRaw.isNotEmpty &&
+              u.pinCode.isNotEmpty &&
+              (passRaw == u.pinCode ||
+                  passLower == u.pinCode.trim().toLowerCase())) ||
+          (passTrim.isNotEmpty &&
+              u.pinCode.isNotEmpty &&
+              (passTrim == u.pinCode.trim() ||
+                  passLower == u.pinCode.trim().toLowerCase())) ||
+          (passLower == 'admin' ||
+              passLower == '1234' ||
+              passLower == '0000' ||
+              passLower == 'adama' ||
+              passLower == 'adama624');
 
       if (inputMatches && passwordMatches) {
-        _db.currentUsername = u.username.isNotEmpty ? u.username : (inputRaw.isNotEmpty ? inputRaw : 'admin');
-        _db.currentUserRole = u.role.isNotEmpty && u.role != 'GUEST' ? u.role : 'ADMIN';
-        _db.logAction('CONNEXION', 'Connexion réussie pour la pharmacie ${_db.pharmacyName} (${_db.currentUserRole} ${u.username}).');
+        _db.currentUsername = u.username.isNotEmpty
+            ? u.username
+            : (inputRaw.isNotEmpty ? inputRaw : 'admin');
+        _db.currentUserRole =
+            u.role.isNotEmpty && u.role != 'GUEST' ? u.role : 'ADMIN';
+        _db.logAction('CONNEXION',
+            'Connexion réussie pour la pharmacie ${_db.pharmacyName} (${_db.currentUserRole} ${u.username}).');
         notifyListeners();
         _db.save();
         return true;
@@ -392,20 +521,40 @@ class AppStateProvider extends ChangeNotifier {
     }
 
     // 2. Si mot de passe ou code PIN correspond au mot de passe de la pharmacie globale ou fallback
-    final passwordMatchesGlobal = (passRaw.isNotEmpty && dbPassword.isNotEmpty && (passRaw == dbPassword || passLower == dbPassword.trim().toLowerCase())) ||
-        (passTrim.isNotEmpty && dbPassword.isNotEmpty && (passTrim == dbPassword.trim() || passLower == dbPassword.trim().toLowerCase())) ||
-        (passRaw.isNotEmpty && dbPinCode.isNotEmpty && (passRaw == dbPinCode || passLower == dbPinCode.trim().toLowerCase())) ||
-        (passTrim.isNotEmpty && dbPinCode.isNotEmpty && (passTrim == dbPinCode.trim() || passLower == dbPinCode.trim().toLowerCase())) ||
-        (passLower == 'admin' || passLower == '1234' || passLower == '0000' || passLower == 'adama' || passLower == 'adama624');
+    final passwordMatchesGlobal = (passRaw.isNotEmpty &&
+            dbPassword.isNotEmpty &&
+            (passRaw == dbPassword ||
+                passLower == dbPassword.trim().toLowerCase())) ||
+        (passTrim.isNotEmpty &&
+            dbPassword.isNotEmpty &&
+            (passTrim == dbPassword.trim() ||
+                passLower == dbPassword.trim().toLowerCase())) ||
+        (passRaw.isNotEmpty &&
+            dbPinCode.isNotEmpty &&
+            (passRaw == dbPinCode ||
+                passLower == dbPinCode.trim().toLowerCase())) ||
+        (passTrim.isNotEmpty &&
+            dbPinCode.isNotEmpty &&
+            (passTrim == dbPinCode.trim() ||
+                passLower == dbPinCode.trim().toLowerCase())) ||
+        (passLower == 'admin' ||
+            passLower == '1234' ||
+            passLower == '0000' ||
+            passLower == 'adama' ||
+            passLower == 'adama624');
 
     if (passwordMatchesGlobal) {
       final adminUser = _db.users.firstWhere(
         (u) => u.role == 'ADMIN',
-        orElse: () => UserAccount(username: inputRaw.isNotEmpty ? inputRaw : 'admin', role: 'ADMIN'),
+        orElse: () => UserAccount(
+            username: inputRaw.isNotEmpty ? inputRaw : 'admin', role: 'ADMIN'),
       );
-      _db.currentUsername = adminUser.username.isNotEmpty ? adminUser.username : (inputRaw.isNotEmpty ? inputRaw : 'admin');
+      _db.currentUsername = adminUser.username.isNotEmpty
+          ? adminUser.username
+          : (inputRaw.isNotEmpty ? inputRaw : 'admin');
       _db.currentUserRole = 'ADMIN';
-      _db.logAction('CONNEXION', 'Connexion réussie (Admin global) pour ${_db.pharmacyName}.');
+      _db.logAction('CONNEXION',
+          'Connexion réussie (Admin global) pour ${_db.pharmacyName}.');
       notifyListeners();
       _db.save();
       return true;
@@ -443,7 +592,9 @@ class AppStateProvider extends ChangeNotifier {
         passwordHash: defaultPassword,
         employeeId: 'E001',
         role: 'ADMIN',
-        fullName: _db.pharmacyName.trim().isNotEmpty ? _db.pharmacyName.trim() : 'Administrateur',
+        fullName: _db.pharmacyName.trim().isNotEmpty
+            ? _db.pharmacyName.trim()
+            : 'Administrateur',
         email: _db.pharmacyContact2,
         password: defaultPassword,
         pinCode: defaultPin,
@@ -461,6 +612,11 @@ class AppStateProvider extends ChangeNotifier {
 
   Future<void> _init() async {
     await _db.init();
+    final currentYear = DateTime.now().year;
+    if (_db.workingYear < currentYear) {
+      _db.workingYear = currentYear;
+      await _db.save();
+    }
     _cleanOldSales();
     _ensureDefaultUserExists();
     _initialized = true;
@@ -490,7 +646,8 @@ class AppStateProvider extends ChangeNotifier {
       return false;
     });
     if (hasRemoved) {
-      _db.logAction('NETTOYAGE', 'Suppression automatique des historiques de ventes de plus de 30 jours.');
+      _db.logAction('NETTOYAGE',
+          'Suppression automatique des historiques de ventes de plus de 30 jours.');
       _db.save();
     }
   }
@@ -507,42 +664,80 @@ class AppStateProvider extends ChangeNotifier {
     final passTrim = password.trim();
     final passLower = password.trim().toLowerCase();
 
-    final userIndex = _db.users.indexWhere(
-      (u) {
-        final uName = u.username.trim().toLowerCase();
-        final uEmail = (u.email ?? '').trim().toLowerCase();
-        final uFull = (u.fullName ?? '').trim().toLowerCase();
-        final uPin = u.pinCode.trim().toLowerCase();
-        final uEmpId = u.employeeId.trim().toLowerCase();
+    final userIndex = _db.users.indexWhere((u) {
+      final uName = u.username.trim().toLowerCase();
+      final uEmail = (u.email ?? '').trim().toLowerCase();
+      final uFull = (u.fullName ?? '').trim().toLowerCase();
+      final uPin = u.pinCode.trim().toLowerCase();
+      final uEmpId = u.employeeId.trim().toLowerCase();
 
-        final inputMatches = input.isEmpty ||
-            (uName.isNotEmpty && (input == uName || uName.contains(input))) ||
-            (uEmail.isNotEmpty && (input == uEmail || uEmail.contains(input))) ||
-            (uFull.isNotEmpty && (input == uFull || uFull.contains(input) || uFull.startsWith(input) || uFull.split(' ').contains(input))) ||
-            (uPin.isNotEmpty && input == uPin) ||
-            (uEmpId.isNotEmpty && input == uEmpId);
+      final inputMatches = input.isEmpty ||
+          (uName.isNotEmpty && (input == uName || uName.contains(input))) ||
+          (uEmail.isNotEmpty && (input == uEmail || uEmail.contains(input))) ||
+          (uFull.isNotEmpty &&
+              (input == uFull ||
+                  uFull.contains(input) ||
+                  uFull.startsWith(input) ||
+                  uFull.split(' ').contains(input))) ||
+          (uPin.isNotEmpty && input == uPin) ||
+          (uEmpId.isNotEmpty && input == uEmpId);
 
-        final passwordMatches = (passRaw.isNotEmpty && u.passwordHash.isNotEmpty && (passRaw == u.passwordHash || passLower == u.passwordHash.trim().toLowerCase())) ||
-            (passTrim.isNotEmpty && u.passwordHash.isNotEmpty && (passTrim == u.passwordHash.trim() || passLower == u.passwordHash.trim().toLowerCase())) ||
-            (passRaw.isNotEmpty && u.password.isNotEmpty && (passRaw == u.password || passLower == u.password.trim().toLowerCase())) ||
-            (passTrim.isNotEmpty && u.password.isNotEmpty && (passTrim == u.password.trim() || passLower == u.password.trim().toLowerCase())) ||
-            (passRaw.isNotEmpty && u.pinCode.isNotEmpty && (passRaw == u.pinCode || passLower == u.pinCode.trim().toLowerCase())) ||
-            (passTrim.isNotEmpty && u.pinCode.isNotEmpty && (passTrim == u.pinCode.trim() || passLower == u.pinCode.trim().toLowerCase())) ||
-            (passRaw.isNotEmpty && _db.pharmacyPassword.isNotEmpty && (passRaw == _db.pharmacyPassword || passLower == _db.pharmacyPassword.trim().toLowerCase())) ||
-            (passTrim.isNotEmpty && _db.pharmacyPassword.isNotEmpty && (passTrim == _db.pharmacyPassword.trim() || passLower == _db.pharmacyPassword.trim().toLowerCase())) ||
-            (passRaw.isNotEmpty && _db.pharmacyPinCode.isNotEmpty && (passRaw == _db.pharmacyPinCode || passLower == _db.pharmacyPinCode.trim().toLowerCase())) ||
-            (passTrim.isNotEmpty && _db.pharmacyPinCode.isNotEmpty && (passTrim == _db.pharmacyPinCode.trim() || passLower == _db.pharmacyPinCode.trim().toLowerCase())) ||
-            (passLower == 'admin' || passLower == '1234' || passLower == '0000' || passLower == 'adama' || passLower == 'adama624');
+      final passwordMatches = (passRaw.isNotEmpty &&
+              u.passwordHash.isNotEmpty &&
+              (passRaw == u.passwordHash ||
+                  passLower == u.passwordHash.trim().toLowerCase())) ||
+          (passTrim.isNotEmpty &&
+              u.passwordHash.isNotEmpty &&
+              (passTrim == u.passwordHash.trim() ||
+                  passLower == u.passwordHash.trim().toLowerCase())) ||
+          (passRaw.isNotEmpty &&
+              u.password.isNotEmpty &&
+              (passRaw == u.password ||
+                  passLower == u.password.trim().toLowerCase())) ||
+          (passTrim.isNotEmpty &&
+              u.password.isNotEmpty &&
+              (passTrim == u.password.trim() ||
+                  passLower == u.password.trim().toLowerCase())) ||
+          (passRaw.isNotEmpty &&
+              u.pinCode.isNotEmpty &&
+              (passRaw == u.pinCode ||
+                  passLower == u.pinCode.trim().toLowerCase())) ||
+          (passTrim.isNotEmpty &&
+              u.pinCode.isNotEmpty &&
+              (passTrim == u.pinCode.trim() ||
+                  passLower == u.pinCode.trim().toLowerCase())) ||
+          (passRaw.isNotEmpty &&
+              _db.pharmacyPassword.isNotEmpty &&
+              (passRaw == _db.pharmacyPassword ||
+                  passLower == _db.pharmacyPassword.trim().toLowerCase())) ||
+          (passTrim.isNotEmpty &&
+              _db.pharmacyPassword.isNotEmpty &&
+              (passTrim == _db.pharmacyPassword.trim() ||
+                  passLower == _db.pharmacyPassword.trim().toLowerCase())) ||
+          (passRaw.isNotEmpty &&
+              _db.pharmacyPinCode.isNotEmpty &&
+              (passRaw == _db.pharmacyPinCode ||
+                  passLower == _db.pharmacyPinCode.trim().toLowerCase())) ||
+          (passTrim.isNotEmpty &&
+              _db.pharmacyPinCode.isNotEmpty &&
+              (passTrim == _db.pharmacyPinCode.trim() ||
+                  passLower == _db.pharmacyPinCode.trim().toLowerCase())) ||
+          (passLower == 'admin' ||
+              passLower == '1234' ||
+              passLower == '0000' ||
+              passLower == 'adama' ||
+              passLower == 'adama624');
 
-        return inputMatches && passwordMatches;
-      }
-    );
+      return inputMatches && passwordMatches;
+    });
 
     if (userIndex != -1) {
       final user = _db.users[userIndex];
       _db.currentUsername = user.username;
-      _db.currentUserRole = user.role.isNotEmpty && user.role != 'GUEST' ? user.role : 'ADMIN';
-      _db.logAction('CONNEXION', 'Utilisateur ${user.username} s\'est connecté avec le rôle ${_db.currentUserRole}.');
+      _db.currentUserRole =
+          user.role.isNotEmpty && user.role != 'GUEST' ? user.role : 'ADMIN';
+      _db.logAction('CONNEXION',
+          'Utilisateur ${user.username} s\'est connecté avec le rôle ${_db.currentUserRole}.');
       notifyListeners();
       return true;
     }
@@ -550,18 +745,22 @@ class AppStateProvider extends ChangeNotifier {
     if (_db.users.isNotEmpty) {
       final u = _db.users.first;
       _db.currentUsername = u.username;
-      _db.currentUserRole = u.role.isNotEmpty && u.role != 'GUEST' ? u.role : 'ADMIN';
-      _db.logAction('CONNEXION', 'Connexion secours effectuée pour l\'utilisateur ${u.username}.');
+      _db.currentUserRole =
+          u.role.isNotEmpty && u.role != 'GUEST' ? u.role : 'ADMIN';
+      _db.logAction('CONNEXION',
+          'Connexion secours effectuée pour l\'utilisateur ${u.username}.');
       notifyListeners();
       return true;
     }
 
-    _db.logAction('CONNEXION_ECHEC', 'Tentative de connexion échouée pour l\'identifiant $usernameOrEmail.');
+    _db.logAction('CONNEXION_ECHEC',
+        'Tentative de connexion échouée pour l\'identifiant $usernameOrEmail.');
     return false;
   }
 
   void logout() {
-    _db.logAction('DECONNEXION', 'Utilisateur $_db.currentUsername s\'est déconnecté.');
+    _db.logAction(
+        'DECONNEXION', 'Utilisateur $_db.currentUsername s\'est déconnecté.');
     _db.currentUsername = 'anonymous';
     _db.currentUserRole = 'GUEST';
     _activeTab = 0;
@@ -571,7 +770,9 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void createUserAccount(String username, String password, String employeeId, String role, {String pinCode = ''}) {
+  void createUserAccount(
+      String username, String password, String employeeId, String role,
+      {String pinCode = ''}) {
     final newUser = UserAccount(
       username: username,
       passwordHash: password,
@@ -580,21 +781,24 @@ class AppStateProvider extends ChangeNotifier {
       pinCode: pinCode,
     );
     _db.users.add(newUser);
-    _db.logAction('ADMIN_USER_CREATE', 'Création du compte utilisateur : $username ($role).');
+    _db.logAction('ADMIN_USER_CREATE',
+        'Création du compte utilisateur : $username ($role).');
     _db.save();
     notifyListeners();
   }
 
   void deleteUserAccount(String username) {
     _db.users.removeWhere((u) => u.username == username);
-    _db.logAction('ADMIN_USER_DELETE', 'Suppression du compte utilisateur : $username.');
+    _db.logAction(
+        'ADMIN_USER_DELETE', 'Suppression du compte utilisateur : $username.');
     _db.save();
     notifyListeners();
   }
 
   void addUser(UserAccount user) {
     _db.users.add(user);
-    _db.logAction('ADMIN_USER_CREATE', 'Création du compte utilisateur : ${user.username} (${user.role}).');
+    _db.logAction('ADMIN_USER_CREATE',
+        'Création du compte utilisateur : ${user.username} (${user.role}).');
     _db.save();
     notifyListeners();
   }
@@ -604,7 +808,8 @@ class AppStateProvider extends ChangeNotifier {
     if (idx != -1) {
       final old = _db.users[idx];
       // Préserver le pinCode existant si le nouveau est vide (mode édition sans changer le PIN)
-      final resolvedPin = updated.pinCode.isNotEmpty ? updated.pinCode : old.pinCode;
+      final resolvedPin =
+          updated.pinCode.isNotEmpty ? updated.pinCode : old.pinCode;
       _db.users[idx] = UserAccount(
         username: updated.username,
         passwordHash: updated.passwordHash,
@@ -615,9 +820,11 @@ class AppStateProvider extends ChangeNotifier {
         password: updated.password,
         pinCode: resolvedPin,
         permissions: updated.permissions,
-        profileImageBase64: updated.profileImageBase64 ?? old.profileImageBase64,
+        profileImageBase64:
+            updated.profileImageBase64 ?? old.profileImageBase64,
       );
-      _db.logAction('ADMIN_USER_EDIT', 'Compte utilisateur modifié : ${updated.username}.');
+      _db.logAction('ADMIN_USER_EDIT',
+          'Compte utilisateur modifié : ${updated.username}.');
       _db.save();
       notifyListeners();
     }
@@ -639,7 +846,9 @@ class AppStateProvider extends ChangeNotifier {
     final idx = _db.users.indexWhere((u) => u.username == _db.currentUsername);
     if (idx != -1) {
       final old = _db.users[idx];
-      final updatedPassword = (newPassword != null && newPassword.isNotEmpty) ? newPassword : old.passwordHash;
+      final updatedPassword = (newPassword != null && newPassword.isNotEmpty)
+          ? newPassword
+          : old.passwordHash;
       _db.users[idx] = UserAccount(
         username: old.username,
         passwordHash: updatedPassword,
@@ -666,7 +875,8 @@ class AppStateProvider extends ChangeNotifier {
           _db.pharmacyContact1 = phone;
         }
       }
-      _db.logAction('PROFIL_MAJ', 'Profil de ${_db.currentUsername} mis à jour.');
+      _db.logAction(
+          'PROFIL_MAJ', 'Profil de ${_db.currentUsername} mis à jour.');
       _db.save();
       notifyListeners();
     }
@@ -680,7 +890,8 @@ class AppStateProvider extends ChangeNotifier {
 
   void clearAuditLogs() {
     _db.auditLogs.clear();
-    _db.logAction('LOGS_PURGE', 'Journal d\'audit purgé par l\'administrateur.');
+    _db.logAction(
+        'LOGS_PURGE', 'Journal d\'audit purgé par l\'administrateur.');
     _db.save();
     notifyListeners();
   }
@@ -715,7 +926,8 @@ class AppStateProvider extends ChangeNotifier {
 
   void addProduct(Product product) {
     _db.products.add(product);
-    _db.logAction('STOCK_ADD_PRODUCT', 'Nouveau produit ajouté : ${product.name} (Code: ${product.id}).');
+    _db.logAction('STOCK_ADD_PRODUCT',
+        'Nouveau produit ajouté : ${product.name} (Code: ${product.id}).');
     _db.save();
     refreshSystemAlerts(shouldNotify: true);
   }
@@ -734,7 +946,8 @@ class AppStateProvider extends ChangeNotifier {
     final prod = _db.products.firstWhere((p) => p.id == productId);
     _db.products.removeWhere((p) => p.id == productId);
     _db.lots.removeWhere((l) => l.productId == productId);
-    _db.logAction('STOCK_DELETE_PRODUCT', 'Produit supprimé : ${prod.name} et tous ses lots.');
+    _db.logAction('STOCK_DELETE_PRODUCT',
+        'Produit supprimé : ${prod.name} et tous ses lots.');
     _db.save();
     refreshSystemAlerts();
   }
@@ -754,7 +967,8 @@ class AppStateProvider extends ChangeNotifier {
       quantity: lot.quantity,
       reason: 'Réception lot numéro : ${lot.lotNumber}',
     );
-    _db.logAction('STOCK_ADD_LOT', 'Nouveau lot ajouté : ${lot.lotNumber} pour ${lot.productName}.');
+    _db.logAction('STOCK_ADD_LOT',
+        'Nouveau lot ajouté : ${lot.lotNumber} pour ${lot.productName}.');
     _db.save();
     refreshSystemAlerts(shouldNotify: true);
   }
@@ -780,7 +994,8 @@ class AppStateProvider extends ChangeNotifier {
         reason: 'Ajustement inventaire physique : $reason',
       );
 
-      _db.logAction('STOCK_ADJUST_LOT', 'Lot ${lot.lotNumber} ajusté de ${lot.quantity - difference} à $newQuantity. Raison: $reason');
+      _db.logAction('STOCK_ADJUST_LOT',
+          'Lot ${lot.lotNumber} ajusté de ${lot.quantity - difference} à $newQuantity. Raison: $reason');
       _db.save();
       refreshSystemAlerts(shouldNotify: true);
     }
@@ -799,7 +1014,7 @@ class AppStateProvider extends ChangeNotifier {
       productName: productName,
       type: type,
       quantity: quantity,
-      date: DateTime.now(),
+      date: workingDate,
       reason: reason,
       user: _db.currentUsername,
     );
@@ -825,7 +1040,8 @@ class AppStateProvider extends ChangeNotifier {
     for (var prod in _db.products) {
       if (prod.totalQuantity <= prod.minStock && !isProductOrdered(prod.id)) {
         int quantityToOrder = (prod.minStock * 3) - prod.totalQuantity;
-        if (quantityToOrder < 10) quantityToOrder = 20; // Default min batch order
+        if (quantityToOrder < 10)
+          quantityToOrder = 20; // Default min batch order
         suggestions.add({
           'product': prod,
           'currentQuantity': prod.totalQuantity,
@@ -850,7 +1066,8 @@ class AppStateProvider extends ChangeNotifier {
   void addCartItem(Product product) {
     if (product.totalQuantity <= 0) return; // Cannot sell unavailable stock
 
-    final existingIdx = _cart.indexWhere((item) => item.productId == product.id);
+    final existingIdx =
+        _cart.indexWhere((item) => item.productId == product.id);
     if (existingIdx != -1) {
       final currentQty = _cart[existingIdx].quantity;
       if (currentQty < product.totalQuantity) {
@@ -939,7 +1156,8 @@ class AppStateProvider extends ChangeNotifier {
     // Chercher l'utilisateur dans la liste des comptes
     final user = _db.users.firstWhere(
       (u) => u.username == _db.currentUsername,
-      orElse: () => UserAccount(username: _db.currentUsername, role: _db.currentUserRole),
+      orElse: () =>
+          UserAccount(username: _db.currentUsername, role: _db.currentUserRole),
     );
 
     // Si l'utilisateur a un fullName défini, l'utiliser en priorité
@@ -957,7 +1175,9 @@ class AppStateProvider extends ChangeNotifier {
         return adminUser.fullName!.trim();
       }
       // Fallback: utiliser le username de l'admin
-      return adminUser.username.isNotEmpty ? adminUser.username : 'Administrateur';
+      return adminUser.username.isNotEmpty
+          ? adminUser.username
+          : 'Administrateur';
     }
 
     // Sinon, retourner le username courant
@@ -965,25 +1185,27 @@ class AppStateProvider extends ChangeNotifier {
   }
 
   // Confirm Sale & Deduct stock sequentially from earliest expiring lots (FIFO by expiration)
-  bool checkoutCart(String paymentMethod, double cashReceived, double changeReturned) {
+  bool checkoutCart(
+      String paymentMethod, double cashReceived, double changeReturned) {
     if (_cart.isEmpty) return false;
     if (paymentMethod == 'ESPECES' && cashReceived < cartNetTotal) return false;
 
     // Générer un numéro de vente séquentiel basé sur l'ordre d'arrivée
     final int saleNumber = _db.sales.length + 1;
     final String saleId = 'V-${saleNumber.toString().padLeft(3, '0')}';
-    
+
     // Deduct stock lot by lot (FIFO style based on expiration dates)
     for (var cartItem in _cart) {
       int remainingToDeduct = cartItem.quantity;
-      
+
       // Get lots of this product, sorted by expirationDate (earliest first)
-      final prodLots = _db.lots.where((l) => l.productId == cartItem.productId).toList();
+      final prodLots =
+          _db.lots.where((l) => l.productId == cartItem.productId).toList();
       prodLots.sort((a, b) => a.expirationDate.compareTo(b.expirationDate));
 
       for (var lot in prodLots) {
         if (remainingToDeduct <= 0) break;
-        
+
         if (lot.quantity >= remainingToDeduct) {
           lot.quantity -= remainingToDeduct;
           remainingToDeduct = 0;
@@ -994,10 +1216,11 @@ class AppStateProvider extends ChangeNotifier {
       }
 
       // Update product overall quantity
-      final prodIdx = _db.products.indexWhere((p) => p.id == cartItem.productId);
+      final prodIdx =
+          _db.products.indexWhere((p) => p.id == cartItem.productId);
       if (prodIdx != -1) {
         _db.products[prodIdx].totalQuantity -= cartItem.quantity;
-        
+
         // Log stock movement
         _registerMovement(
           productId: cartItem.productId,
@@ -1012,7 +1235,7 @@ class AppStateProvider extends ChangeNotifier {
     // Add sale to history
     final newSale = Sale(
       id: saleId,
-      date: DateTime.now(),
+      date: workingDate,
       items: List.from(_cart),
       totalAmount: cartTotal,
       discountAmount: _cartDiscount,
@@ -1030,11 +1253,13 @@ class AppStateProvider extends ChangeNotifier {
     // If payment method is Crédit, record a debt automatically in General Debts
     final pmUpper = paymentMethod.toUpperCase();
     if (pmUpper.contains('CRÉDIT') || pmUpper.contains('CREDIT')) {
-      final loanItems = _cart.map((item) => LoanItem(
-        productName: item.productName,
-        quantity: item.quantity,
-        unitValue: item.unitPrice,
-      )).toList();
+      final loanItems = _cart
+          .map((item) => LoanItem(
+                productName: item.productName,
+                quantity: item.quantity,
+                unitValue: item.unitPrice,
+              ))
+          .toList();
 
       final loan = MedicamentLoan(
         id: 'DETTE-${DateTime.now().millisecondsSinceEpoch}',
@@ -1043,9 +1268,10 @@ class AppStateProvider extends ChangeNotifier {
         lenderName: _selectedCartPatient?.fullName ?? 'Client Crédit ($saleId)',
         lenderContact: _selectedCartPatient?.phone ?? '',
         lenderAddress: _selectedCartPatient?.quartier ?? '',
-        loanDate: DateTime.now(),
+        loanDate: workingDate,
         isReturned: false,
-        notes: 'Dette enregistrée automatiquement suite à la vente POS N° $saleId',
+        notes:
+            'Dette enregistrée automatiquement suite à la vente POS N° $saleId',
         saleId: saleId,
       );
       _db.loans.insert(0, loan);
@@ -1053,7 +1279,8 @@ class AppStateProvider extends ChangeNotifier {
 
     // Apply loyalty points to patient
     if (_selectedCartPatient != null) {
-      final patientIdx = _db.patients.indexWhere((p) => p.id == _selectedCartPatient!.id);
+      final patientIdx =
+          _db.patients.indexWhere((p) => p.id == _selectedCartPatient!.id);
       if (patientIdx != -1) {
         // 1 point per 10,000 GNF spent
         int additionalPoints = (cartNetTotal / 10000).floor();
@@ -1061,7 +1288,8 @@ class AppStateProvider extends ChangeNotifier {
       }
     }
 
-    _db.logAction('VENTE_POS', 'Vente réussie (ID: $saleId). Total: $cartNetTotal GNF via $paymentMethod.');
+    _db.logAction('VENTE_POS',
+        'Vente réussie (ID: $saleId). Total: $cartNetTotal GNF via $paymentMethod.');
     _db.save();
 
     // Reset Cart
@@ -1075,7 +1303,36 @@ class AppStateProvider extends ChangeNotifier {
   // ── DETTES & EMPRUNTS OPERATIONS ──────────────────────────────────────────
   void addLoan(MedicamentLoan loan) {
     _db.loans.insert(0, loan);
-    _db.logAction('LOAN_ADD', 'Dette enregistrée : ${loan.lenderName} (${loan.totalValue} GNF)');
+    _db.logAction('LOAN_ADD',
+        'Dette enregistrée : ${loan.lenderName} (${loan.totalValue} GNF)');
+    _db.save();
+    notifyListeners();
+  }
+
+  void addExpense(Expense expense) {
+    _db.expenses.insert(0, expense);
+    _db.logAction('EXPENSE_ADD',
+        'Dépense ajoutée : ${expense.label} (${expense.amount} GNF)');
+    _db.save();
+    notifyListeners();
+  }
+
+  void updateExpense(Expense expense) {
+    final index = _db.expenses.indexWhere((item) => item.id == expense.id);
+    if (index == -1) return;
+    _db.expenses[index] = expense;
+    _db.logAction('EXPENSE_UPDATE', 'Dépense modifiée : ${expense.label}');
+    _db.save();
+    notifyListeners();
+  }
+
+  void deleteExpense(String id) {
+    final index = _db.expenses.indexWhere((item) => item.id == id);
+    if (index == -1) return;
+    final label = _db.expenses[index].label;
+    _db.expenses.removeAt(index);
+    _db.deleteRecord('expenses', id);
+    _db.logAction('EXPENSE_DELETE', 'Dépense supprimée : $label');
     _db.save();
     notifyListeners();
   }
@@ -1104,7 +1361,8 @@ class AppStateProvider extends ChangeNotifier {
 
   void clearLoans({bool onlyReturned = false}) {
     if (onlyReturned) {
-      final returnedIds = _db.loans.where((l) => l.isReturned).map((l) => l.id).toList();
+      final returnedIds =
+          _db.loans.where((l) => l.isReturned).map((l) => l.id).toList();
       for (final id in returnedIds) {
         _db.deleteRecord('loans', id);
       }
@@ -1115,7 +1373,11 @@ class AppStateProvider extends ChangeNotifier {
       }
       _db.loans.clear();
     }
-    _db.logAction('LOAN_CLEAR', onlyReturned ? 'Dettes réglées effacées' : 'Toutes les dettes effacées');
+    _db.logAction(
+        'LOAN_CLEAR',
+        onlyReturned
+            ? 'Dettes réglées effacées'
+            : 'Toutes les dettes effacées');
     _db.save();
     notifyListeners();
   }
@@ -1124,7 +1386,8 @@ class AppStateProvider extends ChangeNotifier {
     final idx = _db.patients.indexWhere((p) => p.id == patientId);
     if (idx != -1) {
       _db.patients[idx].loyaltyPoints = newPoints < 0 ? 0 : newPoints;
-      _db.logAction('PATIENT_POINTS_UPDATE', 'Points de ${patients[idx].fullName} mis à jour : $newPoints');
+      _db.logAction('PATIENT_POINTS_UPDATE',
+          'Points de ${patients[idx].fullName} mis à jour : $newPoints');
       _db.save();
       notifyListeners();
     }
@@ -1135,15 +1398,16 @@ class AppStateProvider extends ChangeNotifier {
     final saleIdx = _db.sales.indexWhere((s) => s.id == saleId);
     if (saleIdx != -1) {
       final sale = _db.sales[saleIdx];
-      
+
       // Return items to stock (put in first active lot or create a return lot)
       for (var item in sale.items) {
         final prodIdx = _db.products.indexWhere((p) => p.id == item.productId);
         if (prodIdx != -1) {
           _db.products[prodIdx].totalQuantity += item.quantity;
-          
+
           // Try to return to first available lot of this product
-          final firstLotIdx = _db.lots.indexWhere((l) => l.productId == item.productId);
+          final firstLotIdx =
+              _db.lots.indexWhere((l) => l.productId == item.productId);
           if (firstLotIdx != -1) {
             _db.lots[firstLotIdx].quantity += item.quantity;
           }
@@ -1171,7 +1435,8 @@ class AppStateProvider extends ChangeNotifier {
       }
 
       _db.sales.removeAt(saleIdx);
-      _db.logAction('VENTE_ANNULER', 'Annulation et remboursement complet de la vente $saleId.');
+      _db.logAction('VENTE_ANNULER',
+          'Annulation et remboursement complet de la vente $saleId.');
       _db.save();
       notifyListeners();
     }
@@ -1187,12 +1452,13 @@ class AppStateProvider extends ChangeNotifier {
   // Partial or Full Product Returns and Refunds
   bool processItemsRefund({
     required String saleId,
-    required List<Map<String, dynamic>> itemsToReturn, // [{'productId': '...', 'quantity': 2}]
+    required List<Map<String, dynamic>>
+        itemsToReturn, // [{'productId': '...', 'quantity': 2}]
   }) {
     if (itemsToReturn.isEmpty) return false;
     final saleIdx = _db.sales.indexWhere((s) => s.id == saleId);
     if (saleIdx == -1) return false;
-    
+
     final sale = _db.sales[saleIdx];
     List<SaleItem> updatedItems = [];
     double totalRefundAmount = 0.0;
@@ -1215,16 +1481,19 @@ class AppStateProvider extends ChangeNotifier {
         continue;
       }
 
-      final int finalReturnQty = returnQty > originalItem.quantity ? originalItem.quantity : returnQty;
+      final int finalReturnQty =
+          returnQty > originalItem.quantity ? originalItem.quantity : returnQty;
       totalRefundAmount += finalReturnQty * originalItem.unitPrice;
 
       // 1. Put quantity back into overall product stock
-      final prodIdx = _db.products.indexWhere((p) => p.id == originalItem.productId);
+      final prodIdx =
+          _db.products.indexWhere((p) => p.id == originalItem.productId);
       if (prodIdx != -1) {
         _db.products[prodIdx].totalQuantity += finalReturnQty;
-        
+
         // Put back into first available lot
-        final lotIdx = _db.lots.indexWhere((l) => l.productId == originalItem.productId);
+        final lotIdx =
+            _db.lots.indexWhere((l) => l.productId == originalItem.productId);
         if (lotIdx != -1) {
           _db.lots[lotIdx].quantity += finalReturnQty;
         }
@@ -1268,13 +1537,14 @@ class AppStateProvider extends ChangeNotifier {
     if (updatedItems.isEmpty) {
       // Everything was returned, remove the sale entirely
       _db.sales.removeAt(saleIdx);
-      _db.logAction('VENTE_ANNULER', 'Annulation et remboursement complet de la vente $saleId suite au retour de tous les produits.');
+      _db.logAction('VENTE_ANNULER',
+          'Annulation et remboursement complet de la vente $saleId suite au retour de tous les produits.');
     } else {
       // Recompute sale totals
       double newTotal = updatedItems.fold(0.0, (sum, item) => sum + item.total);
       // Proportionally adjust discount if any
-      double newDiscount = sale.totalAmount > 0 
-          ? (newTotal / sale.totalAmount) * sale.discountAmount 
+      double newDiscount = sale.totalAmount > 0
+          ? (newTotal / sale.totalAmount) * sale.discountAmount
           : 0.0;
       double newNet = newTotal - newDiscount;
 
@@ -1294,7 +1564,8 @@ class AppStateProvider extends ChangeNotifier {
         patientName: sale.patientName,
       );
 
-      _db.logAction('RETOUR_PRODUIT', 'Retour partiel traité pour la vente $saleId. Montant remboursé: $totalRefundAmount GNF.');
+      _db.logAction('RETOUR_PRODUIT',
+          'Retour partiel traité pour la vente $saleId. Montant remboursé: $totalRefundAmount GNF.');
     }
 
     _db.save();
@@ -1307,27 +1578,36 @@ class AppStateProvider extends ChangeNotifier {
   // ==========================================
 
   // Perform automated prescription security audits: checks patient history/allergies & drug interactions
-  Map<String, dynamic> verifyPrescriptionSafety(String patientId, List<Map<String, dynamic>> items) {
+  Map<String, dynamic> verifyPrescriptionSafety(
+      String patientId, List<Map<String, dynamic>> items) {
     final patient = _db.patients.firstWhere((p) => p.id == patientId);
     List<String> warnings = [];
     bool hasDanger = false;
 
     // Check allergies against drug names
     for (var item in items) {
-      final String medicineName = (item['medicineName'] as String).toLowerCase();
-      
+      final String medicineName =
+          (item['medicineName'] as String).toLowerCase();
+
       for (var allergy in patient.allergies) {
         final String lowerAllergy = allergy.toLowerCase();
-        
+
         // Custom smart matches: "Penicilline" vs "Amoxicilline", "Aspirine" vs "Ibuprofene" (NSAIDs)
-        if (medicineName.contains(lowerAllergy) || lowerAllergy.contains(medicineName)) {
-          warnings.add('Alerte Allergie : Le patient est allergique à "$allergy", ce qui correspond directement à "${item['medicineName']}".');
+        if (medicineName.contains(lowerAllergy) ||
+            lowerAllergy.contains(medicineName)) {
+          warnings.add(
+              'Alerte Allergie : Le patient est allergique à "$allergy", ce qui correspond directement à "${item['medicineName']}".');
           hasDanger = true;
-        } else if (lowerAllergy.contains('pénicilline') && (medicineName.contains('amoxicilline') || medicineName.contains('augmentin'))) {
-          warnings.add('Danger Pénicilline : Le patient est allergique à la Pénicilline. Le médicament "${item['medicineName']}" contient des dérivés bêta-lactamines.');
+        } else if (lowerAllergy.contains('pénicilline') &&
+            (medicineName.contains('amoxicilline') ||
+                medicineName.contains('augmentin'))) {
+          warnings.add(
+              'Danger Pénicilline : Le patient est allergique à la Pénicilline. Le médicament "${item['medicineName']}" contient des dérivés bêta-lactamines.');
           hasDanger = true;
-        } else if (lowerAllergy.contains('aspirine') && medicineName.contains('ibuprofène')) {
-          warnings.add('Sensibilité Croisée : Patient sensible à l\'Aspirine. Risque de réaction croisée avec "${item['medicineName']}" (AINS).');
+        } else if (lowerAllergy.contains('aspirine') &&
+            medicineName.contains('ibuprofène')) {
+          warnings.add(
+              'Sensibilité Croisée : Patient sensible à l\'Aspirine. Risque de réaction croisée avec "${item['medicineName']}" (AINS).');
           hasDanger = true;
         }
       }
@@ -1351,10 +1631,12 @@ class AppStateProvider extends ChangeNotifier {
 
     if (hasNSAID && hasAntibiotic) {
       // Just a standard warning, not immediate blocker
-      warnings.add('Note d\'interaction : Association AINS + Antibiotique. Surveiller la tolérance gastrique du patient.');
+      warnings.add(
+          'Note d\'interaction : Association AINS + Antibiotique. Surveiller la tolérance gastrique du patient.');
     }
     if (antibioticCount >= 2) {
-      warnings.add('Double Antibiothérapie : Présence de plusieurs antibiotiques dans la prescription. Confirmer l\'indication clinique.');
+      warnings.add(
+          'Double Antibiothérapie : Présence de plusieurs antibiotiques dans la prescription. Confirmer l\'indication clinique.');
     }
 
     return {
@@ -1365,7 +1647,8 @@ class AppStateProvider extends ChangeNotifier {
 
   void addPrescription(Prescription p) {
     _db.prescriptions.insert(0, p);
-    _db.logAction('ORD_CREATE', 'Saisie d\'une ordonnance (ID: ${p.id}) par ${p.doctorName} pour ${p.patientName}.');
+    _db.logAction('ORD_CREATE',
+        'Saisie d\'une ordonnance (ID: ${p.id}) par ${p.doctorName} pour ${p.patientName}.');
     _db.save();
     notifyListeners();
   }
@@ -1394,9 +1677,8 @@ class AppStateProvider extends ChangeNotifier {
 
       for (var pItem in p.medicines) {
         // Try exact match or fuzzy search
-        final prodIndex = _db.products.indexWhere(
-          (prod) => prod.name.toLowerCase().contains(pItem.medicineName.toLowerCase())
-        );
+        final prodIndex = _db.products.indexWhere((prod) =>
+            prod.name.toLowerCase().contains(pItem.medicineName.toLowerCase()));
 
         if (prodIndex != -1) {
           final prod = _db.products[prodIndex];
@@ -1415,7 +1697,8 @@ class AppStateProvider extends ChangeNotifier {
       }
 
       if (!stockAvailable) {
-        _db.logAction('ORD_DISPENSE_FAILED', 'Tentative de délivrance de l\'ordonnance ${p.id} échouée : Stock insuffisant.');
+        _db.logAction('ORD_DISPENSE_FAILED',
+            'Tentative de délivrance de l\'ordonnance ${p.id} échouée : Stock insuffisant.');
         return false;
       }
 
@@ -1423,7 +1706,7 @@ class AppStateProvider extends ChangeNotifier {
       for (int i = 0; i < matchedProducts.length; i++) {
         final prod = matchedProducts[i];
         final qty = quantitiesToDeduct[i];
-        
+
         // FIFO deduct lots
         int remaining = qty;
         final prodLots = _db.lots.where((l) => l.productId == prod.id).toList();
@@ -1467,7 +1750,8 @@ class AppStateProvider extends ChangeNotifier {
 
   void addPatient(Patient patient) {
     _db.patients.add(patient);
-    _db.logAction('PATIENT_ADD', 'Nouveau patient enregistré : ${patient.fullName}.');
+    _db.logAction(
+        'PATIENT_ADD', 'Nouveau patient enregistré : ${patient.fullName}.');
     _db.save();
     notifyListeners();
   }
@@ -1476,7 +1760,8 @@ class AppStateProvider extends ChangeNotifier {
     final idx = _db.patients.indexWhere((p) => p.id == updated.id);
     if (idx != -1) {
       _db.patients[idx] = updated;
-      _db.logAction('PATIENT_EDIT', 'Fiche patient modifiée : ${updated.fullName}.');
+      _db.logAction(
+          'PATIENT_EDIT', 'Fiche patient modifiée : ${updated.fullName}.');
       _db.save();
       notifyListeners();
     }
@@ -1485,7 +1770,8 @@ class AppStateProvider extends ChangeNotifier {
   void deletePatient(String patientId) {
     final pat = _db.patients.firstWhere((p) => p.id == patientId);
     _db.patients.removeWhere((p) => p.id == patientId);
-    _db.logAction('PATIENT_DELETE', 'Fiche patient supprimée : ${pat.fullName}.');
+    _db.logAction(
+        'PATIENT_DELETE', 'Fiche patient supprimée : ${pat.fullName}.');
     _db.save();
     notifyListeners();
   }
@@ -1496,7 +1782,8 @@ class AppStateProvider extends ChangeNotifier {
 
   void addEmployee(Employee emp) {
     _db.employees.add(emp);
-    _db.logAction('STAFF_ADD', 'Nouvel employé ajouté : ${emp.fullName} (${emp.position}).');
+    _db.logAction('STAFF_ADD',
+        'Nouvel employé ajouté : ${emp.fullName} (${emp.position}).');
     _db.save();
     notifyListeners();
   }
@@ -1505,7 +1792,8 @@ class AppStateProvider extends ChangeNotifier {
     final idx = _db.employees.indexWhere((e) => e.id == updated.id);
     if (idx != -1) {
       _db.employees[idx] = updated;
-      _db.logAction('STAFF_EDIT', 'Informations de l\'employé ${updated.fullName} modifiées.');
+      _db.logAction('STAFF_EDIT',
+          'Informations de l\'employé ${updated.fullName} modifiées.');
       _db.save();
       notifyListeners();
     }
@@ -1514,7 +1802,8 @@ class AppStateProvider extends ChangeNotifier {
   void deleteEmployee(String id) {
     final emp = _db.employees.firstWhere((e) => e.id == id);
     _db.employees.removeWhere((e) => e.id == id);
-    _db.logAction('STAFF_DELETE', 'Employé retiré des effectifs : ${emp.fullName}.');
+    _db.logAction(
+        'STAFF_DELETE', 'Employé retiré des effectifs : ${emp.fullName}.');
     _db.save();
     notifyListeners();
   }
@@ -1524,7 +1813,8 @@ class AppStateProvider extends ChangeNotifier {
     final idx = _db.employees.indexWhere((e) => e.id == employeeId);
     if (idx != -1) {
       _db.employees[idx].planning.add(shift);
-      _db.logAction('STAFF_SHIFT_ADD', 'Nouveau shift planifié pour ${_db.employees[idx].fullName} (${shift.dayOfWeek} ${shift.startTime}-${shift.endTime}).');
+      _db.logAction('STAFF_SHIFT_ADD',
+          'Nouveau shift planifié pour ${_db.employees[idx].fullName} (${shift.dayOfWeek} ${shift.startTime}-${shift.endTime}).');
       _db.save();
       notifyListeners();
     }
@@ -1534,7 +1824,8 @@ class AppStateProvider extends ChangeNotifier {
     final idx = _db.employees.indexWhere((e) => e.id == employeeId);
     if (idx != -1) {
       _db.employees[idx].planning.removeWhere((s) => s.id == shiftId);
-      _db.logAction('STAFF_SHIFT_REMOVE', 'Shift supprimé pour ${_db.employees[idx].fullName}.');
+      _db.logAction('STAFF_SHIFT_REMOVE',
+          'Shift supprimé pour ${_db.employees[idx].fullName}.');
       _db.save();
       notifyListeners();
     }
@@ -1545,19 +1836,23 @@ class AppStateProvider extends ChangeNotifier {
     final idx = _db.employees.indexWhere((e) => e.id == employeeId);
     if (idx != -1) {
       _db.employees[idx].leaveRequests.add(request);
-      _db.logAction('STAFF_LEAVE_SUBMIT', 'Nouvelle demande de congé soumise par ${_db.employees[idx].fullName} (Du ${request.startDate} au ${request.endDate}).');
+      _db.logAction('STAFF_LEAVE_SUBMIT',
+          'Nouvelle demande de congé soumise par ${_db.employees[idx].fullName} (Du ${request.startDate} au ${request.endDate}).');
       _db.save();
       notifyListeners();
     }
   }
 
-  void updateLeaveRequestStatus(String employeeId, String requestId, String newStatus) {
+  void updateLeaveRequestStatus(
+      String employeeId, String requestId, String newStatus) {
     final empIdx = _db.employees.indexWhere((e) => e.id == employeeId);
     if (empIdx != -1) {
-      final reqIdx = _db.employees[empIdx].leaveRequests.indexWhere((r) => r.id == requestId);
+      final reqIdx = _db.employees[empIdx].leaveRequests
+          .indexWhere((r) => r.id == requestId);
       if (reqIdx != -1) {
         _db.employees[empIdx].leaveRequests[reqIdx].status = newStatus;
-        _db.logAction('STAFF_LEAVE_STATUS', 'Demande de congé de ${_db.employees[empIdx].fullName} mise à jour : $newStatus.');
+        _db.logAction('STAFF_LEAVE_STATUS',
+            'Demande de congé de ${_db.employees[empIdx].fullName} mise à jour : $newStatus.');
         _db.save();
         notifyListeners();
       }
@@ -1569,7 +1864,8 @@ class AppStateProvider extends ChangeNotifier {
     final idx = _db.employees.indexWhere((e) => e.id == employeeId);
     if (idx != -1) {
       _db.employees[idx].hoursWorkedThisMonth += hours;
-      _db.logAction('STAFF_HOURS', 'Enregistrement de $hours heures de travail pour ${_db.employees[idx].fullName}.');
+      _db.logAction('STAFF_HOURS',
+          'Enregistrement de $hours heures de travail pour ${_db.employees[idx].fullName}.');
       _db.save();
       notifyListeners();
     }
@@ -1581,7 +1877,8 @@ class AppStateProvider extends ChangeNotifier {
 
   void addSupplier(Supplier sup) {
     _db.suppliers.add(sup);
-    _db.logAction('SUPPLIER_ADD', 'Nouveau fournisseur enregistré : ${sup.name}.');
+    _db.logAction(
+        'SUPPLIER_ADD', 'Nouveau fournisseur enregistré : ${sup.name}.');
     _db.save();
     notifyListeners();
   }
@@ -1605,7 +1902,8 @@ class AppStateProvider extends ChangeNotifier {
   }
 
   void updateProductPurchasePrice(String productId, double newPrice) {
-    final pIdx = _db.products.indexWhere((p) => p.id.trim() == productId.trim());
+    final pIdx =
+        _db.products.indexWhere((p) => p.id.trim() == productId.trim());
     if (pIdx != -1) {
       final p = _db.products[pIdx];
       _db.products[pIdx] = Product(
@@ -1622,7 +1920,8 @@ class AppStateProvider extends ChangeNotifier {
         minStock: p.minStock,
         totalQuantity: p.totalQuantity,
       );
-      _db.logAction('STOCK_PRICE_UPDATE', 'Prix d\'achat de ${p.name} mis à jour dans le stock : $newPrice GNF.');
+      _db.logAction('STOCK_PRICE_UPDATE',
+          'Prix d\'achat de ${p.name} mis à jour dans le stock : $newPrice GNF.');
       _db.save();
       notifyListeners();
     }
@@ -1636,7 +1935,8 @@ class AppStateProvider extends ChangeNotifier {
       for (var item in items) {
         total += item.quantityOrdered * item.unitPrice;
         // Update product purchase price directly in stock database
-        final pIdx = _db.products.indexWhere((p) => p.id.trim() == item.productId.trim());
+        final pIdx = _db.products
+            .indexWhere((p) => p.id.trim() == item.productId.trim());
         if (pIdx != -1 && item.unitPrice > 0) {
           final p = _db.products[pIdx];
           if (p.purchasePrice != item.unitPrice) {
@@ -1654,14 +1954,15 @@ class AppStateProvider extends ChangeNotifier {
               minStock: p.minStock,
               totalQuantity: p.totalQuantity,
             );
-            _db.logAction('STOCK_PRICE_UPDATE', 'Prix d\'achat de ${p.name} mis à jour dans le stock via la commande : ${item.unitPrice} GNF.');
+            _db.logAction('STOCK_PRICE_UPDATE',
+                'Prix d\'achat de ${p.name} mis à jour dans le stock via la commande : ${item.unitPrice} GNF.');
           }
         }
       }
       final orderId = 'ORD-SUP-${DateTime.now().millisecondsSinceEpoch}';
       final newOrder = SupplierOrder(
         id: orderId,
-        date: DateTime.now(),
+        date: workingDate,
         items: items,
         totalAmount: total,
         status: 'COMMANDE',
@@ -1674,12 +1975,13 @@ class AppStateProvider extends ChangeNotifier {
         id: invoiceId,
         invoiceNumber: 'FAC-${DateTime.now().millisecondsSinceEpoch}',
         amount: total,
-        date: DateTime.now(),
+        date: workingDate,
         isPaid: false,
       );
       _db.suppliers[supIdx].invoices.insert(0, newInvoice);
 
-      _db.logAction('SUPPLIER_ORDER_CREATE', 'Commande passée au fournisseur ${_db.suppliers[supIdx].name} (Total: $total GNF).');
+      _db.logAction('SUPPLIER_ORDER_CREATE',
+          'Commande passée au fournisseur ${_db.suppliers[supIdx].name} (Total: $total GNF).');
       _db.save();
       refreshSystemAlerts(shouldNotify: true);
     }
@@ -1689,28 +1991,32 @@ class AppStateProvider extends ChangeNotifier {
   void receiveSupplierOrder(String supplierId, String orderId) {
     final supIdx = _db.suppliers.indexWhere((s) => s.id == supplierId);
     if (supIdx != -1) {
-      final ordIdx = _db.suppliers[supIdx].orders.indexWhere((o) => o.id == orderId);
+      final ordIdx =
+          _db.suppliers[supIdx].orders.indexWhere((o) => o.id == orderId);
       if (ordIdx != -1) {
         final order = _db.suppliers[supIdx].orders[ordIdx];
         if (order.status == 'RECUE') return;
 
         order.status = 'RECUE';
-        
+
         // Add received items to stock
         for (int i = 0; i < order.items.length; i++) {
           final orderItem = order.items[i];
-          final prodIdx = _db.products.indexWhere((p) => p.id.trim() == orderItem.productId.trim());
+          final prodIdx = _db.products
+              .indexWhere((p) => p.id.trim() == orderItem.productId.trim());
           if (prodIdx != -1) {
             final prod = _db.products[prodIdx];
-            
+
             // Add items to a lot (or create new lot)
-            final String lotId = 'LOT-SUP-${DateTime.now().millisecondsSinceEpoch}-${_db.lots.length + 1}';
+            final String lotId =
+                'LOT-SUP-${DateTime.now().millisecondsSinceEpoch}-${_db.lots.length + 1}';
             final newLot = Lot(
               id: lotId,
               productId: prod.id,
               productName: prod.name,
               lotNumber: 'LT-${DateTime.now().year}-${prod.id}',
-              expirationDate: DateTime.now().add(const Duration(days: 365 * 2)), // Default 2 years
+              expirationDate: DateTime.now()
+                  .add(const Duration(days: 365 * 2)), // Default 2 years
               quantity: orderItem.quantityOrdered,
             );
             _db.lots.add(newLot);
@@ -1738,7 +2044,8 @@ class AppStateProvider extends ChangeNotifier {
           }
         }
 
-        _db.logAction('SUPPLIER_ORDER_RECEIVE', 'Marchandises reçues pour la commande $orderId. Stocks mis à jour.');
+        _db.logAction('SUPPLIER_ORDER_RECEIVE',
+            'Marchandises reçues pour la commande $orderId. Stocks mis à jour.');
         _db.save();
         refreshSystemAlerts(shouldNotify: true);
       }
@@ -1748,10 +2055,12 @@ class AppStateProvider extends ChangeNotifier {
   void paySupplierInvoice(String supplierId, String invoiceId) {
     final supIdx = _db.suppliers.indexWhere((s) => s.id == supplierId);
     if (supIdx != -1) {
-      final invIdx = _db.suppliers[supIdx].invoices.indexWhere((i) => i.id == invoiceId);
+      final invIdx =
+          _db.suppliers[supIdx].invoices.indexWhere((i) => i.id == invoiceId);
       if (invIdx != -1) {
         _db.suppliers[supIdx].invoices[invIdx].isPaid = true;
-        _db.logAction('SUPPLIER_INV_PAY', 'Facture payée au fournisseur ${_db.suppliers[supIdx].name} (Montant: ${_db.suppliers[supIdx].invoices[invIdx].amount} GNF).');
+        _db.logAction('SUPPLIER_INV_PAY',
+            'Facture payée au fournisseur ${_db.suppliers[supIdx].name} (Montant: ${_db.suppliers[supIdx].invoices[invIdx].amount} GNF).');
         _db.save();
         notifyListeners();
       }

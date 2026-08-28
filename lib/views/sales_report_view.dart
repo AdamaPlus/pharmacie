@@ -31,7 +31,7 @@ class _SalesReportViewState extends State<SalesReportView> {
   Widget build(BuildContext context) {
     final state = Provider.of<AppStateProvider>(context);
     final themeColor = Color(0xFF10B981); // Emerald Green
-    final now = DateTime.now();
+    final now = state.workingDate;
 
     // 1. Filter sales based on chosen period
     final filteredSales = state.sales.where((s) {

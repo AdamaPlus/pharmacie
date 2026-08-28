@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../providers/app_state_provider.dart';
 import '../models/pharmacy_models.dart';
-
+import '../utils/license_key.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -46,6 +46,11 @@ class _LoginViewState extends State<LoginView>
 
   bool _obscureRegPassword = true;
   bool _obscureRegConfirmPassword = true;
+  final _registrationLicenseController = TextEditingController();
+  int _registrationStep = 0;
+  bool _obscureRegistrationLicense = true;
+  bool _isActivatingLicense = false;
+  String? _registrationLicenseError;
 
   String? _errorMessage;
   String? _successMessage;
@@ -81,6 +86,7 @@ class _LoginViewState extends State<LoginView>
     _regPinCodeController.dispose();
     _regContact1Controller.dispose();
     _regContact2Controller.dispose();
+    _registrationLicenseController.dispose();
     super.dispose();
   }
 
@@ -102,24 +108,38 @@ class _LoginViewState extends State<LoginView>
 
     final input = username.toLowerCase();
     final bool isUserOrAdminMatch = provider.users.any((u) {
-      final uName = u.username.trim().toLowerCase();
-      final uEmail = (u.email ?? '').trim().toLowerCase();
-      final uFull = (u.fullName ?? '').trim().toLowerCase();
-      final uPin = u.pinCode.trim().toLowerCase();
-      final uEmpId = u.employeeId.trim().toLowerCase();
+          final uName = u.username.trim().toLowerCase();
+          final uEmail = (u.email ?? '').trim().toLowerCase();
+          final uFull = (u.fullName ?? '').trim().toLowerCase();
+          final uPin = u.pinCode.trim().toLowerCase();
+          final uEmpId = u.employeeId.trim().toLowerCase();
 
-      return (uName.isNotEmpty && (input == uName || uName.contains(input))) ||
-          (uEmail.isNotEmpty && (input == uEmail || uEmail.contains(input))) ||
-          (uFull.isNotEmpty && (input == uFull || uFull.startsWith(input) || uFull.split(' ').contains(input))) ||
-          (uPin.isNotEmpty && input == uPin) ||
-          (uEmpId.isNotEmpty && input == uEmpId);
-    }) ||
-    (provider.pharmacyContact2.trim().toLowerCase().isNotEmpty &&
-        (input == provider.pharmacyContact2.trim().toLowerCase() || provider.pharmacyContact2.trim().toLowerCase().contains(input))) ||
-    (provider.pharmacyContact1.trim().toLowerCase().isNotEmpty &&
-        (input == provider.pharmacyContact1.trim().toLowerCase() || provider.pharmacyContact1.trim().toLowerCase().contains(input))) ||
-    (provider.pharmacyName.trim().toLowerCase().isNotEmpty &&
-        (input == provider.pharmacyName.trim().toLowerCase() || provider.pharmacyName.trim().toLowerCase().contains(input)));
+          return (uName.isNotEmpty &&
+                  (input == uName || uName.contains(input))) ||
+              (uEmail.isNotEmpty &&
+                  (input == uEmail || uEmail.contains(input))) ||
+              (uFull.isNotEmpty &&
+                  (input == uFull ||
+                      uFull.startsWith(input) ||
+                      uFull.split(' ').contains(input))) ||
+              (uPin.isNotEmpty && input == uPin) ||
+              (uEmpId.isNotEmpty && input == uEmpId);
+        }) ||
+        (provider.pharmacyContact2.trim().toLowerCase().isNotEmpty &&
+            (input == provider.pharmacyContact2.trim().toLowerCase() ||
+                provider.pharmacyContact2
+                    .trim()
+                    .toLowerCase()
+                    .contains(input))) ||
+        (provider.pharmacyContact1.trim().toLowerCase().isNotEmpty &&
+            (input == provider.pharmacyContact1.trim().toLowerCase() ||
+                provider.pharmacyContact1
+                    .trim()
+                    .toLowerCase()
+                    .contains(input))) ||
+        (provider.pharmacyName.trim().toLowerCase().isNotEmpty &&
+            (input == provider.pharmacyName.trim().toLowerCase() ||
+                provider.pharmacyName.trim().toLowerCase().contains(input)));
 
     if (!isUserOrAdminMatch && provider.users.isNotEmpty) {
       _usernameError = 'Identifiant incorrect ou inexistant';
@@ -133,25 +153,58 @@ class _LoginViewState extends State<LoginView>
   }
 
   void _handlePharmacyRegistration() {
-    if (_formKeyRegister.currentState!.validate()) {
+    if (_formKeyRegister.currentState?.validate() ?? false) {
       setState(() {
         _errorMessage = null;
         _successMessage = null;
+        _registrationStep = 1;
       });
-      final provider = Provider.of<AppStateProvider>(context, listen: false);
-      provider.registerPharmacy(
-        name: _regNameController.text.trim(),
-        quartier: _regQuartierController.text.trim(),
-        adminFullName: _regAdminNameController.text.trim(),
-        username: _regUsernameController.text.trim().toLowerCase(),
-        password: _regPasswordController.text,
-        pinCode: '',
-
-        contact1: _regContact1Controller.text.trim(),
-        contact2: _regContact2Controller.text.trim(),
-        logo: _regLogoBytes,
-      );
     }
+  }
+
+  void _completeRegistration() {
+    context.read<AppStateProvider>().registerPharmacy(
+          name: _regNameController.text.trim(),
+          quartier: _regQuartierController.text.trim(),
+          adminFullName: _regAdminNameController.text.trim(),
+          username: _regUsernameController.text.trim().toLowerCase(),
+          password: _regPasswordController.text,
+          pinCode: '',
+          contact1: _regContact1Controller.text.trim(),
+          contact2: _regContact2Controller.text.trim(),
+          logo: _regLogoBytes,
+        );
+  }
+
+  void _startTrialAndRegister() {
+    context.read<AppStateProvider>().startSevenDayTrial();
+    _completeRegistration();
+  }
+
+  Future<void> _activateLicenseAndRegister() async {
+    final key = _registrationLicenseController.text.trim();
+    if (key.isEmpty) {
+      setState(() =>
+          _registrationLicenseError = 'Veuillez saisir votre clé de licence');
+      return;
+    }
+    if (!LicenseKey.hasValidFormat(key)) {
+      setState(() => _registrationLicenseError =
+          'Format requis : XXXX-XXXX-XXXX-XXXX (lettres et chiffres)');
+      return;
+    }
+    setState(() {
+      _isActivatingLicense = true;
+      _registrationLicenseError = null;
+    });
+    final valid = await context.read<AppStateProvider>().validateLicense(key);
+    if (!mounted) return;
+    setState(() => _isActivatingLicense = false);
+    if (!valid) {
+      setState(() => _registrationLicenseError = 'Clé de licence invalide');
+      return;
+    }
+    _completeRegistration();
   }
 
   @override
@@ -170,8 +223,8 @@ class _LoginViewState extends State<LoginView>
           // ── Fond image pharmacie ──
           Image.asset('assets/images/pharmacy_bg.png', fit: BoxFit.cover),
 
-          // ── Overlay sombre complet pour centrage ──
-          Container(color: const Color(0xAA0F172A)),
+          // Voile clair pour garder le formulaire lisible sur l'image.
+          Container(color: const Color(0xDDF8FAFC)),
 
           // ── Formulaire centré ──
           Center(
@@ -190,17 +243,17 @@ class _LoginViewState extends State<LoginView>
                       width: 460,
                       padding: const EdgeInsets.all(40),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0F172A).withOpacity(0.78),
+                        color: Colors.white.withOpacity(0.96),
                         borderRadius: BorderRadius.circular(28),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.1),
+                          color: const Color(0xFFE2E8F0),
                           width: 1,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.45),
-                            blurRadius: 50,
-                            offset: const Offset(0, 24),
+                            color: const Color(0x1F0F172A),
+                            blurRadius: 35,
+                            offset: const Offset(0, 16),
                           ),
                         ],
                       ),
@@ -240,16 +293,18 @@ class _LoginViewState extends State<LoginView>
                                     style: GoogleFonts.outfit(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w800,
-                                      color: Colors.white,
+                                      color: const Color(0xFF0F172A),
                                     ),
                                   ),
                                   Text(
                                     showRegister
-                                        ? 'Créez votre pharmacie'
+                                        ? (_registrationStep == 0
+                                            ? 'Créez votre pharmacie'
+                                            : 'Choisissez votre formule')
                                         : 'Bienvenue — Connectez-vous',
                                     style: GoogleFonts.inter(
                                       fontSize: 12,
-                                      color: Colors.white.withOpacity(0.5),
+                                      color: const Color(0xFF64748B),
                                     ),
                                   ),
                                 ],
@@ -278,7 +333,9 @@ class _LoginViewState extends State<LoginView>
 
                           // Formulaire selon l'état
                           if (showRegister)
-                            _buildRegisterForm(themeColor)
+                            _registrationStep == 0
+                                ? _buildRegisterForm(themeColor)
+                                : _buildRegistrationChoice(themeColor)
                           else
                             _buildLoginForm(themeColor),
                         ],
@@ -298,11 +355,47 @@ class _LoginViewState extends State<LoginView>
   // FORMULAIRE CONNEXION
   // ══════════════════════════════════════════
   Widget _buildLoginForm(Color themeColor) {
+    final state = context.watch<AppStateProvider>();
     return Form(
       key: _formKeyLogin,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Center(
+            child: Container(
+              width: 104,
+              height: 104,
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFDDE5EC), width: 2),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x1A0F172A),
+                    blurRadius: 18,
+                    offset: Offset(0, 7),
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: state.pharmacyLogo != null
+                  ? Image.memory(state.pharmacyLogo!, fit: BoxFit.cover)
+                  : Image.asset('assets/images/app_icon.png',
+                      fit: BoxFit.cover),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            state.pharmacyName.isNotEmpty ? state.pharmacyName : 'PharmaGuinée',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.outfit(
+              color: const Color(0xFF0F172A),
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 24),
           _loginField(
             label: "Nom d'utilisateur ou Email",
             controller: _usernameController,
@@ -336,7 +429,7 @@ class _LoginViewState extends State<LoginView>
                 _obscurePassword
                     ? Icons.visibility_off_outlined
                     : Icons.visibility_outlined,
-                color: Colors.white38,
+                color: const Color(0xFF64748B),
                 size: 18,
               ),
               onPressed: () =>
@@ -402,10 +495,10 @@ class _LoginViewState extends State<LoginView>
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
+                    color: const Color(0xFFF8FAFC),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.12),
+                      color: const Color(0xFFDDE5EC),
                       width: 2,
                     ),
                   ),
@@ -434,7 +527,7 @@ class _LoginViewState extends State<LoginView>
                       color: themeColor,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: const Color(0xFF0F172A),
+                        color: Colors.white,
                         width: 2,
                       ),
                     ),
@@ -453,7 +546,10 @@ class _LoginViewState extends State<LoginView>
               padding: const EdgeInsets.only(top: 6, bottom: 20),
               child: Text(
                 _regLogoBytes != null ? 'Logo importé ✓' : 'Logo (optionnel)',
-                style: GoogleFonts.inter(fontSize: 11, color: Colors.white38),
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: const Color(0xFF64748B),
+                ),
               ),
             ),
           ),
@@ -522,7 +618,7 @@ class _LoginViewState extends State<LoginView>
                 _obscureRegPassword
                     ? Icons.visibility_off_outlined
                     : Icons.visibility_outlined,
-                color: Colors.white38,
+                color: const Color(0xFF64748B),
                 size: 18,
               ),
               onPressed: () =>
@@ -544,7 +640,7 @@ class _LoginViewState extends State<LoginView>
                 _obscureRegConfirmPassword
                     ? Icons.visibility_off_outlined
                     : Icons.visibility_outlined,
-                color: Colors.white38,
+                color: const Color(0xFF64748B),
                 size: 18,
               ),
               onPressed: () => setState(
@@ -554,13 +650,211 @@ class _LoginViewState extends State<LoginView>
           ),
           const SizedBox(height: 28),
           _primaryBtn(
-            'Créer le compte',
-            Icons.check_circle_rounded,
+            'Continuer',
+            Icons.arrow_forward_rounded,
             themeColor,
             _handlePharmacyRegistration,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRegistrationChoice(Color themeColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: const Color(0xFFECFDF5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFA7F3D0)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.check_circle_outline_rounded,
+                  color: Color(0xFF059669), size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Vos informations sont complètes',
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF065F46),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      'Choisissez comment vous souhaitez commencer à utiliser PharmaGuinée.',
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF047857),
+                        fontSize: 11.5,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFDDE5EC)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: themeColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child:
+                        Icon(Icons.timer_outlined, color: themeColor, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Essai gratuit de 7 jours',
+                            style: GoogleFonts.outfit(
+                                color: const Color(0xFF0F172A),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700)),
+                        Text('Toutes les fonctionnalités sont disponibles.',
+                            style: GoogleFonts.inter(
+                                color: const Color(0xFF64748B), fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 15),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _startTrialAndRegister,
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: const Text('Continuer en mode test'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: themeColor,
+                    side: BorderSide(color: themeColor),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFDDE5EC)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Vous avez déjà une clé de licence ?',
+                  style: GoogleFonts.outfit(
+                      color: const Color(0xFF0F172A),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700)),
+              const SizedBox(height: 6),
+              Text('Activez-la maintenant pour utiliser la version complète.',
+                  style: GoogleFonts.inter(
+                      color: const Color(0xFF64748B), fontSize: 11)),
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: _registrationLicenseController,
+                obscureText: _obscureRegistrationLicense,
+                inputFormatters: const [LicenseKeyFormatter()],
+                textCapitalization: TextCapitalization.characters,
+                onChanged: (_) {
+                  if (_registrationLicenseError != null) {
+                    setState(() => _registrationLicenseError = null);
+                  }
+                },
+                decoration: _glassDeco(
+                  'XXXX-XXXX-XXXX-XXXX',
+                  Icons.vpn_key_outlined,
+                  themeColor,
+                  suffixIcon: IconButton(
+                    onPressed: () => setState(() =>
+                        _obscureRegistrationLicense =
+                            !_obscureRegistrationLicense),
+                    icon: Icon(
+                      _obscureRegistrationLicense
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: const Color(0xFF64748B),
+                      size: 19,
+                    ),
+                  ),
+                ).copyWith(
+                  errorText: _registrationLicenseError,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed:
+                      _isActivatingLicense ? null : _activateLicenseAndRegister,
+                  icon: _isActivatingLicense
+                      ? const SizedBox(
+                          width: 17,
+                          height: 17,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.verified_outlined),
+                  label: Text(_isActivatingLicense
+                      ? 'Activation...'
+                      : 'Activer et continuer'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: themeColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        TextButton.icon(
+          onPressed: () => setState(() {
+            _registrationStep = 0;
+            _registrationLicenseError = null;
+          }),
+          icon: const Icon(Icons.arrow_back_rounded, size: 18),
+          label: const Text('Modifier mes informations'),
+          style: TextButton.styleFrom(foregroundColor: const Color(0xFF64748B)),
+        ),
+      ],
     );
   }
 
@@ -589,7 +883,7 @@ class _LoginViewState extends State<LoginView>
           style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Colors.white60,
+            color: const Color(0xFF475569),
           ),
         ),
         const SizedBox(height: 8),
@@ -607,7 +901,7 @@ class _LoginViewState extends State<LoginView>
               : (forceLowerCase ? [LowerCaseTextFormatter()] : null),
           keyboardType: isPin ? TextInputType.number : TextInputType.text,
           style: GoogleFonts.inter(
-            color: Colors.white,
+            color: const Color(0xFF0F172A),
             fontSize: isPin ? 20 : 14,
             letterSpacing: isPin && !obscure ? 8 : 0,
             fontWeight: isPin && !obscure ? FontWeight.bold : FontWeight.normal,
@@ -620,8 +914,7 @@ class _LoginViewState extends State<LoginView>
             themeColor,
             suffixIcon: suffixIcon,
           ),
-          validator:
-              validator ??
+          validator: validator ??
               (v) {
                 if (v == null || v.trim().isEmpty) return 'Champ requis';
                 if (isPin && v.trim().length != 4) return '4 chiffres requis';
@@ -655,7 +948,7 @@ class _LoginViewState extends State<LoginView>
           style: GoogleFonts.inter(
             fontSize: 11.5,
             fontWeight: FontWeight.w600,
-            color: Colors.white60,
+            color: const Color(0xFF475569),
           ),
         ),
         const SizedBox(height: 6),
@@ -665,20 +958,23 @@ class _LoginViewState extends State<LoginView>
           keyboardType: isPhone
               ? TextInputType.phone
               : (isEmail
-                    ? TextInputType.emailAddress
-                    : (isPinCode ? TextInputType.number : TextInputType.text)),
+                  ? TextInputType.emailAddress
+                  : (isPinCode ? TextInputType.number : TextInputType.text)),
           inputFormatters: isPhone
               ? [
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(9),
                 ]
               : (isPinCode
-                    ? [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(4),
-                      ]
-                    : null),
-          style: GoogleFonts.inter(color: Colors.white, fontSize: 13.5),
+                  ? [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(4),
+                    ]
+                  : null),
+          style: GoogleFonts.inter(
+            color: const Color(0xFF0F172A),
+            fontSize: 13.5,
+          ),
           decoration: _glassDeco(
             isPhone
                 ? 'Ex: 620000000 (9 chiffres)'
@@ -693,8 +989,7 @@ class _LoginViewState extends State<LoginView>
             if (isEmail &&
                 v != null &&
                 v.isNotEmpty &&
-                (!v.contains('@') || !v.contains('.')))
-              return 'Email invalide';
+                (!v.contains('@') || !v.contains('.'))) return 'Email invalide';
             if (isPhone && v != null && v.isNotEmpty && v.length != 9)
               return '9 chiffres requis';
             if (isPinCode && v != null && v.isNotEmpty && v.length != 4)
@@ -719,19 +1014,22 @@ class _LoginViewState extends State<LoginView>
   }) {
     return InputDecoration(
       filled: true,
-      fillColor: Colors.white.withOpacity(0.06),
-      prefixIcon: Icon(prefix, color: Colors.white38, size: 18),
+      fillColor: const Color(0xFFF8FAFC),
+      prefixIcon: Icon(prefix, color: const Color(0xFF64748B), size: 18),
       suffixIcon: suffixIcon,
       hintText: hint,
-      hintStyle: GoogleFonts.inter(color: Colors.white24, fontSize: 13),
+      hintStyle: GoogleFonts.inter(
+        color: const Color(0xFF94A3B8),
+        fontSize: 13,
+      ),
       contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
+        borderSide: const BorderSide(color: Color(0xFFDDE5EC)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+        borderSide: const BorderSide(color: Color(0xFFDDE5EC)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -875,7 +1173,6 @@ class _LoginViewState extends State<LoginView>
                       ),
                       const SizedBox(height: 16),
                     ],
-
                     if (currentStep == 1)
                       Form(
                         key: formKeyPhone,
@@ -927,7 +1224,6 @@ class _LoginViewState extends State<LoginView>
                           ],
                         ),
                       ),
-
                     if (currentStep == 2)
                       Form(
                         key: formKeyCode,
@@ -981,7 +1277,6 @@ class _LoginViewState extends State<LoginView>
                           ],
                         ),
                       ),
-
                     if (currentStep == 3)
                       Form(
                         key: formKeyPin,
@@ -1297,7 +1592,6 @@ class _LoginViewState extends State<LoginView>
                       ),
                       const SizedBox(height: 16),
                     ],
-
                     if (currentStep == 1)
                       Form(
                         key: formKeyPhone,
@@ -1349,7 +1643,6 @@ class _LoginViewState extends State<LoginView>
                           ],
                         ),
                       ),
-
                     if (currentStep == 2)
                       Form(
                         key: formKeyCode,
@@ -1403,7 +1696,6 @@ class _LoginViewState extends State<LoginView>
                           ],
                         ),
                       ),
-
                     if (currentStep == 3)
                       Form(
                         key: formKeyPass,
