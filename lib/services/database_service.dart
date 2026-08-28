@@ -526,6 +526,8 @@ class DatabaseService {
   Future<String> exportBackup() async {
     try {
       final data = {
+        'backupVersion': 1,
+        'createdAt': DateTime.now().toIso8601String(),
         'products': products.map((e) => e.toMap()).toList(),
         'lots': lots.map((e) => e.toMap()).toList(),
         'stockMovements': stockMovements.map((e) => e.toMap()).toList(),
@@ -536,6 +538,7 @@ class DatabaseService {
         'suppliers': suppliers.map((e) => e.toMap()).toList(),
         'users': users.map((e) => e.toMap()).toList(),
         'loans': loans.map((e) => e.toMap()).toList(),
+        'expenses': expenses.map((e) => e.toMap()).toList(),
         'auditLogs': auditLogs.map((e) => e.toMap()).toList(),
         'pharmacyName': pharmacyName,
         'pharmacyQuartier': pharmacyQuartier,
@@ -548,6 +551,7 @@ class DatabaseService {
         'firstLaunchDate': firstLaunchDate,
         'isLicensed': isLicensed,
         'workingYear': workingYear,
+        'debtReminderDismissedDate': debtReminderDismissedDate,
       };
       logAction('BACKUP', 'Sauvegarde exportée avec succès.');
       return const JsonEncoder.withIndent('  ').convert(data);
@@ -560,6 +564,50 @@ class DatabaseService {
   Future<bool> importBackup(String backupJson) async {
     try {
       final Map<String, dynamic> data = jsonDecode(backupJson);
+
+      if (!data.containsKey('products') ||
+          !data.containsKey('sales') ||
+          !data.containsKey('users') ||
+          !data.containsKey('pharmacyName')) {
+        throw const FormatException(
+            'Ce fichier n’est pas une sauvegarde PharmaGuinée valide.');
+      }
+
+      // Construire et valider toutes les données avant de toucher à la base.
+      final restoredProducts = (data['products'] as List? ?? [])
+          .map((e) => Product.fromMap(e))
+          .toList();
+      final restoredLots =
+          (data['lots'] as List? ?? []).map((e) => Lot.fromMap(e)).toList();
+      final restoredStockMovements = (data['stockMovements'] as List? ?? [])
+          .map((e) => StockMovement.fromMap(e))
+          .toList();
+      final restoredSales =
+          (data['sales'] as List? ?? []).map((e) => Sale.fromMap(e)).toList();
+      final restoredPrescriptions = (data['prescriptions'] as List? ?? [])
+          .map((e) => Prescription.fromMap(e))
+          .toList();
+      final restoredPatients = (data['patients'] as List? ?? [])
+          .map((e) => Patient.fromMap(e))
+          .toList();
+      final restoredEmployees = (data['employees'] as List? ?? [])
+          .map((e) => Employee.fromMap(e))
+          .toList();
+      final restoredSuppliers = (data['suppliers'] as List? ?? [])
+          .map((e) => Supplier.fromMap(e))
+          .toList();
+      final restoredUsers = (data['users'] as List? ?? [])
+          .map((e) => UserAccount.fromMap(e))
+          .toList();
+      final restoredLoans = (data['loans'] as List? ?? [])
+          .map((e) => MedicamentLoan.fromMap(e))
+          .toList();
+      final restoredExpenses = (data['expenses'] as List? ?? [])
+          .map((e) => Expense.fromMap(e))
+          .toList();
+      final restoredAuditLogs = (data['auditLogs'] as List? ?? [])
+          .map((e) => AuditLog.fromMap(e))
+          .toList();
 
       // Vider les tables SQLite
       if (_db != null) {
@@ -575,6 +623,7 @@ class DatabaseService {
           'suppliers',
           'users',
           'loans',
+          'expenses',
           'audit_logs',
           'pharmacy_settings',
         ]) {
@@ -584,36 +633,18 @@ class DatabaseService {
       }
 
       // Recharger depuis le JSON
-      products = (data['products'] as List? ?? [])
-          .map((e) => Product.fromMap(e))
-          .toList();
-      lots = (data['lots'] as List? ?? []).map((e) => Lot.fromMap(e)).toList();
-      stockMovements = (data['stockMovements'] as List? ?? [])
-          .map((e) => StockMovement.fromMap(e))
-          .toList();
-      sales =
-          (data['sales'] as List? ?? []).map((e) => Sale.fromMap(e)).toList();
-      prescriptions = (data['prescriptions'] as List? ?? [])
-          .map((e) => Prescription.fromMap(e))
-          .toList();
-      patients = (data['patients'] as List? ?? [])
-          .map((e) => Patient.fromMap(e))
-          .toList();
-      employees = (data['employees'] as List? ?? [])
-          .map((e) => Employee.fromMap(e))
-          .toList();
-      suppliers = (data['suppliers'] as List? ?? [])
-          .map((e) => Supplier.fromMap(e))
-          .toList();
-      users = (data['users'] as List? ?? [])
-          .map((e) => UserAccount.fromMap(e))
-          .toList();
-      loans = (data['loans'] as List? ?? [])
-          .map((e) => MedicamentLoan.fromMap(e))
-          .toList();
-      auditLogs = (data['auditLogs'] as List? ?? [])
-          .map((e) => AuditLog.fromMap(e))
-          .toList();
+      products = restoredProducts;
+      lots = restoredLots;
+      stockMovements = restoredStockMovements;
+      sales = restoredSales;
+      prescriptions = restoredPrescriptions;
+      patients = restoredPatients;
+      employees = restoredEmployees;
+      suppliers = restoredSuppliers;
+      users = restoredUsers;
+      loans = restoredLoans;
+      expenses = restoredExpenses;
+      auditLogs = restoredAuditLogs;
       pharmacyName = data['pharmacyName'] ?? '';
       pharmacyQuartier = data['pharmacyQuartier'] ?? '';
       pharmacyPassword = data['pharmacyPassword'] ?? '';
@@ -625,6 +656,7 @@ class DatabaseService {
       firstLaunchDate = data['firstLaunchDate'] ?? '';
       isLicensed = data['isLicensed'] ?? false;
       workingYear = data['workingYear'] ?? DateTime.now().year;
+      debtReminderDismissedDate = data['debtReminderDismissedDate'] ?? '';
 
       // Persister vers SQLite
       await save();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
+import 'dart:io';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -43,6 +44,8 @@ class _MainLayoutState extends State<MainLayout> {
   late final TextEditingController _subtitleController;
   late final FocusNode _nameFocusNode;
   late final FocusNode _subtitleFocusNode;
+  bool _isBackingUp = false;
+  bool _isRestoring = false;
 
   @override
   void initState() {
@@ -1903,261 +1906,429 @@ class _MainLayoutState extends State<MainLayout> {
       _nameController.text = state.pharmacyName;
     }
 
-    return Center(
-      child: Container(
-        width: 600,
-        padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-              color: Theme.of(context).dividerTheme.color ??
-                  Colors.white.withOpacity(0.05)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Configuration de la Pharmacie',
-                    style: GoogleFonts.outfit(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: state.textPrimary)),
-                IconButton(
-                  icon: Icon(Icons.close, color: state.textSecondary),
-                  tooltip: 'Fermer',
-                  onPressed: () => state.setActiveTab(0),
-                )
-              ],
-            ),
-            SizedBox(height: 24),
-            TextField(
-              controller: _nameController,
-              focusNode: _nameFocusNode,
-              style: TextStyle(color: state.textPrimary),
-              decoration: InputDecoration(
-                labelText: 'Nom de la Pharmacie',
-                labelStyle: TextStyle(color: state.textSecondary),
-                filled: true,
-                fillColor: Theme.of(context).scaffoldBackgroundColor,
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none),
-              ),
-              onChanged: (val) {
-                final adminUser = state.users.firstWhere(
-                  (u) => u.role == 'ADMIN',
-                  orElse: () => UserAccount(username: '', role: 'ADMIN'),
-                );
-                state.registerPharmacy(
-                  name: val,
-                  quartier: state.pharmacyQuartier,
-                  adminFullName: adminUser.fullName,
-                  username: adminUser.username.isNotEmpty
-                      ? adminUser.username
-                      : state.pharmacyPinCode,
-                  password: state.pharmacyPassword,
-                  pinCode: state.pharmacyPinCode,
-                  contact1: state.pharmacyContact1,
-                  contact2: state.pharmacyContact2,
-                );
-              },
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: _subtitleController,
-              focusNode: _subtitleFocusNode,
-              style: TextStyle(color: state.textPrimary),
-              decoration: InputDecoration(
-                labelText: 'Sous-titre / Description',
-                labelStyle: TextStyle(color: state.textSecondary),
-                filled: true,
-                fillColor: Theme.of(context).scaffoldBackgroundColor,
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none),
-              ),
-              onChanged: (val) {
-                setState(() => _pharmacySubtitle = val);
-              },
-            ),
-            SizedBox(height: 32),
-            Text('Logo / Image de la Pharmacie',
-                style: GoogleFonts.inter(
-                    color: state.textPrimary, fontWeight: FontWeight.bold)),
-            SizedBox(height: 16),
-            Row(
-              children: [
-                if (_pharmacyLogoBytes != null)
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(shape: BoxShape.circle),
-                    clipBehavior: Clip.antiAlias,
-                    child: Image.memory(_pharmacyLogoBytes!, fit: BoxFit.cover),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Center(
+        child: Container(
+          width: 600,
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardTheme.color,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+                color: Theme.of(context).dividerTheme.color ??
+                    Colors.white.withOpacity(0.05)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Configuration de la Pharmacie',
+                      style: GoogleFonts.outfit(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: state.textPrimary)),
+                  IconButton(
+                    icon: Icon(Icons.close, color: state.textSecondary),
+                    tooltip: 'Fermer',
+                    onPressed: () => state.setActiveTab(0),
                   )
-                else
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                        color: Color(0xFF10B981).withOpacity(0.15),
-                        shape: BoxShape.circle),
-                    child: Icon(Icons.local_pharmacy_rounded,
-                        color: Color(0xFF10B981), size: 40),
-                  ),
-                SizedBox(width: 24),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    FilePickerResult? result = await FilePicker.pickFiles(
-                      type: FileType.image,
-                      withData: true,
-                    );
-                    if (result != null && result.files.single.bytes != null) {
-                      final adminUser = state.users.firstWhere(
-                        (u) => u.role == 'ADMIN',
-                        orElse: () => UserAccount(username: '', role: 'ADMIN'),
-                      );
-                      state.registerPharmacy(
-                        name: state.pharmacyName,
-                        quartier: state.pharmacyQuartier,
-                        adminFullName: adminUser.fullName,
-                        username: adminUser.username.isNotEmpty
-                            ? adminUser.username
-                            : state.pharmacyPinCode,
-                        password: state.pharmacyPassword,
-                        pinCode: state.pharmacyPinCode,
-                        contact1: state.pharmacyContact1,
-                        contact2: state.pharmacyContact2,
-                        logo: result.files.single.bytes,
-                      );
-                    }
-                  },
-                  icon: Icon(Icons.upload_file),
-                  label: Text('Importer un logo...'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF10B981),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
-                  ),
-                ),
-                if (_pharmacyLogoBytes != null) ...[
-                  SizedBox(width: 12),
-                  TextButton.icon(
-                    onPressed: () {
-                      final adminUser = state.users.firstWhere(
-                        (u) => u.role == 'ADMIN',
-                        orElse: () => UserAccount(username: '', role: 'ADMIN'),
-                      );
-                      state.registerPharmacy(
-                        name: state.pharmacyName,
-                        quartier: state.pharmacyQuartier,
-                        adminFullName: adminUser.fullName,
-                        username: adminUser.username.isNotEmpty
-                            ? adminUser.username
-                            : state.pharmacyPinCode,
-                        password: state.pharmacyPassword,
-                        pinCode: state.pharmacyPinCode,
-                        contact1: state.pharmacyContact1,
-                        contact2: state.pharmacyContact2,
-                        logo: null,
-                      );
-                    },
-                    icon: Icon(Icons.delete, color: Colors.redAccent),
-                    label: Text('Retirer',
-                        style: TextStyle(color: Colors.redAccent)),
-                  ),
-                ]
-              ],
-            ),
-            SizedBox(height: 32),
-            Text('Licence de l’application',
-                style: GoogleFonts.inter(
-                    color: state.textPrimary, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: (state.isLicensed ? Colors.green : Colors.amber)
-                    .withOpacity(0.08),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                    color: (state.isLicensed ? Colors.green : Colors.amber)
-                        .withOpacity(0.25)),
+                ],
               ),
-              child: Row(children: [
-                Icon(
-                    state.isLicensed
-                        ? Icons.verified_rounded
-                        : Icons.vpn_key_rounded,
-                    color: state.isLicensed ? Colors.green : Colors.amber),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: Text(
-                        state.isLicensed
-                            ? 'Licence activée définitivement'
-                            : 'Mode test — ${state.trialDaysRemaining} jour(s) restant(s)',
-                        style: GoogleFonts.inter(
-                            color: state.textPrimary,
-                            fontWeight: FontWeight.w600))),
-                if (!state.isLicensed)
-                  ElevatedButton.icon(
-                    onPressed: () =>
-                        _showLicenseActivationDialog(context, state),
-                    icon: const Icon(Icons.key_rounded, size: 17),
-                    label: const Text('Activer la licence'),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber.shade700,
-                        foregroundColor: Colors.white),
-                  ),
-              ]),
-            ),
-            SizedBox(height: 32),
-            Text('Confidentialité des Rapports',
-                style: GoogleFonts.inter(
-                    color: state.textPrimary, fontWeight: FontWeight.bold)),
-            SizedBox(height: 16),
-            SwitchListTile(
-              title: Text('Masquer les revenus totaux',
-                  style: TextStyle(
-                      color: state.textPrimary, fontWeight: FontWeight.w600)),
-              subtitle: Text(
-                  'Désactive l\'affichage des montants de chiffre d\'affaires (Jour, Mois, Année) dans le tableau de bord et les rapports pour éviter les regards indiscrets.',
-                  style: TextStyle(color: state.textSecondary, fontSize: 12)),
-              value: state.maskRevenues,
-              onChanged: (val) {
-                state.setMaskRevenues(val);
-              },
-              activeColor: Color(0xFF10B981),
-              contentPadding: EdgeInsets.zero,
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () => state.setActiveTab(0),
-                  icon: const Icon(Icons.close, size: 16),
-                  label: const Text('Fermer'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey.shade800,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
+              SizedBox(height: 24),
+              TextField(
+                controller: _nameController,
+                focusNode: _nameFocusNode,
+                style: TextStyle(color: state.textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'Nom de la Pharmacie',
+                  labelStyle: TextStyle(color: state.textSecondary),
+                  filled: true,
+                  fillColor: Theme.of(context).scaffoldBackgroundColor,
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none),
                 ),
-              ],
-            ),
-          ],
+                onChanged: (val) {
+                  final adminUser = state.users.firstWhere(
+                    (u) => u.role == 'ADMIN',
+                    orElse: () => UserAccount(username: '', role: 'ADMIN'),
+                  );
+                  state.registerPharmacy(
+                    name: val,
+                    quartier: state.pharmacyQuartier,
+                    adminFullName: adminUser.fullName,
+                    username: adminUser.username.isNotEmpty
+                        ? adminUser.username
+                        : state.pharmacyPinCode,
+                    password: state.pharmacyPassword,
+                    pinCode: state.pharmacyPinCode,
+                    contact1: state.pharmacyContact1,
+                    contact2: state.pharmacyContact2,
+                  );
+                },
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: _subtitleController,
+                focusNode: _subtitleFocusNode,
+                style: TextStyle(color: state.textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'Sous-titre / Description',
+                  labelStyle: TextStyle(color: state.textSecondary),
+                  filled: true,
+                  fillColor: Theme.of(context).scaffoldBackgroundColor,
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none),
+                ),
+                onChanged: (val) {
+                  setState(() => _pharmacySubtitle = val);
+                },
+              ),
+              SizedBox(height: 32),
+              Text('Logo / Image de la Pharmacie',
+                  style: GoogleFonts.inter(
+                      color: state.textPrimary, fontWeight: FontWeight.bold)),
+              SizedBox(height: 16),
+              Row(
+                children: [
+                  if (_pharmacyLogoBytes != null)
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(shape: BoxShape.circle),
+                      clipBehavior: Clip.antiAlias,
+                      child:
+                          Image.memory(_pharmacyLogoBytes!, fit: BoxFit.cover),
+                    )
+                  else
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                          color: Color(0xFF10B981).withOpacity(0.15),
+                          shape: BoxShape.circle),
+                      child: Icon(Icons.local_pharmacy_rounded,
+                          color: Color(0xFF10B981), size: 40),
+                    ),
+                  SizedBox(width: 24),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      FilePickerResult? result = await FilePicker.pickFiles(
+                        type: FileType.image,
+                        withData: true,
+                      );
+                      if (result != null && result.files.single.bytes != null) {
+                        final adminUser = state.users.firstWhere(
+                          (u) => u.role == 'ADMIN',
+                          orElse: () =>
+                              UserAccount(username: '', role: 'ADMIN'),
+                        );
+                        state.registerPharmacy(
+                          name: state.pharmacyName,
+                          quartier: state.pharmacyQuartier,
+                          adminFullName: adminUser.fullName,
+                          username: adminUser.username.isNotEmpty
+                              ? adminUser.username
+                              : state.pharmacyPinCode,
+                          password: state.pharmacyPassword,
+                          pinCode: state.pharmacyPinCode,
+                          contact1: state.pharmacyContact1,
+                          contact2: state.pharmacyContact2,
+                          logo: result.files.single.bytes,
+                        );
+                      }
+                    },
+                    icon: Icon(Icons.upload_file),
+                    label: Text('Importer un logo...'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF10B981),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                    ),
+                  ),
+                  if (_pharmacyLogoBytes != null) ...[
+                    SizedBox(width: 12),
+                    TextButton.icon(
+                      onPressed: () {
+                        final adminUser = state.users.firstWhere(
+                          (u) => u.role == 'ADMIN',
+                          orElse: () =>
+                              UserAccount(username: '', role: 'ADMIN'),
+                        );
+                        state.registerPharmacy(
+                          name: state.pharmacyName,
+                          quartier: state.pharmacyQuartier,
+                          adminFullName: adminUser.fullName,
+                          username: adminUser.username.isNotEmpty
+                              ? adminUser.username
+                              : state.pharmacyPinCode,
+                          password: state.pharmacyPassword,
+                          pinCode: state.pharmacyPinCode,
+                          contact1: state.pharmacyContact1,
+                          contact2: state.pharmacyContact2,
+                          logo: null,
+                        );
+                      },
+                      icon: Icon(Icons.delete, color: Colors.redAccent),
+                      label: Text('Retirer',
+                          style: TextStyle(color: Colors.redAccent)),
+                    ),
+                  ]
+                ],
+              ),
+              SizedBox(height: 32),
+              Text('Licence de l’application',
+                  style: GoogleFonts.inter(
+                      color: state.textPrimary, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: (state.isLicensed ? Colors.green : Colors.amber)
+                      .withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: (state.isLicensed ? Colors.green : Colors.amber)
+                          .withOpacity(0.25)),
+                ),
+                child: Row(children: [
+                  Icon(
+                      state.isLicensed
+                          ? Icons.verified_rounded
+                          : Icons.vpn_key_rounded,
+                      color: state.isLicensed ? Colors.green : Colors.amber),
+                  const SizedBox(width: 12),
+                  Expanded(
+                      child: Text(
+                          state.isLicensed
+                              ? 'Licence activée définitivement'
+                              : 'Mode test — ${state.trialDaysRemaining} jour(s) restant(s)',
+                          style: GoogleFonts.inter(
+                              color: state.textPrimary,
+                              fontWeight: FontWeight.w600))),
+                  if (!state.isLicensed)
+                    ElevatedButton.icon(
+                      onPressed: () =>
+                          _showLicenseActivationDialog(context, state),
+                      icon: const Icon(Icons.key_rounded, size: 17),
+                      label: const Text('Activer la licence'),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber.shade700,
+                          foregroundColor: Colors.white),
+                    ),
+                ]),
+              ),
+              SizedBox(height: 32),
+              Text('Confidentialité des Rapports',
+                  style: GoogleFonts.inter(
+                      color: state.textPrimary, fontWeight: FontWeight.bold)),
+              SizedBox(height: 16),
+              SwitchListTile(
+                title: Text('Masquer les revenus totaux',
+                    style: TextStyle(
+                        color: state.textPrimary, fontWeight: FontWeight.w600)),
+                subtitle: Text(
+                    'Désactive l\'affichage des montants de chiffre d\'affaires (Jour, Mois, Année) dans le tableau de bord et les rapports pour éviter les regards indiscrets.',
+                    style: TextStyle(color: state.textSecondary, fontSize: 12)),
+                value: state.maskRevenues,
+                onChanged: (val) {
+                  state.setMaskRevenues(val);
+                },
+                activeColor: Color(0xFF10B981),
+                contentPadding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: 24),
+              Text('Sauvegarde des données',
+                  style: GoogleFonts.inter(
+                      color: state.textPrimary, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(
+                'Créez une copie complète des données de la pharmacie ou restaurez une sauvegarde existante.',
+                style:
+                    GoogleFonts.inter(color: state.textSecondary, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _isBackingUp ? null : () => _backupData(state),
+                    icon: _isBackingUp
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.download_rounded, size: 18),
+                    label: Text(_isBackingUp
+                        ? 'Sauvegarde en cours...'
+                        : 'Sauvegarder les données'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10B981),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _isRestoring ? null : () => _restoreData(state),
+                    icon: _isRestoring
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.restore_rounded, size: 18),
+                    label: Text(_isRestoring
+                        ? 'Restauration en cours...'
+                        : 'Restaurer les données'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: state.textPrimary,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () => state.setActiveTab(0),
+                    icon: const Icon(Icons.close, size: 16),
+                    label: const Text('Fermer'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey.shade800,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _backupData(AppStateProvider state) async {
+    setState(() => _isBackingUp = true);
+    try {
+      final backup = await state.backupDatabase();
+      if (backup.isEmpty) throw Exception('La sauvegarde est vide.');
+
+      final now = DateTime.now();
+      String twoDigits(int value) => value.toString().padLeft(2, '0');
+      final fileName = 'pharmaguinee_sauvegarde_'
+          '${now.year}${twoDigits(now.month)}${twoDigits(now.day)}_'
+          '${twoDigits(now.hour)}${twoDigits(now.minute)}.json';
+      final outputPath = await FilePicker.saveFile(
+        dialogTitle: 'Enregistrer la sauvegarde',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: const ['json'],
+      );
+      if (outputPath == null) return;
+
+      await File(outputPath).writeAsString(backup, flush: true);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Sauvegarde créée avec succès.'),
+        backgroundColor: Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+      ));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Échec de la sauvegarde : $error'),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+      ));
+    } finally {
+      if (mounted) setState(() => _isBackingUp = false);
+    }
+  }
+
+  Future<void> _restoreData(AppStateProvider state) async {
+    final result = await FilePicker.pickFiles(
+      dialogTitle: 'Choisir une sauvegarde',
+      type: FileType.custom,
+      allowedExtensions: const ['json'],
+      withData: true,
+    );
+    if (result == null || !mounted) return;
+
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Restaurer les données ?'),
+            content: const Text(
+              'Les données actuelles seront remplacées par celles de la sauvegarde sélectionnée. Cette action est irréversible.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Annuler'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                icon: const Icon(Icons.restore_rounded, size: 18),
+                label: const Text('Restaurer'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !mounted) return;
+
+    setState(() => _isRestoring = true);
+    try {
+      final pickedFile = result.files.single;
+      final backup = pickedFile.bytes != null
+          ? utf8.decode(pickedFile.bytes!)
+          : await File(pickedFile.path!).readAsString();
+      final success = await state.restoreDatabase(backup);
+      if (!success)
+        throw const FormatException('Fichier de sauvegarde invalide.');
+
+      if (!mounted) return;
+      _nameController.text = state.pharmacyName;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Données restaurées avec succès.'),
+        backgroundColor: Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+      ));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Échec de la restauration : $error'),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+      ));
+    } finally {
+      if (mounted) setState(() => _isRestoring = false);
+    }
   }
 
   // ignore: unused_element
