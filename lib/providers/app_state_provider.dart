@@ -615,6 +615,14 @@ class AppStateProvider extends ChangeNotifier {
 
   Future<void> _init() async {
     await _db.init();
+    final currentYear = DateTime.now().year;
+    if (_db.workingYear < currentYear) {
+      final previousYear = _db.workingYear;
+      _db.workingYear = currentYear;
+      _db.logAction('NEW_YEAR',
+          'Passage automatique de l’année $previousYear à $currentYear. Les opérations antérieures restent archivées et les produits sont conservés.');
+      await _db.save();
+    }
     _activeTab = _db.activeTab;
     _ensureDefaultUserExists();
     _initialized = true;

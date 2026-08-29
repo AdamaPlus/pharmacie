@@ -91,12 +91,17 @@ class DatabaseService {
 
   Future<Directory> _resolveDatabaseDirectory() async {
     if (Platform.isWindows) {
-      final appData = Platform.environment['APPDATA'];
-      if (appData != null && appData.isNotEmpty) {
-        final target = Directory(p.join(appData, 'PharmaGuinee'));
-        if (!await target.exists()) await target.create(recursive: true);
-        await _migrateLegacyWindowsDatabase(target);
-        return target;
+      for (final path in windowsDataDirectoryCandidates(
+        Platform.environment,
+      )) {
+        final target = Directory(path);
+        try {
+          if (!await target.exists()) await target.create(recursive: true);
+          await _migrateLegacyWindowsDatabase(target);
+          return target;
+        } on FileSystemException catch (e) {
+          debugPrint('Dossier de données Windows inutilisable ($path) : $e');
+        }
       }
     }
 
@@ -128,9 +133,13 @@ class DatabaseService {
       preferredRoots.add(p.join(home, 'Documents', 'Pharma Guinée'));
     }
 
-    final appDocsDir = await getApplicationDocumentsDirectory();
-    preferredRoots.add(p.join(appDocsDir.path, 'Pharma Guinée'));
-    preferredRoots.add(p.join(appDocsDir.path, 'pharmaguinee'));
+    try {
+      final appDocsDir = await getApplicationDocumentsDirectory();
+      preferredRoots.add(p.join(appDocsDir.path, 'Pharma Guinée'));
+      preferredRoots.add(p.join(appDocsDir.path, 'pharmaguinee'));
+    } catch (e) {
+      debugPrint('Dossier Documents du système indisponible : $e');
+    }
 
     for (final root in preferredRoots) {
       final dir = Directory(root);
@@ -139,11 +148,54 @@ class DatabaseService {
       }
     }
 
-    final fallback = Directory(preferredRoots.first);
-    if (!await fallback.exists()) {
-      await fallback.create(recursive: true);
+    for (final root in preferredRoots) {
+      final fallback = Directory(root);
+      try {
+        if (!await fallback.exists()) {
+          await fallback.create(recursive: true);
+        }
+        return fallback;
+      } on FileSystemException catch (e) {
+        debugPrint('Dossier de données inutilisable ($root) : $e');
+      }
     }
+
+    // Dernier recours : évite que l'application refuse de démarrer même si
+    // Windows ne fournit aucune variable de profil utilisateur exploitable.
+    final fallback =
+        Directory(p.join(Directory.systemTemp.path, 'PharmaGuinee'));
+    if (!await fallback.exists()) await fallback.create(recursive: true);
     return fallback;
+  }
+
+  @visibleForTesting
+  static List<String> windowsDataDirectoryCandidates(
+    Map<String, String> environment,
+  ) {
+    final candidates = <String>[];
+    void addRoot(String? root) {
+      if (root == null || root.trim().isEmpty) return;
+      final path = p.join(root.trim(), 'PharmaGuinee');
+      if (!candidates.contains(path)) candidates.add(path);
+    }
+
+    addRoot(environment['APPDATA']);
+    addRoot(environment['LOCALAPPDATA']);
+
+    final userProfile = environment['USERPROFILE']?.trim();
+    if (userProfile != null && userProfile.isNotEmpty) {
+      addRoot(p.join(userProfile, 'AppData', 'Roaming'));
+      addRoot(p.join(userProfile, 'Documents'));
+    }
+
+    final homeDrive = environment['HOMEDRIVE']?.trim() ?? '';
+    final homePath = environment['HOMEPATH']?.trim() ?? '';
+    if (homeDrive.isNotEmpty && homePath.isNotEmpty) {
+      final profile = '$homeDrive$homePath';
+      addRoot(p.join(profile, 'AppData', 'Roaming'));
+      addRoot(p.join(profile, 'Documents'));
+    }
+    return candidates;
   }
 
   Future<void> _migrateLegacyWindowsDatabase(Directory target) async {
