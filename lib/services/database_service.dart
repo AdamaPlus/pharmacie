@@ -48,6 +48,7 @@ class DatabaseService {
   String firstLaunchDate = '';
   bool isLicensed = false;
   int workingYear = DateTime.now().year;
+  int activeTab = 0;
   String debtReminderDismissedDate = '';
 
   // ────────────────────────────────────────────────────────────────
@@ -260,9 +261,10 @@ class DatabaseService {
     isLicensed = settings['isLicensed'] == 'true';
     workingYear =
         int.tryParse(settings['workingYear'] ?? '') ?? DateTime.now().year;
+    activeTab = int.tryParse(settings['activeTab'] ?? '') ?? 0;
     debtReminderDismissedDate = settings['debtReminderDismissedDate'] ?? '';
-    currentUsername = 'anonymous';
-    currentUserRole = 'GUEST';
+    currentUsername = settings['currentUsername'] ?? 'anonymous';
+    currentUserRole = settings['currentUserRole'] ?? 'GUEST';
 
     if (firstLaunchDate.isEmpty) {
       firstLaunchDate = DateTime.now().toIso8601String();
@@ -334,9 +336,29 @@ class DatabaseService {
       upsertSetting('firstLaunchDate', firstLaunchDate);
       upsertSetting('isLicensed', isLicensed.toString());
       upsertSetting('workingYear', workingYear.toString());
+      upsertSetting('activeTab', activeTab.toString());
       upsertSetting('debtReminderDismissedDate', debtReminderDismissedDate);
       upsertSetting('currentUsername', currentUsername);
       upsertSetting('currentUserRole', currentUserRole);
+
+      // Les listes en mémoire sont la source de vérité. Vider puis réinsérer
+      // dans le même batch atomique empêche les éléments supprimés de
+      // réapparaître au prochain démarrage.
+      for (final table in [
+        'products',
+        'lots',
+        'stock_movements',
+        'sales',
+        'prescriptions',
+        'patients',
+        'employees',
+        'suppliers',
+        'users',
+        'loans',
+        'expenses',
+      ]) {
+        batch.delete(table);
+      }
 
       // Collections
       _upsertAll(batch, 'products', products, (e) => e.id, (e) => e.toMap());
@@ -354,6 +376,7 @@ class DatabaseService {
       _upsertAll(batch, 'expenses', expenses, (e) => e.id, (e) => e.toMap());
 
       // Logs d'audit
+      batch.delete('audit_logs');
       for (final log in auditLogs.take(2000)) {
         batch.insert(
           'audit_logs',

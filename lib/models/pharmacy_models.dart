@@ -85,7 +85,7 @@ class Lot {
 
   bool get isExpired => expirationDate.isBefore(DateTime.now());
   bool get isNearExpiration =>
-      expirationDate.isBefore(DateTime.now().add(const Duration(days: 90))) &&
+      expirationDate.isBefore(DateTime.now().add(const Duration(days: 30))) &&
       !isExpired;
 
   Map<String, dynamic> toMap() {

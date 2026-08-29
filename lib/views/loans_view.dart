@@ -167,14 +167,23 @@ class _LoansViewState extends State<LoansView>
                 pw.TableRow(
                   decoration: const pw.BoxDecoration(color: PdfColors.teal50),
                   children: [
-                    'N° Dette', 'Date', 'Client / Prêteur', 'Points Fidélité', 'Médicaments', 'Montant Total', 'Statut'
-                  ].map((h) => pw.Padding(
-                    padding: const pw.EdgeInsets.all(5),
-                    child: pw.Text(
-                      h,
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
-                    ),
-                  )).toList(),
+                    'N° Dette',
+                    'Date',
+                    'Client / Prêteur',
+                    'Points Fidélité',
+                    'Médicaments',
+                    'Montant Total',
+                    'Statut'
+                  ]
+                      .map((h) => pw.Padding(
+                            padding: const pw.EdgeInsets.all(5),
+                            child: pw.Text(
+                              h,
+                              style: pw.TextStyle(
+                                  fontWeight: pw.FontWeight.bold, fontSize: 8),
+                            ),
+                          ))
+                      .toList(),
                 ),
                 // Rows
                 ...loans.map((loan) {
@@ -183,39 +192,55 @@ class _LoansViewState extends State<LoansView>
                     children: [
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(5),
-                        child: pw.Text(loan.id, style: pw.TextStyle(fontSize: 7.5)),
+                        child: pw.Text(loan.id,
+                            style: pw.TextStyle(fontSize: 7.5)),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(5),
-                        child: pw.Text(DateFormat('dd/MM/yyyy').format(loan.loanDate), style: pw.TextStyle(fontSize: 7.5)),
+                        child: pw.Text(
+                            DateFormat('dd/MM/yyyy').format(loan.loanDate),
+                            style: pw.TextStyle(fontSize: 7.5)),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(5),
                         child: pw.Column(
                           crossAxisAlignment: pw.CrossAxisAlignment.start,
                           children: [
-                            pw.Text(loan.lenderName, style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
+                            pw.Text(loan.lenderName,
+                                style: pw.TextStyle(
+                                    fontSize: 7.5,
+                                    fontWeight: pw.FontWeight.bold)),
                             if (loan.lenderContact.isNotEmpty)
-                              pw.Text('Tél: ${loan.lenderContact}', style: pw.TextStyle(fontSize: 6.5, color: PdfColors.grey700)),
+                              pw.Text('Tél: ${loan.lenderContact}',
+                                  style: pw.TextStyle(
+                                      fontSize: 6.5, color: PdfColors.grey700)),
                           ],
                         ),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(5),
                         child: pw.Text(
-                          patient != null ? '${patient.loyaltyPoints} pts' : '—',
-                          style: pw.TextStyle(fontSize: 7.5, color: patient != null ? PdfColors.amber800 : PdfColors.grey600),
+                          patient != null
+                              ? '${patient.loyaltyPoints} pts'
+                              : '—',
+                          style: pw.TextStyle(
+                              fontSize: 7.5,
+                              color: patient != null
+                                  ? PdfColors.amber800
+                                  : PdfColors.grey600),
                         ),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(5),
-                        child: pw.Text(loan.medicamentName, style: pw.TextStyle(fontSize: 7.5)),
+                        child: pw.Text(loan.medicamentName,
+                            style: pw.TextStyle(fontSize: 7.5)),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(5),
                         child: pw.Text(
                           _fmt.format(loan.totalValue),
-                          style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+                          style: pw.TextStyle(
+                              fontSize: 7.5, fontWeight: pw.FontWeight.bold),
                           textAlign: pw.TextAlign.right,
                         ),
                       ),
@@ -225,7 +250,9 @@ class _LoansViewState extends State<LoansView>
                           loan.isReturned ? 'Réglé' : 'En cours',
                           style: pw.TextStyle(
                             fontSize: 7.5,
-                            color: loan.isReturned ? PdfColors.green700 : PdfColors.orange800,
+                            color: loan.isReturned
+                                ? PdfColors.green700
+                                : PdfColors.orange800,
                             fontWeight: pw.FontWeight.bold,
                           ),
                         ),
@@ -246,15 +273,21 @@ class _LoansViewState extends State<LoansView>
                   padding: const pw.EdgeInsets.all(8),
                   decoration: pw.BoxDecoration(
                     border: pw.Border.all(color: PdfColors.grey400),
-                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                    borderRadius:
+                        const pw.BorderRadius.all(pw.Radius.circular(4)),
                   ),
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
-                      pw.Text('Total de dettes listées: ${loans.length}', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                      pw.Text('Total de dettes listées: ${loans.length}',
+                          style: pw.TextStyle(
+                              fontSize: 8, fontWeight: pw.FontWeight.bold)),
                       pw.Text(
                         'Total valeur en cours : ${_fmt.format(loans.where((l) => !l.isReturned).fold(0.0, (s, l) => s + l.totalValue))}',
-                        style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.teal700),
+                        style: pw.TextStyle(
+                            fontSize: 9,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.teal700),
                       ),
                     ],
                   ),
@@ -273,7 +306,8 @@ class _LoansViewState extends State<LoansView>
   }
 
   // ── EXPORT PDF LISTE DES DETTES ──────────────────────────────────────────
-  Future<void> _exportLoansListPdf(List<MedicamentLoan> loans, String title) async {
+  Future<void> _exportLoansListPdf(
+      List<MedicamentLoan> loans, String title) async {
     final state = Provider.of<AppStateProvider>(context, listen: false);
     final logoBytes = state.pharmacyLogo;
     final doc = pw.Document();
@@ -293,18 +327,32 @@ class _LoansViewState extends State<LoansView>
                           pw.Container(
                             width: 40,
                             height: 40,
-                            child: pw.Image(pw.MemoryImage(logoBytes), fit: pw.BoxFit.cover),
+                            child: pw.Image(pw.MemoryImage(logoBytes),
+                                fit: pw.BoxFit.cover),
                           ),
                           pw.SizedBox(width: 8),
-                          pw.Text('PharmaGuinée', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.teal)),
+                          pw.Text('PharmaGuinée',
+                              style: pw.TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: pw.FontWeight.bold,
+                                  color: PdfColors.teal)),
                         ],
                       )
-                    : pw.Text('PharmaGuinée', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.teal)),
+                    : pw.Text('PharmaGuinée',
+                        style: pw.TextStyle(
+                            fontSize: 16,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.teal)),
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
-                    pw.Text('EXPORTE - LISTE GÉNÉRALE DES DETTES', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-                    pw.Text('Date: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+                    pw.Text('EXPORTE - LISTE GÉNÉRALE DES DETTES',
+                        style: pw.TextStyle(
+                            fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                    pw.Text(
+                        'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}',
+                        style: pw.TextStyle(
+                            fontSize: 8, color: PdfColors.grey700)),
                   ],
                 ),
               ],
@@ -312,7 +360,11 @@ class _LoansViewState extends State<LoansView>
             pw.SizedBox(height: 8),
             pw.Divider(color: PdfColors.teal, thickness: 1),
             pw.SizedBox(height: 10),
-            pw.Text(title, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
+            pw.Text(title,
+                style: pw.TextStyle(
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.grey800)),
             pw.SizedBox(height: 8),
             pw.Table(
               border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
@@ -328,30 +380,78 @@ class _LoansViewState extends State<LoansView>
               children: [
                 pw.TableRow(
                   decoration: const pw.BoxDecoration(color: PdfColors.teal50),
-                  children: ['N° Dette', 'Date', 'Client / Prêteur', 'Points', 'Médicaments', 'Montant Total', 'Statut']
+                  children: [
+                    'N° Dette',
+                    'Date',
+                    'Client / Prêteur',
+                    'Points',
+                    'Médicaments',
+                    'Montant Total',
+                    'Statut'
+                  ]
                       .map((h) => pw.Padding(
                             padding: const pw.EdgeInsets.all(5),
-                            child: pw.Text(h, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8)),
+                            child: pw.Text(h,
+                                style: pw.TextStyle(
+                                    fontWeight: pw.FontWeight.bold,
+                                    fontSize: 8)),
                           ))
                       .toList(),
                 ),
                 ...loans.map((loan) {
                   final patient = _findMatchingPatient(state, loan);
                   return pw.TableRow(children: [
-                    pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(loan.id, style: pw.TextStyle(fontSize: 7.5))),
-                    pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(DateFormat('dd/MM/yy').format(loan.loanDate), style: pw.TextStyle(fontSize: 7.5))),
-                    pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text(loan.lenderName, style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
-                        if (loan.lenderContact.isNotEmpty)
-                          pw.Text(loan.lenderContact, style: pw.TextStyle(fontSize: 6.5, color: PdfColors.grey600)),
-                      ],
-                    )),
-                    pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(patient != null ? '${patient.loyaltyPoints} pts' : '—', style: pw.TextStyle(fontSize: 7.5))),
-                    pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(loan.medicamentName, style: pw.TextStyle(fontSize: 7.5))),
-                    pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(_fmt.format(loan.totalValue), textAlign: pw.TextAlign.right, style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.teal700))),
-                    pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(loan.isReturned ? 'Réglé' : 'En cours', style: pw.TextStyle(fontSize: 7.5, color: loan.isReturned ? PdfColors.green700 : PdfColors.orange700))),
+                    pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Text(loan.id,
+                            style: pw.TextStyle(fontSize: 7.5))),
+                    pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Text(
+                            DateFormat('dd/MM/yy').format(loan.loanDate),
+                            style: pw.TextStyle(fontSize: 7.5))),
+                    pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text(loan.lenderName,
+                                style: pw.TextStyle(
+                                    fontSize: 7.5,
+                                    fontWeight: pw.FontWeight.bold)),
+                            if (loan.lenderContact.isNotEmpty)
+                              pw.Text(loan.lenderContact,
+                                  style: pw.TextStyle(
+                                      fontSize: 6.5, color: PdfColors.grey600)),
+                          ],
+                        )),
+                    pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Text(
+                            patient != null
+                                ? '${patient.loyaltyPoints} pts'
+                                : '—',
+                            style: pw.TextStyle(fontSize: 7.5))),
+                    pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Text(loan.medicamentName,
+                            style: pw.TextStyle(fontSize: 7.5))),
+                    pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Text(_fmt.format(loan.totalValue),
+                            textAlign: pw.TextAlign.right,
+                            style: pw.TextStyle(
+                                fontSize: 7.5,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.teal700))),
+                    pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Text(loan.isReturned ? 'Réglé' : 'En cours',
+                            style: pw.TextStyle(
+                                fontSize: 7.5,
+                                color: loan.isReturned
+                                    ? PdfColors.green700
+                                    : PdfColors.orange700))),
                   ]);
                 }).toList(),
               ],
@@ -360,13 +460,24 @@ class _LoansViewState extends State<LoansView>
             pw.Row(mainAxisAlignment: pw.MainAxisAlignment.end, children: [
               pw.Container(
                 padding: const pw.EdgeInsets.all(8),
-                decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400), borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4))),
-                child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
-                  pw.Text('Total de dettes: ${loans.length}', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
-                  pw.SizedBox(height: 2),
-                  pw.Text('Valeur totale en cours : ${_fmt.format(loans.where((l) => !l.isReturned).fold(0.0, (s, l) => s + l.totalValue))}',
-                      style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.teal)),
-                ]),
+                decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey400),
+                    borderRadius:
+                        const pw.BorderRadius.all(pw.Radius.circular(4))),
+                child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text('Total de dettes: ${loans.length}',
+                          style: pw.TextStyle(
+                              fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                      pw.SizedBox(height: 2),
+                      pw.Text(
+                          'Valeur totale en cours : ${_fmt.format(loans.where((l) => !l.isReturned).fold(0.0, (s, l) => s + l.totalValue))}',
+                          style: pw.TextStyle(
+                              fontSize: 9,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.teal)),
+                    ]),
               ),
             ]),
           ];
@@ -377,7 +488,8 @@ class _LoansViewState extends State<LoansView>
     try {
       final bytes = await doc.save();
       final dir = await getApplicationDocumentsDirectory();
-      final fileName = 'Liste_Dettes_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}.pdf';
+      final fileName =
+          'Liste_Dettes_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}.pdf';
       final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(bytes);
       if (mounted) {
@@ -390,7 +502,8 @@ class _LoansViewState extends State<LoansView>
     } catch (_) {
       await Printing.sharePdf(
         bytes: await doc.save(),
-        filename: 'Liste_Dettes_${DateFormat('yyyyMMdd').format(DateTime.now())}.pdf',
+        filename:
+            'Liste_Dettes_${DateFormat('yyyyMMdd').format(DateTime.now())}.pdf',
       );
     }
   }
@@ -472,17 +585,24 @@ class _LoansViewState extends State<LoansView>
                       ),
                       pw.Text(
                         'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(loan.loanDate)}',
-                        style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                        style:
+                            pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
                       ),
                     ],
                   ),
                   pw.Container(
-                    padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const pw.EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
                     decoration: pw.BoxDecoration(
-                      color: loan.isReturned ? PdfColors.green50 : PdfColors.orange50,
-                      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                      color: loan.isReturned
+                          ? PdfColors.green50
+                          : PdfColors.orange50,
+                      borderRadius:
+                          const pw.BorderRadius.all(pw.Radius.circular(4)),
                       border: pw.Border.all(
-                        color: loan.isReturned ? PdfColors.green : PdfColors.orange,
+                        color: loan.isReturned
+                            ? PdfColors.green
+                            : PdfColors.orange,
                       ),
                     ),
                     child: pw.Text(
@@ -490,7 +610,9 @@ class _LoansViewState extends State<LoansView>
                       style: pw.TextStyle(
                         fontSize: 8,
                         fontWeight: pw.FontWeight.bold,
-                        color: loan.isReturned ? PdfColors.green700 : PdfColors.orange700,
+                        color: loan.isReturned
+                            ? PdfColors.green700
+                            : PdfColors.orange700,
                       ),
                     ),
                   ),
@@ -527,19 +649,24 @@ class _LoansViewState extends State<LoansView>
                     ),
                     pw.Text(
                       'Contact : ${loan.lenderContact.isNotEmpty ? loan.lenderContact : "N/A"} | Adresse: ${loan.lenderAddress.isNotEmpty ? loan.lenderAddress : "N/A"}',
-                      style: pw.TextStyle(fontSize: 8, color: PdfColors.grey800),
+                      style:
+                          pw.TextStyle(fontSize: 8, color: PdfColors.grey800),
                     ),
                     if (patient != null) ...[
                       pw.SizedBox(height: 2),
                       pw.Text(
                         '⭐ Points de fidélité accumulés : ${patient.loyaltyPoints} pts',
-                        style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.amber900),
+                        style: pw.TextStyle(
+                            fontSize: 8.5,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.amber900),
                       ),
                     ],
                     if (loan.notes.isNotEmpty)
                       pw.Text(
                         'Note: ${loan.notes}',
-                        style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700),
+                        style: pw.TextStyle(
+                            fontSize: 7.5, color: PdfColors.grey700),
                       ),
                   ],
                 ),
@@ -557,7 +684,8 @@ class _LoansViewState extends State<LoansView>
               ),
               pw.SizedBox(height: 4),
               pw.Table(
-                border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+                border:
+                    pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
                 columnWidths: const {
                   0: pw.FlexColumnWidth(3.0),
                   1: pw.FlexColumnWidth(1.0),
@@ -570,32 +698,62 @@ class _LoansViewState extends State<LoansView>
                     children: [
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(4),
-                        child: pw.Text('Désignation', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8)),
+                        child: pw.Text('Désignation',
+                            style: pw.TextStyle(
+                                fontWeight: pw.FontWeight.bold, fontSize: 8)),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(4),
-                        child: pw.Text('Qté', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8), textAlign: pw.TextAlign.center),
+                        child: pw.Text('Qté',
+                            style: pw.TextStyle(
+                                fontWeight: pw.FontWeight.bold, fontSize: 8),
+                            textAlign: pw.TextAlign.center),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(4),
-                        child: pw.Text('Prix unitaire', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8), textAlign: pw.TextAlign.right),
+                        child: pw.Text('Prix unitaire',
+                            style: pw.TextStyle(
+                                fontWeight: pw.FontWeight.bold, fontSize: 8),
+                            textAlign: pw.TextAlign.right),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(4),
-                        child: pw.Text('Total', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8), textAlign: pw.TextAlign.right),
+                        child: pw.Text('Total',
+                            style: pw.TextStyle(
+                                fontWeight: pw.FontWeight.bold, fontSize: 8),
+                            textAlign: pw.TextAlign.right),
                       ),
                     ],
                   ),
-                  ...loan.items.map(
-                    (item) => pw.TableRow(
-                      children: [
-                        pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(item.productName, style: pw.TextStyle(fontSize: 7.5))),
-                        pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text('${item.quantity}', style: pw.TextStyle(fontSize: 7.5), textAlign: pw.TextAlign.center)),
-                        pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(_fmt.format(item.unitValue), style: pw.TextStyle(fontSize: 7.5), textAlign: pw.TextAlign.right)),
-                        pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(_fmt.format(item.totalValue), style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
-                      ],
-                    ),
-                  ).toList(),
+                  ...loan.items
+                      .map(
+                        (item) => pw.TableRow(
+                          children: [
+                            pw.Padding(
+                                padding: const pw.EdgeInsets.all(4),
+                                child: pw.Text(item.productName,
+                                    style: pw.TextStyle(fontSize: 7.5))),
+                            pw.Padding(
+                                padding: const pw.EdgeInsets.all(4),
+                                child: pw.Text('${item.quantity}',
+                                    style: pw.TextStyle(fontSize: 7.5),
+                                    textAlign: pw.TextAlign.center)),
+                            pw.Padding(
+                                padding: const pw.EdgeInsets.all(4),
+                                child: pw.Text(_fmt.format(item.unitValue),
+                                    style: pw.TextStyle(fontSize: 7.5),
+                                    textAlign: pw.TextAlign.right)),
+                            pw.Padding(
+                                padding: const pw.EdgeInsets.all(4),
+                                child: pw.Text(_fmt.format(item.totalValue),
+                                    style: pw.TextStyle(
+                                        fontSize: 7.5,
+                                        fontWeight: pw.FontWeight.bold),
+                                    textAlign: pw.TextAlign.right)),
+                          ],
+                        ),
+                      )
+                      .toList(),
                 ],
               ),
               pw.SizedBox(height: 10),
@@ -606,7 +764,8 @@ class _LoansViewState extends State<LoansView>
                 children: [
                   pw.Text(
                     'MONTANT TOTAL DE LA DETTE : ',
-                    style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+                    style: pw.TextStyle(
+                        fontSize: 9, fontWeight: pw.FontWeight.bold),
                   ),
                   pw.Text(
                     _fmt.format(loan.totalValue),
@@ -627,16 +786,22 @@ class _LoansViewState extends State<LoansView>
                 children: [
                   pw.Column(
                     children: [
-                      pw.Text('Signature du Client', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey700)),
+                      pw.Text('Signature du Client',
+                          style: pw.TextStyle(
+                              fontSize: 7, color: PdfColors.grey700)),
                       pw.SizedBox(height: 20),
-                      pw.Text('____________________', style: pw.TextStyle(fontSize: 7)),
+                      pw.Text('____________________',
+                          style: pw.TextStyle(fontSize: 7)),
                     ],
                   ),
                   pw.Column(
                     children: [
-                      pw.Text('Pour la Pharmacie', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey700)),
+                      pw.Text('Pour la Pharmacie',
+                          style: pw.TextStyle(
+                              fontSize: 7, color: PdfColors.grey700)),
                       pw.SizedBox(height: 20),
-                      pw.Text('____________________', style: pw.TextStyle(fontSize: 7)),
+                      pw.Text('____________________',
+                          style: pw.TextStyle(fontSize: 7)),
                     ],
                   ),
                 ],
@@ -656,7 +821,8 @@ class _LoansViewState extends State<LoansView>
   // ── MODAL ÉDITION POINTS CLIENT ──────────────────────────────────────────
   void _showEditLoyaltyPointsDialog(BuildContext context, Patient patient) {
     final state = Provider.of<AppStateProvider>(context, listen: false);
-    final pointsCtrl = TextEditingController(text: patient.loyaltyPoints.toString());
+    final pointsCtrl =
+        TextEditingController(text: patient.loyaltyPoints.toString());
 
     showDialog(
       context: context,
@@ -687,20 +853,27 @@ class _LoansViewState extends State<LoansView>
             children: [
               Text(
                 'Modifier le solde des points de fidélité pour ce client.',
-                style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12),
+                style:
+                    GoogleFonts.inter(color: state.textSecondary, fontSize: 12),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: pointsCtrl,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                style: TextStyle(color: state.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: state.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold),
                 decoration: InputDecoration(
                   labelText: 'Nombre de points',
-                  labelStyle: TextStyle(color: state.textSecondary, fontSize: 12),
+                  labelStyle:
+                      TextStyle(color: state.textSecondary, fontSize: 12),
                   suffixText: 'pts',
-                  suffixStyle: GoogleFonts.inter(color: Colors.amber, fontWeight: FontWeight.bold),
-                  prefixIcon: const Icon(Icons.stars_rounded, color: Colors.amber, size: 20),
+                  suffixStyle: GoogleFonts.inter(
+                      color: Colors.amber, fontWeight: FontWeight.bold),
+                  prefixIcon: const Icon(Icons.stars_rounded,
+                      color: Colors.amber, size: 20),
                   filled: true,
                   fillColor: state.bgPrimary,
                   border: OutlineInputBorder(
@@ -715,7 +888,8 @@ class _LoansViewState extends State<LoansView>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Annuler', style: GoogleFonts.inter(color: state.textSecondary)),
+            child: Text('Annuler',
+                style: GoogleFonts.inter(color: state.textSecondary)),
           ),
           ElevatedButton.icon(
             onPressed: () {
@@ -724,13 +898,15 @@ class _LoansViewState extends State<LoansView>
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Points de fidélité mis à jour pour ${patient.fullName} : $newPts pts'),
+                  content: Text(
+                      'Points de fidélité mis à jour pour ${patient.fullName} : $newPts pts'),
                   backgroundColor: const Color(0xFF10B981),
                 ),
               );
             },
             icon: const Icon(Icons.check_circle_rounded, size: 16),
-            label: Text('Enregistrer', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            label: Text('Enregistrer',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF10B981),
               foregroundColor: Colors.white,
@@ -751,7 +927,9 @@ class _LoansViewState extends State<LoansView>
     if (count == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(onlyReturned ? 'Aucune dette réglée à purger.' : 'Aucune dette à supprimer.'),
+          content: Text(onlyReturned
+              ? 'Aucune dette réglée à purger.'
+              : 'Aucune dette à supprimer.'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -764,11 +942,13 @@ class _LoansViewState extends State<LoansView>
         backgroundColor: state.bgSecondary,
         title: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 22),
+            const Icon(Icons.warning_amber_rounded,
+                color: Colors.redAccent, size: 22),
             const SizedBox(width: 8),
             Text(
               onlyReturned ? 'Purger les dettes réglées' : 'Tout Supprimer',
-              style: GoogleFonts.outfit(color: state.textPrimary, fontWeight: FontWeight.bold),
+              style: GoogleFonts.outfit(
+                  color: state.textPrimary, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -789,7 +969,9 @@ class _LoansViewState extends State<LoansView>
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(onlyReturned ? 'Dettes réglées purgées avec succès.' : 'Toutes les dettes ont été effacées.'),
+                  content: Text(onlyReturned
+                      ? 'Dettes réglées purgées avec succès.'
+                      : 'Toutes les dettes ont été effacées.'),
                   backgroundColor: Colors.redAccent,
                 ),
               );
@@ -876,7 +1058,8 @@ class _LoansViewState extends State<LoansView>
               const SizedBox(height: 6),
               // Total active badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.orange.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(6),
@@ -885,7 +1068,8 @@ class _LoansViewState extends State<LoansView>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.account_balance_wallet_rounded, color: Colors.orange, size: 14),
+                    const Icon(Icons.account_balance_wallet_rounded,
+                        color: Colors.orange, size: 14),
                     const SizedBox(width: 6),
                     Text(
                       'Total dettes actives : ${_fmt.format(grandTotal)}',
@@ -907,26 +1091,36 @@ class _LoansViewState extends State<LoansView>
             children: [
               if (allLoans.isNotEmpty) ...[
                 OutlinedButton.icon(
-                  onPressed: () => _exportLoansListPdf(allLoans, 'Liste Générale des Dettes'),
+                  onPressed: () => _exportLoansListPdf(
+                      allLoans, 'Liste Générale des Dettes'),
                   icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
-                  label: Text('Exporter PDF', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12)),
+                  label: Text('Exporter PDF',
+                      style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600, fontSize: 12)),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.redAccent,
                     side: const BorderSide(color: Colors.redAccent),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton.icon(
-                  onPressed: () => _printLoansList(allLoans, 'Liste Générale des Dettes'),
+                  onPressed: () =>
+                      _printLoansList(allLoans, 'Liste Générale des Dettes'),
                   icon: const Icon(Icons.print_rounded, size: 16),
-                  label: Text('Imprimer tout', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12)),
+                  label: Text('Imprimer tout',
+                      style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600, fontSize: 12)),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: state.textSecondary,
                     side: const BorderSide(color: Color(0xFF475569)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -946,9 +1140,12 @@ class _LoansViewState extends State<LoansView>
                       value: 'PURGE_REGLEES',
                       child: Row(
                         children: [
-                          const Icon(Icons.cleaning_services_rounded, color: Colors.orange, size: 16),
+                          const Icon(Icons.cleaning_services_rounded,
+                              color: Colors.orange, size: 16),
                           const SizedBox(width: 8),
-                          Text('Purger les dettes réglées', style: GoogleFonts.inter(color: state.textPrimary, fontSize: 12)),
+                          Text('Purger les dettes réglées',
+                              style: GoogleFonts.inter(
+                                  color: state.textPrimary, fontSize: 12)),
                         ],
                       ),
                     ),
@@ -956,26 +1153,39 @@ class _LoansViewState extends State<LoansView>
                       value: 'CLEAR_ALL',
                       child: Row(
                         children: [
-                          const Icon(Icons.delete_forever_rounded, color: Colors.redAccent, size: 16),
+                          const Icon(Icons.delete_forever_rounded,
+                              color: Colors.redAccent, size: 16),
                           const SizedBox(width: 8),
-                          Text('Tout supprimer', style: GoogleFonts.inter(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                          Text('Tout supprimer',
+                              style: GoogleFonts.inter(
+                                  color: Colors.redAccent,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
                   ],
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 11),
                     decoration: BoxDecoration(
                       color: Colors.red.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                      border:
+                          Border.all(color: Colors.redAccent.withOpacity(0.3)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 16),
+                        const Icon(Icons.delete_outline_rounded,
+                            color: Colors.redAccent, size: 16),
                         const SizedBox(width: 6),
-                        Text('Purger / Effacer', style: GoogleFonts.inter(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.w600)),
-                        const Icon(Icons.arrow_drop_down, color: Colors.redAccent, size: 16),
+                        Text('Purger / Effacer',
+                            style: GoogleFonts.inter(
+                                color: Colors.redAccent,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600)),
+                        const Icon(Icons.arrow_drop_down,
+                            color: Colors.redAccent, size: 16),
                       ],
                     ),
                   ),
@@ -987,7 +1197,8 @@ class _LoansViewState extends State<LoansView>
                 icon: const Icon(Icons.add_rounded, size: 18),
                 label: Text(
                   'Nouvelle Dette',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
+                  style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600, fontSize: 13),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: themeColor,
@@ -1025,7 +1236,8 @@ class _LoansViewState extends State<LoansView>
         ),
         child: Row(
           children: [
-            Icon(icon, size: 14, color: selected ? Colors.white : state.textSecondary),
+            Icon(icon,
+                size: 14, color: selected ? Colors.white : state.textSecondary),
             const SizedBox(width: 6),
             Text(
               label,
@@ -1056,7 +1268,11 @@ class _LoansViewState extends State<LoansView>
         final matchesContact = loan.lenderContact.toLowerCase().contains(q);
         final matchesMed = loan.medicamentName.toLowerCase().contains(q);
         final matchesNotes = loan.notes.toLowerCase().contains(q);
-        if (!matchesId && !matchesName && !matchesContact && !matchesMed && !matchesNotes) {
+        if (!matchesId &&
+            !matchesName &&
+            !matchesContact &&
+            !matchesMed &&
+            !matchesNotes) {
           return false;
         }
       }
@@ -1080,9 +1296,12 @@ class _LoansViewState extends State<LoansView>
                     onChanged: (val) => setState(() => _searchQuery = val),
                     style: TextStyle(color: state.textPrimary, fontSize: 13),
                     decoration: InputDecoration(
-                      hintText: 'Rechercher par client, téléphone, n° dette, médicament...',
-                      hintStyle: TextStyle(color: state.textSecondaryLight, fontSize: 12),
-                      prefixIcon: Icon(Icons.search_rounded, color: state.textSecondaryLight, size: 18),
+                      hintText:
+                          'Rechercher par client, téléphone, n° dette, médicament...',
+                      hintStyle: TextStyle(
+                          color: state.textSecondaryLight, fontSize: 12),
+                      prefixIcon: Icon(Icons.search_rounded,
+                          color: state.textSecondaryLight, size: 18),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 16),
@@ -1094,14 +1313,17 @@ class _LoansViewState extends State<LoansView>
                           : null,
                       filled: true,
                       fillColor: state.bgSecondary,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 0, horizontal: 12),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                        borderSide:
+                            BorderSide(color: Colors.white.withOpacity(0.08)),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                        borderSide:
+                            BorderSide(color: Colors.white.withOpacity(0.08)),
                       ),
                     ),
                   ),
@@ -1136,7 +1358,8 @@ class _LoansViewState extends State<LoansView>
           child: filtered.isEmpty
               ? _buildEmptyState('Aucune dette correspondant aux critères.')
               : SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
                   child: Container(
                     decoration: BoxDecoration(
                       color: state.bgSecondary,
@@ -1154,13 +1377,16 @@ class _LoansViewState extends State<LoansView>
                         6: FlexColumnWidth(1.2), // Statut
                         7: FlexColumnWidth(1.6), // Actions
                       },
-                      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                      defaultVerticalAlignment:
+                          TableCellVerticalAlignment.middle,
                       children: [
                         // Table Header
                         TableRow(
                           decoration: BoxDecoration(
                             color: state.bgPrimary,
-                            border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.08))),
+                            border: Border(
+                                bottom: BorderSide(
+                                    color: Colors.white.withOpacity(0.08))),
                           ),
                           children: [
                             _thCell('N° Dette'),
@@ -1178,12 +1404,15 @@ class _LoansViewState extends State<LoansView>
                           final patient = _findMatchingPatient(state, loan);
                           return TableRow(
                             decoration: BoxDecoration(
-                              border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.04))),
+                              border: Border(
+                                  bottom: BorderSide(
+                                      color: Colors.white.withOpacity(0.04))),
                             ),
                             children: [
                               // N° Dette
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
                                 child: Text(
                                   loan.id,
                                   style: GoogleFonts.inter(
@@ -1195,15 +1424,19 @@ class _LoansViewState extends State<LoansView>
                               ),
                               // Date
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
                                 child: Text(
-                                  DateFormat('dd/MM/yyyy').format(loan.loanDate),
-                                  style: GoogleFonts.inter(color: state.textSecondary, fontSize: 11),
+                                  DateFormat('dd/MM/yyyy')
+                                      .format(loan.loanDate),
+                                  style: GoogleFonts.inter(
+                                      color: state.textSecondary, fontSize: 11),
                                 ),
                               ),
                               // Client / Prêteur
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -1218,29 +1451,41 @@ class _LoansViewState extends State<LoansView>
                                     if (loan.lenderContact.isNotEmpty)
                                       Text(
                                         loan.lenderContact,
-                                        style: GoogleFonts.inter(color: state.textSecondaryLight, fontSize: 10.5),
+                                        style: GoogleFonts.inter(
+                                            color: state.textSecondaryLight,
+                                            fontSize: 10.5),
                                       ),
                                   ],
                                 ),
                               ),
                               // Points Fidélité
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
                                 child: patient != null
                                     ? InkWell(
-                                        onTap: () => _showEditLoyaltyPointsDialog(context, patient),
+                                        onTap: () =>
+                                            _showEditLoyaltyPointsDialog(
+                                                context, patient),
                                         borderRadius: BorderRadius.circular(6),
                                         child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 4),
                                           decoration: BoxDecoration(
-                                            color: Colors.amber.withOpacity(0.12),
-                                            borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                                            color:
+                                                Colors.amber.withOpacity(0.12),
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                            border: Border.all(
+                                                color: Colors.amber
+                                                    .withOpacity(0.3)),
                                           ),
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              const Icon(Icons.stars_rounded, color: Colors.amber, size: 13),
+                                              const Icon(Icons.stars_rounded,
+                                                  color: Colors.amber,
+                                                  size: 13),
                                               const SizedBox(width: 4),
                                               Text(
                                                 '${patient.loyaltyPoints} pts',
@@ -1251,44 +1496,59 @@ class _LoansViewState extends State<LoansView>
                                                 ),
                                               ),
                                               const SizedBox(width: 4),
-                                              const Icon(Icons.edit_rounded, color: Colors.amber, size: 10),
+                                              const Icon(Icons.edit_rounded,
+                                                  color: Colors.amber,
+                                                  size: 10),
                                             ],
                                           ),
                                         ),
                                       )
-                                    : Text('—', style: GoogleFonts.inter(color: state.textSecondaryLight, fontSize: 11)),
+                                    : Text('—',
+                                        style: GoogleFonts.inter(
+                                            color: state.textSecondaryLight,
+                                            fontSize: 11)),
                               ),
                               // Médicaments
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
                                 child: Text(
                                   loan.medicamentName,
-                                  style: GoogleFonts.inter(color: state.textSecondary, fontSize: 11),
+                                  style: GoogleFonts.inter(
+                                      color: state.textSecondary, fontSize: 11),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               // Montant Total
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
                                 child: Text(
                                   _fmt.format(loan.totalValue),
                                   textAlign: TextAlign.right,
                                   style: GoogleFonts.outfit(
-                                    color: loan.isReturned ? state.textSecondaryLight : themeColor,
+                                    color: loan.isReturned
+                                        ? state.textSecondaryLight
+                                        : themeColor,
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.bold,
-                                    decoration: loan.isReturned ? TextDecoration.lineThrough : TextDecoration.none,
+                                    decoration: loan.isReturned
+                                        ? TextDecoration.lineThrough
+                                        : TextDecoration.none,
                                   ),
                                 ),
                               ),
                               // Statut (Bouton bascule rapide)
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 8),
                                 child: Center(
                                   child: InkWell(
                                     onTap: () {
-                                      final s = Provider.of<AppStateProvider>(context, listen: false);
+                                      final s = Provider.of<AppStateProvider>(
+                                          context,
+                                          listen: false);
                                       s.updateLoan(MedicamentLoan(
                                         id: loan.id,
                                         items: loan.items,
@@ -1304,31 +1564,42 @@ class _LoansViewState extends State<LoansView>
                                     },
                                     borderRadius: BorderRadius.circular(6),
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: loan.isReturned
                                             ? themeColor.withOpacity(0.12)
                                             : Colors.orange.withOpacity(0.12),
                                         borderRadius: BorderRadius.circular(6),
                                         border: Border.all(
-                                          color: loan.isReturned ? themeColor : Colors.orange,
+                                          color: loan.isReturned
+                                              ? themeColor
+                                              : Colors.orange,
                                         ),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Icon(
-                                            loan.isReturned ? Icons.check_circle_rounded : Icons.hourglass_top_rounded,
+                                            loan.isReturned
+                                                ? Icons.check_circle_rounded
+                                                : Icons.hourglass_top_rounded,
                                             size: 12,
-                                            color: loan.isReturned ? themeColor : Colors.orange,
+                                            color: loan.isReturned
+                                                ? themeColor
+                                                : Colors.orange,
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
-                                            loan.isReturned ? 'Réglé' : 'En cours',
+                                            loan.isReturned
+                                                ? 'Réglé'
+                                                : 'En cours',
                                             style: GoogleFonts.inter(
                                               fontSize: 10.5,
                                               fontWeight: FontWeight.bold,
-                                              color: loan.isReturned ? themeColor : Colors.orange,
+                                              color: loan.isReturned
+                                                  ? themeColor
+                                                  : Colors.orange,
                                             ),
                                           ),
                                         ],
@@ -1339,27 +1610,33 @@ class _LoansViewState extends State<LoansView>
                               ),
                               // Actions
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 8),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
                                     // Print Reçu
                                     IconButton(
-                                      icon: const Icon(Icons.print_rounded, size: 16),
+                                      icon: const Icon(Icons.print_rounded,
+                                          size: 16),
                                       color: state.textSecondary,
                                       tooltip: 'Imprimer le reçu',
                                       onPressed: () => _printSingleLoan(loan),
                                     ),
                                     // Modifier
                                     IconButton(
-                                      icon: const Icon(Icons.edit_rounded, size: 16),
+                                      icon: const Icon(Icons.edit_rounded,
+                                          size: 16),
                                       color: Colors.blueAccent,
                                       tooltip: 'Modifier',
-                                      onPressed: () => _showAddLoanDialog(context, loan),
+                                      onPressed: () =>
+                                          _showAddLoanDialog(context, loan),
                                     ),
                                     // Supprimer
                                     IconButton(
-                                      icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                                      icon: const Icon(
+                                          Icons.delete_outline_rounded,
+                                          size: 16),
                                       color: Colors.redAccent,
                                       tooltip: 'Supprimer cette dette',
                                       onPressed: () {
@@ -1369,33 +1646,46 @@ class _LoansViewState extends State<LoansView>
                                             backgroundColor: state.bgSecondary,
                                             title: Text(
                                               'Confirmer la suppression',
-                                              style: GoogleFonts.inter(color: state.textPrimary, fontWeight: FontWeight.bold),
+                                              style: GoogleFonts.inter(
+                                                  color: state.textPrimary,
+                                                  fontWeight: FontWeight.bold),
                                             ),
                                             content: Text(
                                               'Voulez-vous vraiment supprimer la dette N° ${loan.id} (${loan.lenderName}) ?',
-                                              style: GoogleFonts.inter(color: state.textSecondary),
+                                              style: GoogleFonts.inter(
+                                                  color: state.textSecondary),
                                             ),
                                             actions: [
                                               TextButton(
-                                                onPressed: () => Navigator.pop(dCtx),
+                                                onPressed: () =>
+                                                    Navigator.pop(dCtx),
                                                 child: const Text('Annuler'),
                                               ),
                                               ElevatedButton.icon(
                                                 onPressed: () {
-                                                  final s = Provider.of<AppStateProvider>(context, listen: false);
+                                                  final s = Provider.of<
+                                                          AppStateProvider>(
+                                                      context,
+                                                      listen: false);
                                                   s.deleteLoan(loan.id);
                                                   Navigator.pop(dCtx);
-                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
                                                     SnackBar(
-                                                      content: Text('Dette ${loan.id} supprimée.'),
-                                                      backgroundColor: Colors.redAccent,
+                                                      content: Text(
+                                                          'Dette ${loan.id} supprimée.'),
+                                                      backgroundColor:
+                                                          Colors.redAccent,
                                                     ),
                                                   );
                                                 },
-                                                icon: const Icon(Icons.delete_rounded, size: 16),
+                                                icon: const Icon(
+                                                    Icons.delete_rounded,
+                                                    size: 16),
                                                 label: const Text('Supprimer'),
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor: Colors.redAccent,
+                                                  backgroundColor:
+                                                      Colors.redAccent,
                                                   foregroundColor: Colors.white,
                                                 ),
                                               ),
@@ -1419,12 +1709,15 @@ class _LoansViewState extends State<LoansView>
     );
   }
 
-  Widget _thCell(String text, {bool alignRight = false, bool alignCenter = false}) {
+  Widget _thCell(String text,
+      {bool alignRight = false, bool alignCenter = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Text(
         text,
-        textAlign: alignRight ? TextAlign.right : (alignCenter ? TextAlign.center : TextAlign.left),
+        textAlign: alignRight
+            ? TextAlign.right
+            : (alignCenter ? TextAlign.center : TextAlign.left),
         style: GoogleFonts.inter(
           color: state.textSecondaryLight,
           fontSize: 10.5,
@@ -1434,7 +1727,8 @@ class _LoansViewState extends State<LoansView>
     );
   }
 
-  Widget _statusFilterChip(String label, String value, {Color activeColor = const Color(0xFF10B981)}) {
+  Widget _statusFilterChip(String label, String value,
+      {Color activeColor = const Color(0xFF10B981)}) {
     final isSelected = _statusFilter == value;
     return InkWell(
       onTap: () => setState(() => _statusFilter = value),
@@ -1535,10 +1829,12 @@ class _LoansViewState extends State<LoansView>
             Colors.orange,
             onPrint: pending.isEmpty
                 ? null
-                : () => _printLoansList(pending, 'Liste des $typeLabel en cours'),
+                : () =>
+                    _printLoansList(pending, 'Liste des $typeLabel en cours'),
             onExportPdf: pending.isEmpty
                 ? null
-                : () => _exportLoansListPdf(pending, 'Dettes $typeLabel en cours'),
+                : () =>
+                    _exportLoansListPdf(pending, 'Dettes $typeLabel en cours'),
           ),
           const SizedBox(height: 12),
           if (pending.isEmpty)
@@ -1555,10 +1851,12 @@ class _LoansViewState extends State<LoansView>
             const Color(0xFF10B981),
             onPrint: returned.isEmpty
                 ? null
-                : () => _printLoansList(returned, 'Liste des $typeLabel réglées'),
+                : () =>
+                    _printLoansList(returned, 'Liste des $typeLabel réglées'),
             onExportPdf: returned.isEmpty
                 ? null
-                : () => _exportLoansListPdf(returned, 'Dettes $typeLabel réglées'),
+                : () =>
+                    _exportLoansListPdf(returned, 'Dettes $typeLabel réglées'),
           ),
           const SizedBox(height: 12),
           if (returned.isEmpty)
@@ -1621,7 +1919,8 @@ class _LoansViewState extends State<LoansView>
                   color: Colors.redAccent.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Icon(Icons.picture_as_pdf_rounded, color: Colors.redAccent, size: 14),
+                child: const Icon(Icons.picture_as_pdf_rounded,
+                    color: Colors.redAccent, size: 14),
               ),
             ),
           ),
@@ -1714,7 +2013,8 @@ class _LoansViewState extends State<LoansView>
                   onTap: () => _showEditLoyaltyPointsDialog(context, patient),
                   borderRadius: BorderRadius.circular(6),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.amber.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(6),
@@ -1722,7 +2022,8 @@ class _LoansViewState extends State<LoansView>
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.stars_rounded, color: Colors.amber, size: 14),
+                        const Icon(Icons.stars_rounded,
+                            color: Colors.amber, size: 14),
                         const SizedBox(width: 4),
                         Text(
                           '${patient.loyaltyPoints} pts de fidélité',
@@ -1733,7 +2034,8 @@ class _LoansViewState extends State<LoansView>
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(Icons.edit_rounded, color: Colors.amber, size: 11),
+                        const Icon(Icons.edit_rounded,
+                            color: Colors.amber, size: 11),
                       ],
                     ),
                   ),
@@ -1801,7 +2103,8 @@ class _LoansViewState extends State<LoansView>
                           2: FlexColumnWidth(1.2),
                           3: FlexColumnWidth(1.5),
                         },
-                        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                        defaultVerticalAlignment:
+                            TableCellVerticalAlignment.middle,
                         children: [
                           TableRow(
                             decoration: BoxDecoration(
@@ -1814,54 +2117,101 @@ class _LoansViewState extends State<LoansView>
                             children: [
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 4),
-                                child: Text('Produit', style: GoogleFonts.inter(color: state.textSecondaryLight, fontSize: 10, fontWeight: FontWeight.bold)),
+                                child: Text('Produit',
+                                    style: GoogleFonts.inter(
+                                        color: state.textSecondaryLight,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold)),
                               ),
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 4),
-                                child: Text('Quantité', style: GoogleFonts.inter(color: state.textSecondaryLight, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                                child: Text('Quantité',
+                                    style: GoogleFonts.inter(
+                                        color: state.textSecondaryLight,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold),
+                                    textAlign: TextAlign.center),
                               ),
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 4),
-                                child: Text('P.U.', style: GoogleFonts.inter(color: state.textSecondaryLight, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.right),
+                                child: Text('P.U.',
+                                    style: GoogleFonts.inter(
+                                        color: state.textSecondaryLight,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold),
+                                    textAlign: TextAlign.right),
                               ),
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 4),
-                                child: Text('Valeur', style: GoogleFonts.inter(color: state.textSecondaryLight, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.right),
+                                child: Text('Valeur',
+                                    style: GoogleFonts.inter(
+                                        color: state.textSecondaryLight,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold),
+                                    textAlign: TextAlign.right),
                               ),
                             ],
                           ),
-                          ...loan.items.map(
-                            (item) => TableRow(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
-                                  child: Text(item.productName, style: GoogleFonts.inter(color: state.textPrimary, fontSize: 11.5, fontWeight: FontWeight.w600)),
+                          ...loan.items
+                              .map(
+                                (item) => TableRow(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 4),
+                                      child: Text(item.productName,
+                                          style: GoogleFonts.inter(
+                                              color: state.textPrimary,
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w600)),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 4),
+                                      child: Text('${item.quantity}',
+                                          style: GoogleFonts.inter(
+                                              color: state.textSecondary,
+                                              fontSize: 11),
+                                          textAlign: TextAlign.center),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 4),
+                                      child: Text(_fmt.format(item.unitValue),
+                                          style: GoogleFonts.inter(
+                                              color: state.textSecondary,
+                                              fontSize: 11),
+                                          textAlign: TextAlign.right),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 4),
+                                      child: Text(_fmt.format(item.totalValue),
+                                          style: GoogleFonts.inter(
+                                              color: themeColor,
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.bold),
+                                          textAlign: TextAlign.right),
+                                    ),
+                                  ],
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
-                                  child: Text('${item.quantity}', style: GoogleFonts.inter(color: state.textSecondary, fontSize: 11), textAlign: TextAlign.center),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
-                                  child: Text(_fmt.format(item.unitValue), style: GoogleFonts.inter(color: state.textSecondary, fontSize: 11), textAlign: TextAlign.right),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
-                                  child: Text(_fmt.format(item.totalValue), style: GoogleFonts.inter(color: themeColor, fontSize: 11.5, fontWeight: FontWeight.bold), textAlign: TextAlign.right),
-                                ),
-                              ],
-                            ),
-                          ).toList(),
+                              )
+                              .toList(),
                         ],
                       ),
-                      Divider(color: Colors.white.withOpacity(0.04), height: 16),
+                      Divider(
+                          color: Colors.white.withOpacity(0.04), height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            loan.isReturned ? 'Montant Réglé ✓' : 'Valeur Totale du Prêt :',
+                            loan.isReturned
+                                ? 'Montant Réglé ✓'
+                                : 'Valeur Totale du Prêt :',
                             style: GoogleFonts.inter(
-                              color: loan.isReturned ? const Color(0xFF10B981) : state.textSecondary,
+                              color: loan.isReturned
+                                  ? const Color(0xFF10B981)
+                                  : state.textSecondary,
                               fontSize: 11.5,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1869,10 +2219,14 @@ class _LoansViewState extends State<LoansView>
                           Text(
                             _fmt.format(loan.totalValue),
                             style: GoogleFonts.outfit(
-                              color: loan.isReturned ? state.textSecondaryLight : themeColor,
+                              color: loan.isReturned
+                                  ? state.textSecondaryLight
+                                  : themeColor,
                               fontSize: 14.5,
                               fontWeight: FontWeight.w800,
-                              decoration: loan.isReturned ? TextDecoration.lineThrough : TextDecoration.none,
+                              decoration: loan.isReturned
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
                               decorationColor: state.textSecondaryLight,
                             ),
                           ),
@@ -1887,9 +2241,15 @@ class _LoansViewState extends State<LoansView>
               // Lender info
               Expanded(
                 child: _infoBlock(
-                  icon: loan.lenderType == 'pharmacie' ? Icons.local_pharmacy_rounded : Icons.person_rounded,
-                  iconColor: loan.lenderType == 'pharmacie' ? const Color(0xFF06B6D4) : const Color(0xFFF59E0B),
-                  label: loan.lenderType == 'pharmacie' ? 'Pharmacie prêteuse' : 'Personne prêteuse / Client',
+                  icon: loan.lenderType == 'pharmacie'
+                      ? Icons.local_pharmacy_rounded
+                      : Icons.person_rounded,
+                  iconColor: loan.lenderType == 'pharmacie'
+                      ? const Color(0xFF06B6D4)
+                      : const Color(0xFFF59E0B),
+                  label: loan.lenderType == 'pharmacie'
+                      ? 'Pharmacie prêteuse'
+                      : 'Personne prêteuse / Client',
                   lines: [
                     loan.lenderName,
                     'Contact : ${loan.lenderContact.isNotEmpty ? loan.lenderContact : "Non renseigné"}',
@@ -1913,18 +2273,21 @@ class _LoansViewState extends State<LoansView>
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.blueAccent,
                   side: const BorderSide(color: Colors.blueAccent),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
               ),
               const SizedBox(width: 10),
               OutlinedButton.icon(
                 onPressed: () => _printSingleLoan(loan),
                 icon: const Icon(Icons.print_rounded, size: 16),
-                label: Text('Imprimer le reçu', style: GoogleFonts.inter(fontSize: 12)),
+                label: Text('Imprimer le reçu',
+                    style: GoogleFonts.inter(fontSize: 12)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: state.textSecondary,
                   side: const BorderSide(color: Color(0xFF475569)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
               ),
               const SizedBox(width: 10),
@@ -1934,8 +2297,11 @@ class _LoansViewState extends State<LoansView>
                     context: context,
                     builder: (dCtx) => AlertDialog(
                       backgroundColor: state.bgSecondary,
-                      title: Text('Confirmer la suppression', style: GoogleFonts.inter(color: state.textPrimary)),
-                      content: Text('Voulez-vous vraiment supprimer cette dette ?', style: GoogleFonts.inter(color: state.textSecondary)),
+                      title: Text('Confirmer la suppression',
+                          style: GoogleFonts.inter(color: state.textPrimary)),
+                      content: Text(
+                          'Voulez-vous vraiment supprimer cette dette ?',
+                          style: GoogleFonts.inter(color: state.textSecondary)),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(dCtx),
@@ -1943,29 +2309,34 @@ class _LoansViewState extends State<LoansView>
                         ),
                         TextButton(
                           onPressed: () {
-                            final s = Provider.of<AppStateProvider>(context, listen: false);
+                            final s = Provider.of<AppStateProvider>(context,
+                                listen: false);
                             s.deleteLoan(loan.id);
                             Navigator.pop(dCtx);
                           },
-                          child: const Text('Supprimer', style: TextStyle(color: Colors.redAccent)),
+                          child: const Text('Supprimer',
+                              style: TextStyle(color: Colors.redAccent)),
                         ),
                       ],
                     ),
                   );
                 },
                 icon: const Icon(Icons.delete_outline_rounded, size: 16),
-                label: Text('Supprimer', style: GoogleFonts.inter(fontSize: 12)),
+                label:
+                    Text('Supprimer', style: GoogleFonts.inter(fontSize: 12)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.redAccent,
                   side: const BorderSide(color: Colors.redAccent),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
               ),
               if (!loan.isReturned) ...[
                 const SizedBox(width: 10),
                 ElevatedButton.icon(
                   onPressed: () {
-                    final s = Provider.of<AppStateProvider>(context, listen: false);
+                    final s =
+                        Provider.of<AppStateProvider>(context, listen: false);
                     s.updateLoan(MedicamentLoan(
                       id: loan.id,
                       items: loan.items,
@@ -1980,11 +2351,14 @@ class _LoansViewState extends State<LoansView>
                     ));
                   },
                   icon: const Icon(Icons.check_circle_rounded, size: 16),
-                  label: Text('Marquer comme Réglé', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
+                  label: Text('Marquer comme Réglé',
+                      style: GoogleFonts.inter(
+                          fontSize: 12, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: themeColor,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
               ],
@@ -2055,9 +2429,12 @@ class _LoansViewState extends State<LoansView>
     final quantityCtrl = TextEditingController();
     final valueCtrl = TextEditingController();
 
-    final lenderNameCtrl = TextEditingController(text: isEdit ? original.lenderName : '');
-    final lenderContactCtrl = TextEditingController(text: isEdit ? original.lenderContact : '');
-    final lenderAddressCtrl = TextEditingController(text: isEdit ? original.lenderAddress : '');
+    final lenderNameCtrl =
+        TextEditingController(text: isEdit ? original.lenderName : '');
+    final lenderContactCtrl =
+        TextEditingController(text: isEdit ? original.lenderContact : '');
+    final lenderAddressCtrl =
+        TextEditingController(text: isEdit ? original.lenderAddress : '');
     final notesCtrl = TextEditingController(text: isEdit ? original.notes : '');
     String lenderType = isEdit ? original.lenderType : 'personne';
 
@@ -2072,7 +2449,9 @@ class _LoansViewState extends State<LoansView>
         builder: (ctx, setS) => AlertDialog(
           backgroundColor: state.bgSecondary,
           title: Text(
-            isEdit ? 'Modifier la Dette de Médicaments' : 'Enregistrer une Dette de Médicaments',
+            isEdit
+                ? 'Modifier la Dette de Médicaments'
+                : 'Enregistrer une Dette de Médicaments',
             style: GoogleFonts.outfit(
               color: state.textPrimary,
               fontWeight: FontWeight.bold,
@@ -2102,7 +2481,15 @@ class _LoansViewState extends State<LoansView>
                         'Personne / Client',
                         Icons.person_rounded,
                         lenderType,
-                        (v) => setS(() => lenderType = v),
+                        (v) => setS(() {
+                          lenderType = v;
+                          final matches = state.products
+                              .where((p) => p.name == selectedProductName);
+                          if (matches.isNotEmpty) {
+                            valueCtrl.text =
+                                matches.first.sellingPrice.round().toString();
+                          }
+                        }),
                       ),
                       const SizedBox(width: 12),
                       _typeChip(
@@ -2110,14 +2497,23 @@ class _LoansViewState extends State<LoansView>
                         'Pharmacie',
                         Icons.local_pharmacy_rounded,
                         lenderType,
-                        (v) => setS(() => lenderType = v),
+                        (v) => setS(() {
+                          lenderType = v;
+                          final matches = state.products
+                              .where((p) => p.name == selectedProductName);
+                          if (matches.isNotEmpty) {
+                            valueCtrl.text =
+                                matches.first.purchasePrice.round().toString();
+                          }
+                        }),
                       ),
                     ],
                   ),
                   const SizedBox(height: 14),
 
                   // Si c'est une personne, sélecteur de patient rapide
-                  if (lenderType == 'personne' && state.patients.isNotEmpty) ...[
+                  if (lenderType == 'personne' &&
+                      state.patients.isNotEmpty) ...[
                     Text(
                       'SÉLECTIONNER UN CLIENT EXISTANT (OPTIONNEL)',
                       style: GoogleFonts.inter(
@@ -2134,16 +2530,21 @@ class _LoansViewState extends State<LoansView>
                       style: TextStyle(color: state.textPrimary, fontSize: 13),
                       decoration: InputDecoration(
                         labelText: 'Sélectionner un client enregistré',
-                        labelStyle: TextStyle(color: state.textSecondary, fontSize: 12),
-                        prefixIcon: const Icon(Icons.person_search_rounded, color: Colors.amber, size: 18),
+                        labelStyle:
+                            TextStyle(color: state.textSecondary, fontSize: 12),
+                        prefixIcon: const Icon(Icons.person_search_rounded,
+                            color: Colors.amber, size: 18),
                         filled: true,
                         fillColor: state.bgPrimary,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none),
                       ),
                       items: state.patients
                           .map((p) => DropdownMenuItem<Patient>(
                                 value: p,
-                                child: Text('${p.fullName} (${p.loyaltyPoints} pts fidélité)'),
+                                child: Text(
+                                    '${p.fullName} (${p.loyaltyPoints} pts fidélité)'),
                               ))
                           .toList(),
                       onChanged: (pat) {
@@ -2160,19 +2561,25 @@ class _LoansViewState extends State<LoansView>
                     if (selectedPatient != null) ...[
                       const SizedBox(height: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.amber.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                          border:
+                              Border.all(color: Colors.amber.withOpacity(0.3)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.stars_rounded, color: Colors.amber, size: 16),
+                            const Icon(Icons.stars_rounded,
+                                color: Colors.amber, size: 16),
                             const SizedBox(width: 6),
                             Text(
                               'Ce client possède ${selectedPatient!.loyaltyPoints} points de fidélité',
-                              style: GoogleFonts.inter(color: Colors.amber, fontSize: 11.5, fontWeight: FontWeight.bold),
+                              style: GoogleFonts.inter(
+                                  color: Colors.amber,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
@@ -2183,7 +2590,9 @@ class _LoansViewState extends State<LoansView>
 
                   // Information du prêteur
                   Text(
-                    lenderType == 'pharmacie' ? 'INFORMATIONS DE LA PHARMACIE' : 'INFORMATIONS DU CLIENT / PERSONNE',
+                    lenderType == 'pharmacie'
+                        ? 'INFORMATIONS DE LA PHARMACIE'
+                        : 'INFORMATIONS DU CLIENT / PERSONNE',
                     style: GoogleFonts.inter(
                       color: state.textSecondary,
                       fontSize: 11,
@@ -2194,7 +2603,9 @@ class _LoansViewState extends State<LoansView>
                   const SizedBox(height: 10),
                   _dialogField(
                     lenderNameCtrl,
-                    lenderType == 'pharmacie' ? 'Nom de la pharmacie' : 'Nom et Prénom',
+                    lenderType == 'pharmacie'
+                        ? 'Nom de la pharmacie'
+                        : 'Nom et Prénom',
                     Icons.badge_rounded,
                   ),
                   const SizedBox(height: 10),
@@ -2229,28 +2640,39 @@ class _LoansViewState extends State<LoansView>
                     style: TextStyle(color: state.textPrimary, fontSize: 13),
                     decoration: InputDecoration(
                       labelText: 'Sélectionner un médicament',
-                      labelStyle: TextStyle(color: state.textSecondary, fontSize: 12),
-                      prefixIcon: Icon(Icons.medication_rounded, color: state.textSecondaryLight, size: 18),
+                      labelStyle:
+                          TextStyle(color: state.textSecondary, fontSize: 12),
+                      prefixIcon: Icon(Icons.medication_rounded,
+                          color: state.textSecondaryLight, size: 18),
                       filled: true,
                       fillColor: state.bgPrimary,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none),
                     ),
                     items: (() {
                       final sortedProds = List<Product>.from(state.products);
-                      sortedProds.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+                      sortedProds.sort((a, b) =>
+                          a.name.toLowerCase().compareTo(b.name.toLowerCase()));
                       return sortedProds
                           .map((p) => DropdownMenuItem<String>(
                                 value: p.name,
-                                child: Text(p.name, overflow: TextOverflow.ellipsis),
+                                child: Text(p.name,
+                                    overflow: TextOverflow.ellipsis),
                               ))
                           .toList();
                     })(),
                     onChanged: (val) {
                       setS(() {
                         selectedProductName = val;
-                        final matching = state.products.where((p) => p.name == val);
+                        final matching =
+                            state.products.where((p) => p.name == val);
                         if (matching.isNotEmpty) {
-                          valueCtrl.text = matching.first.purchasePrice.toInt().toString();
+                          valueCtrl.text = (lenderType == 'personne'
+                                  ? matching.first.sellingPrice
+                                  : matching.first.purchasePrice)
+                              .round()
+                              .toString();
                         }
                       });
                     },
@@ -2282,10 +2704,13 @@ class _LoansViewState extends State<LoansView>
                     alignment: Alignment.centerRight,
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        if (selectedProductName == null || quantityCtrl.text.isEmpty || valueCtrl.text.isEmpty) {
+                        if (selectedProductName == null ||
+                            quantityCtrl.text.isEmpty ||
+                            valueCtrl.text.isEmpty) {
                           ScaffoldMessenger.of(ctx).showSnackBar(
                             const SnackBar(
-                              content: Text('Veuillez sélectionner un produit, sa quantité et sa valeur.'),
+                              content: Text(
+                                  'Veuillez sélectionner un produit, sa quantité et sa valeur.'),
                               backgroundColor: Colors.orangeAccent,
                             ),
                           );
@@ -2311,7 +2736,8 @@ class _LoansViewState extends State<LoansView>
                       style: ElevatedButton.styleFrom(
                         backgroundColor: themeColor,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6)),
                       ),
                     ),
                   ),
@@ -2322,7 +2748,8 @@ class _LoansViewState extends State<LoansView>
                       decoration: BoxDecoration(
                         color: state.bgPrimary,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.white.withOpacity(0.04)),
+                        border:
+                            Border.all(color: Colors.white.withOpacity(0.04)),
                       ),
                       child: ListView.builder(
                         shrinkWrap: true,
@@ -2331,15 +2758,28 @@ class _LoansViewState extends State<LoansView>
                           final item = dialogItems[idx];
                           return ListTile(
                             dense: true,
-                            title: Text(item.productName, style: GoogleFonts.inter(color: state.textPrimary, fontWeight: FontWeight.bold, fontSize: 12.5)),
-                            subtitle: Text('Quantité: ${item.quantity} × ${_fmt.format(item.unitValue)}', style: GoogleFonts.inter(color: state.textSecondary, fontSize: 11)),
+                            title: Text(item.productName,
+                                style: GoogleFonts.inter(
+                                    color: state.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12.5)),
+                            subtitle: Text(
+                                'Quantité: ${item.quantity} × ${_fmt.format(item.unitValue)}',
+                                style: GoogleFonts.inter(
+                                    color: state.textSecondary, fontSize: 11)),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(_fmt.format(item.totalValue), style: GoogleFonts.inter(color: themeColor, fontWeight: FontWeight.bold, fontSize: 12.5)),
+                                Text(_fmt.format(item.totalValue),
+                                    style: GoogleFonts.inter(
+                                        color: themeColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12.5)),
                                 IconButton(
-                                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18),
-                                  onPressed: () => setS(() => dialogItems.removeAt(idx)),
+                                  icon: const Icon(Icons.delete_outline_rounded,
+                                      color: Colors.redAccent, size: 18),
+                                  onPressed: () =>
+                                      setS(() => dialogItems.removeAt(idx)),
                                 ),
                               ],
                             ),
@@ -2351,17 +2791,26 @@ class _LoansViewState extends State<LoansView>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Valeur totale cumulée :', style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+                        Text('Valeur totale cumulée :',
+                            style: GoogleFonts.inter(
+                                color: state.textSecondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600)),
                         Text(
-                          _fmt.format(dialogItems.fold(0.0, (sum, item) => sum + item.totalValue)),
-                          style: GoogleFonts.outfit(color: themeColor, fontSize: 16, fontWeight: FontWeight.w800),
+                          _fmt.format(dialogItems.fold(
+                              0.0, (sum, item) => sum + item.totalValue)),
+                          style: GoogleFonts.outfit(
+                              color: themeColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800),
                         ),
                       ],
                     ),
                   ],
 
                   const SizedBox(height: 14),
-                  _dialogField(notesCtrl, 'Notes (optionnel)', Icons.notes_rounded),
+                  _dialogField(
+                      notesCtrl, 'Notes (optionnel)', Icons.notes_rounded),
                 ],
               ),
             ),
@@ -2369,57 +2818,78 @@ class _LoansViewState extends State<LoansView>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text('Annuler', style: GoogleFonts.inter(color: state.textSecondary)),
+              child: Text('Annuler',
+                  style: GoogleFonts.inter(color: state.textSecondary)),
             ),
             ElevatedButton.icon(
               onPressed: () {
                 if (dialogItems.isEmpty) {
                   ScaffoldMessenger.of(ctx).showSnackBar(
-                    const SnackBar(content: Text('Veuillez ajouter au moins un médicament au prêt.'), backgroundColor: Colors.redAccent),
+                    const SnackBar(
+                        content: Text(
+                            'Veuillez ajouter au moins un médicament au prêt.'),
+                        backgroundColor: Colors.redAccent),
                   );
                   return;
                 }
                 if (lenderNameCtrl.text.isEmpty) {
                   ScaffoldMessenger.of(ctx).showSnackBar(
-                    const SnackBar(content: Text('Veuillez renseigner le nom du prêteur/client.'), backgroundColor: Colors.redAccent),
+                    const SnackBar(
+                        content: Text(
+                            'Veuillez renseigner le nom du prêteur/client.'),
+                        backgroundColor: Colors.redAccent),
                   );
                   return;
                 }
 
                 final s = Provider.of<AppStateProvider>(context, listen: false);
-                if (isEdit) {
-                  s.updateLoan(MedicamentLoan(
-                    id: original!.id,
-                    items: dialogItems,
-                    lenderType: lenderType,
-                    lenderName: lenderNameCtrl.text,
-                    lenderContact: lenderContactCtrl.text,
-                    lenderAddress: lenderAddressCtrl.text,
-                    loanDate: original.loanDate,
-                    isReturned: original.isReturned,
-                    notes: notesCtrl.text,
-                    saleId: original.saleId,
+                final saved = isEdit
+                    ? s.updateLoan(MedicamentLoan(
+                        id: original!.id,
+                        items: dialogItems,
+                        lenderType: lenderType,
+                        lenderName: lenderNameCtrl.text,
+                        lenderContact: lenderContactCtrl.text,
+                        lenderAddress: lenderAddressCtrl.text,
+                        loanDate: original.loanDate,
+                        isReturned: original.isReturned,
+                        notes: notesCtrl.text,
+                        saleId: original.saleId,
+                      ))
+                    : s.addLoan(MedicamentLoan(
+                        id: 'DETTE-${DateTime.now().millisecondsSinceEpoch}',
+                        items: dialogItems,
+                        lenderType: lenderType,
+                        lenderName: lenderNameCtrl.text,
+                        lenderContact: lenderContactCtrl.text,
+                        lenderAddress: lenderAddressCtrl.text,
+                        loanDate: s.workingDate,
+                        notes: notesCtrl.text,
+                      ));
+                if (!saved) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                    content:
+                        Text('Stock insuffisant pour enregistrer cette dette.'),
+                    backgroundColor: Colors.redAccent,
                   ));
-                } else {
-                  s.addLoan(MedicamentLoan(
-                    id: 'DETTE-${DateTime.now().millisecondsSinceEpoch}',
-                    items: dialogItems,
-                    lenderType: lenderType,
-                    lenderName: lenderNameCtrl.text,
-                    lenderContact: lenderContactCtrl.text,
-                    lenderAddress: lenderAddressCtrl.text,
-                    loanDate: DateTime.now(),
-                    notes: notesCtrl.text,
-                  ));
+                  return;
                 }
                 Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(isEdit
+                      ? 'Dette modifiée avec succès.'
+                      : 'Dette enregistrée avec succès.'),
+                  backgroundColor: const Color(0xFF10B981),
+                ));
               },
               icon: const Icon(Icons.save_rounded, size: 16),
-              label: Text('Enregistrer', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+              label: Text('Enregistrer',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: themeColor,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
             ),
           ],
@@ -2438,9 +2908,14 @@ class _LoansViewState extends State<LoansView>
     final state = Provider.of<AppStateProvider>(context, listen: false);
     return TextField(
       controller: ctrl,
-      keyboardType: isPhone ? TextInputType.phone : (isNumber ? TextInputType.number : TextInputType.text),
+      keyboardType: isPhone
+          ? TextInputType.phone
+          : (isNumber ? TextInputType.number : TextInputType.text),
       inputFormatters: isPhone
-          ? [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(9)]
+          ? [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(9)
+            ]
           : (isNumber ? [FilteringTextInputFormatter.digitsOnly] : null),
       style: TextStyle(color: state.textPrimary, fontSize: 13),
       decoration: InputDecoration(
@@ -2449,8 +2924,11 @@ class _LoansViewState extends State<LoansView>
         prefixIcon: Icon(icon, color: state.textSecondaryLight, size: 18),
         filled: true,
         fillColor: state.bgPrimary,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide.none),
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
       ),
     );
   }
@@ -2503,7 +2981,8 @@ class _LoansViewState extends State<LoansView>
   @override
   Widget build(BuildContext context) {
     final allLoans = state.loans;
-    final clientLoans = allLoans.where((l) => l.lenderType == 'personne').toList();
+    final clientLoans =
+        allLoans.where((l) => l.lenderType == 'personne').toList();
     final allPending = allLoans.where((l) => !l.isReturned).toList();
     final grandTotal = allPending.fold(0.0, (s, l) => s + l.totalValue);
 

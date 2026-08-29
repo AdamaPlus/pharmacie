@@ -52,10 +52,8 @@ class _StockViewState extends State<StockView>
     // Categories list
     final List<String> categories = ['Tous'];
     final List<String> defaultCats = [];
-    final dynamicCatsList = state.products
-        .map((p) => p.category)
-        .toSet()
-        .toList();
+    final dynamicCatsList =
+        state.products.map((p) => p.category).toSet().toList();
     for (var c in defaultCats) {
       if (!dynamicCatsList.contains(c)) dynamicCatsList.add(c);
     }
@@ -173,7 +171,8 @@ class _StockViewState extends State<StockView>
                                 value: 'import_csv',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.upload_rounded, color: Colors.green),
+                                    Icon(Icons.upload_rounded,
+                                        color: Colors.green),
                                     SizedBox(width: 8),
                                     Text('Importer CSV'),
                                   ],
@@ -203,7 +202,8 @@ class _StockViewState extends State<StockView>
                             onPressed: state.canCreateNewMedicines()
                                 ? () => _showAddProductDialog(context, state)
                                 : null,
-                            icon: Icon(Icons.add_circle_outline_rounded, size: 18),
+                            icon: Icon(Icons.add_circle_outline_rounded,
+                                size: 18),
                             label: Text('Nouveau médicament'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Color(0xFF10B981),
@@ -331,13 +331,12 @@ class _StockViewState extends State<StockView>
   Widget _buildProductsTab(AppStateProvider state) {
     // Filter products
     final filtered = state.products.where((p) {
-      final matchesQuery =
-          p.name.toLowerCase().contains(
-            state.productSearchQuery.toLowerCase(),
-          ) ||
+      final matchesQuery = p.name.toLowerCase().contains(
+                state.productSearchQuery.toLowerCase(),
+              ) ||
           p.description.toLowerCase().contains(
-            state.productSearchQuery.toLowerCase(),
-          ) ||
+                state.productSearchQuery.toLowerCase(),
+              ) ||
           p.barcode.contains(state.productSearchQuery);
       final matchesCat =
           _selectedCategory == 'Tous' || p.category == _selectedCategory;
@@ -418,8 +417,7 @@ class _StockViewState extends State<StockView>
                             ),
                           ),
                           clipBehavior: Clip.antiAlias,
-                          child:
-                              prod.image.isNotEmpty &&
+                          child: prod.image.isNotEmpty &&
                                   !prod.image.startsWith('generic_pill') &&
                                   prod.image.length > 50
                               ? Image.memory(
@@ -486,28 +484,28 @@ class _StockViewState extends State<StockView>
                           color: isOrdered
                               ? Colors.blueAccent.withOpacity(0.12)
                               : isOutOfStock
-                              ? Colors.redAccent.withOpacity(0.12)
-                              : isLowStock
-                              ? Colors.orangeAccent.withOpacity(0.12)
-                              : Color(0xFF10B981).withOpacity(0.12),
+                                  ? Colors.redAccent.withOpacity(0.12)
+                                  : isLowStock
+                                      ? Colors.orangeAccent.withOpacity(0.12)
+                                      : Color(0xFF10B981).withOpacity(0.12),
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Text(
                           isOrdered
                               ? 'En Commande'
                               : isOutOfStock
-                              ? 'Rupture'
-                              : isLowStock
-                              ? 'Stock Faible'
-                              : 'Suffisant',
+                                  ? 'Rupture'
+                                  : isLowStock
+                                      ? 'Stock Faible'
+                                      : 'Suffisant',
                           style: GoogleFonts.inter(
                             color: isOrdered
                                 ? Colors.blueAccent
                                 : isOutOfStock
-                                ? Colors.redAccent
-                                : isLowStock
-                                ? Colors.orangeAccent
-                                : Color(0xFF10B981),
+                                    ? Colors.redAccent
+                                    : isLowStock
+                                        ? Colors.orangeAccent
+                                        : Color(0xFF10B981),
                             fontSize: 11.5,
                             fontWeight: FontWeight.bold,
                           ),
@@ -528,9 +526,12 @@ class _StockViewState extends State<StockView>
                             size: 18,
                           ),
                           onPressed: state.canEditProductDetails()
-                              ? () => _showAddProductDialog(context, state, prod)
+                              ? () =>
+                                  _showAddProductDialog(context, state, prod)
                               : null,
-                          tooltip: state.canEditProductDetails() ? 'Modifier' : 'Accès restreint',
+                          tooltip: state.canEditProductDetails()
+                              ? 'Modifier'
+                              : 'Accès restreint',
                         ),
                         if (state.currentUserRole == 'ADMIN')
                           IconButton(
@@ -562,13 +563,12 @@ class _StockViewState extends State<StockView>
   Widget _buildLotsTab(AppStateProvider state) {
     // Filter lots
     final filteredLots = state.lots.where((l) {
-      final matchesQuery =
-          l.productName.toLowerCase().contains(
-            state.productSearchQuery.toLowerCase(),
-          ) ||
+      final matchesQuery = l.productName.toLowerCase().contains(
+                state.productSearchQuery.toLowerCase(),
+              ) ||
           l.lotNumber.toLowerCase().contains(
-            state.productSearchQuery.toLowerCase(),
-          );
+                state.productSearchQuery.toLowerCase(),
+              );
 
       bool matchesAlert = true;
       if (_filterOnlyAlerts) {
@@ -688,22 +688,22 @@ class _StockViewState extends State<StockView>
                               color: lot.isExpired
                                   ? Colors.redAccent.withOpacity(0.12)
                                   : lot.isNearExpiration
-                                  ? Colors.orangeAccent.withOpacity(0.12)
-                                  : Color(0xFF10B981).withOpacity(0.12),
+                                      ? Colors.orangeAccent.withOpacity(0.12)
+                                      : Color(0xFF10B981).withOpacity(0.12),
                               borderRadius: BorderRadius.circular(30),
                             ),
                             child: Text(
                               lot.isExpired
                                   ? 'PÉRIMÉ'
                                   : lot.isNearExpiration
-                                  ? 'EXPIRE BIENTÔT'
-                                  : 'VALIDE',
+                                      ? 'EXPIRE BIENTÔT'
+                                      : 'VALIDE',
                               style: GoogleFonts.inter(
                                 color: lot.isExpired
                                     ? Colors.redAccent
                                     : lot.isNearExpiration
-                                    ? Colors.orangeAccent
-                                    : Color(0xFF10B981),
+                                        ? Colors.orangeAccent
+                                        : Color(0xFF10B981),
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -819,6 +819,10 @@ class _StockViewState extends State<StockView>
             onPressed: () {
               state.deleteProduct(prod.id);
               Navigator.pop(context);
+              ScaffoldMessenger.of(this.context).showSnackBar(const SnackBar(
+                content: Text('Produit supprimé avec succès.'),
+                backgroundColor: Color(0xFF10B981),
+              ));
             },
           ),
         ],
@@ -844,15 +848,16 @@ class _StockViewState extends State<StockView>
     final sellCtrl = TextEditingController(
       text: isEdit ? original.sellingPrice.toString() : '',
     );
+    final minStockCtrl = TextEditingController(
+      text: isEdit ? original.minStock.toString() : '',
+    );
 
     String catVal = isEdit ? original.category : 'Autre';
     final customCatCtrl = TextEditingController();
     String prodImage = isEdit ? original.image : 'generic_pill';
 
-    List<String> dynamicCategories = state.products
-        .map((p) => p.category)
-        .toSet()
-        .toList();
+    List<String> dynamicCategories =
+        state.products.map((p) => p.category).toSet().toList();
     dynamicCategories.remove('Autre');
     if (!dynamicCategories.contains(catVal) && catVal != 'Autre') {
       dynamicCategories.add(catVal);
@@ -879,8 +884,7 @@ class _StockViewState extends State<StockView>
       text: firstLot?.lotNumber ?? _generateUniqueLotNumber(state.lots),
     );
     final qtyCtrl = TextEditingController(
-      text:
-          firstLot?.quantity.toString() ??
+      text: firstLot?.quantity.toString() ??
           (isEdit ? original.totalQuantity.toString() : ''),
     );
     final expCtrl = TextEditingController(
@@ -1016,9 +1020,9 @@ class _StockViewState extends State<StockView>
                                         ),
                                         contentPadding:
                                             const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 12,
-                                            ),
+                                          horizontal: 12,
+                                          vertical: 12,
+                                        ),
                                         border: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
                                             8,
@@ -1050,6 +1054,13 @@ class _StockViewState extends State<StockView>
                               ),
                             ),
                           ],
+                        ),
+                        SizedBox(height: 16),
+                        _dialogField(
+                          label: 'Seuil d’alerte de stock faible *',
+                          controller: minStockCtrl,
+                          isNumber: true,
+                          required: true,
                         ),
                         SizedBox(height: 16),
                         Row(
@@ -1105,9 +1116,9 @@ class _StockViewState extends State<StockView>
                                       ),
                                       contentPadding:
                                           const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 12,
-                                          ),
+                                        horizontal: 12,
+                                        vertical: 12,
+                                      ),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                         borderSide: BorderSide(
@@ -1125,8 +1136,7 @@ class _StockViewState extends State<StockView>
                                       DateTime? picked = await showDatePicker(
                                         context: context,
                                         locale: const Locale('fr', 'FR'),
-                                        initialDate:
-                                            firstLot?.expirationDate ??
+                                        initialDate: firstLot?.expirationDate ??
                                             DateTime.now().add(
                                               const Duration(days: 365),
                                             ),
@@ -1198,9 +1208,9 @@ class _StockViewState extends State<StockView>
                                       onPressed: () async {
                                         FilePickerResult? result =
                                             await FilePicker.pickFiles(
-                                              type: FileType.image,
-                                              withData: true,
-                                            );
+                                          type: FileType.image,
+                                          withData: true,
+                                        );
                                         if (result != null &&
                                             result.files.single.bytes != null) {
                                           final base64Str = base64Encode(
@@ -1353,15 +1363,14 @@ class _StockViewState extends State<StockView>
                         category: catVal == 'Autre'
                             ? customCatCtrl.text.trim()
                             : catVal,
-                        supplierName: isEdit
-                            ? original.supplierName
-                            : 'Inconnu',
+                        supplierName:
+                            isEdit ? original.supplierName : 'Inconnu',
                         image: prodImage,
-                        minStock: isEdit ? original.minStock : 10,
+                        minStock: int.tryParse(minStockCtrl.text) ?? 0,
                         totalQuantity: isEdit
                             ? (original.totalQuantity -
-                                  (firstLot?.quantity ?? 0) +
-                                  finalQty)
+                                (firstLot?.quantity ?? 0) +
+                                finalQty)
                             : 0,
                       );
 
@@ -1414,6 +1423,14 @@ class _StockViewState extends State<StockView>
                         ); // this increments newProd.totalQuantity and saves
                       }
                       Navigator.pop(context);
+                      ScaffoldMessenger.of(this.context).showSnackBar(
+                        SnackBar(
+                          content: Text(isEdit
+                              ? 'Produit modifié avec succès.'
+                              : 'Produit enregistré avec succès.'),
+                          backgroundColor: const Color(0xFF10B981),
+                        ),
+                      );
                     }
                   },
                 ),
@@ -1428,9 +1445,8 @@ class _StockViewState extends State<StockView>
   // Génère un numéro de lot séquentiel unique : 1, 2, 3...
   String _generateUniqueLotNumber(List<dynamic> existingLots) {
     int next = 1;
-    final existing = existingLots
-        .map((l) => int.tryParse(l.lotNumber) ?? 0)
-        .toSet();
+    final existing =
+        existingLots.map((l) => int.tryParse(l.lotNumber) ?? 0).toSet();
     while (existing.contains(next)) {
       next++;
     }
@@ -1473,180 +1489,180 @@ class _StockViewState extends State<StockView>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Select Product
-                      Text(
-                        'Sélectionner le produit',
-                        style: GoogleFonts.inter(
-                          color: state.textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: state.bgPrimary,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<Product>(
-                            value: selProd,
-                            isExpanded: true,
-                            dropdownColor: state.bgSecondary,
-                            style: GoogleFonts.inter(
-                              color: state.textPrimary,
-                              fontSize: 13.5,
-                            ),
-                            items: (() {
-                              final sorted = List<Product>.from(state.products);
-                              sorted.sort(
-                                (a, b) => a.name.toLowerCase().compareTo(
-                                  b.name.toLowerCase(),
-                                ),
-                              );
-                              return sorted
-                                  .map(
-                                    (p) => DropdownMenuItem(
-                                      value: p,
-                                      child: Text(p.name),
-                                    ),
-                                  )
-                                  .toList();
-                            })(),
-                            onChanged: (val) {
-                              if (val != null)
-                                setDialogState(() => selProd = val);
-                            },
+                      children: [
+                        // Select Product
+                        Text(
+                          'Sélectionner le produit',
+                          style: GoogleFonts.inter(
+                            color: state.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                      SizedBox(height: 16),
-
-                      // Photo et détails du médicament sélectionné
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: state.bgPrimary,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.05),
+                        SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: state.bgPrimary,
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                color: state.bgPrimary,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.08),
-                                ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<Product>(
+                              value: selProd,
+                              isExpanded: true,
+                              dropdownColor: state.bgSecondary,
+                              style: GoogleFonts.inter(
+                                color: state.textPrimary,
+                                fontSize: 13.5,
                               ),
-                              clipBehavior: Clip.antiAlias,
-                              child:
-                                  selProd.image.isNotEmpty &&
-                                      !selProd.image.startsWith(
-                                        'generic_pill',
-                                      ) &&
-                                      selProd.image.length > 50
-                                  ? Image.memory(
-                                      base64Decode(
-                                        selProd.image.contains(',')
-                                            ? selProd.image.split(',').last
-                                            : selProd.image,
+                              items: (() {
+                                final sorted =
+                                    List<Product>.from(state.products);
+                                sorted.sort(
+                                  (a, b) => a.name.toLowerCase().compareTo(
+                                        b.name.toLowerCase(),
                                       ),
-                                      fit: BoxFit.cover,
+                                );
+                                return sorted
+                                    .map(
+                                      (p) => DropdownMenuItem(
+                                        value: p,
+                                        child: Text(p.name),
+                                      ),
                                     )
-                                  : Center(
-                                      child: Transform.rotate(
-                                        angle: -0.5,
-                                        child: Icon(
-                                          Icons.medication_rounded,
-                                          size: 28,
-                                          color: const Color(
-                                            0xFF10B981,
-                                          ).withOpacity(0.4),
+                                    .toList();
+                              })(),
+                              onChanged: (val) {
+                                if (val != null)
+                                  setDialogState(() => selProd = val);
+                              },
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16),
+
+                        // Photo et détails du médicament sélectionné
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: state.bgPrimary,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.05),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 56,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  color: state.bgPrimary,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.08),
+                                  ),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: selProd.image.isNotEmpty &&
+                                        !selProd.image.startsWith(
+                                          'generic_pill',
+                                        ) &&
+                                        selProd.image.length > 50
+                                    ? Image.memory(
+                                        base64Decode(
+                                          selProd.image.contains(',')
+                                              ? selProd.image.split(',').last
+                                              : selProd.image,
+                                        ),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Center(
+                                        child: Transform.rotate(
+                                          angle: -0.5,
+                                          child: Icon(
+                                            Icons.medication_rounded,
+                                            size: 28,
+                                            color: const Color(
+                                              0xFF10B981,
+                                            ).withOpacity(0.4),
+                                          ),
                                         ),
                                       ),
+                              ),
+                              SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      selProd.name,
+                                      style: GoogleFonts.inter(
+                                        color: state.textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13.5,
+                                      ),
                                     ),
-                            ),
-                            SizedBox(width: 14),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'Catégorie : ${selProd.category}',
+                                      style: GoogleFonts.inter(
+                                        color: state.textSecondary,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                    SizedBox(height: 2),
+                                    Text(
+                                      'Stock actuel : ${selProd.totalQuantity} unités',
+                                      style: GoogleFonts.inter(
+                                        color: Color(0xFF10B981),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 16),
+
+                        // Lot number & quantity
+                        Row(
+                          children: [
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    selProd.name,
-                                    style: GoogleFonts.inter(
-                                      color: state.textPrimary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13.5,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    'Catégorie : ${selProd.category}',
-                                    style: GoogleFonts.inter(
-                                      color: state.textSecondary,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                  SizedBox(height: 2),
-                                  Text(
-                                    'Stock actuel : ${selProd.totalQuantity} unités',
-                                    style: GoogleFonts.inter(
-                                      color: Color(0xFF10B981),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
+                              child: _dialogField(
+                                label: 'Numéro de lot *',
+                                controller: numCtrl,
+                                required: true,
+                              ),
+                            ),
+                            SizedBox(width: 16),
+                            Expanded(
+                              child: _dialogField(
+                                label: 'Quantité reçue',
+                                controller: qtyCtrl,
+                                isNumber: true,
+                                required: true,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      SizedBox(height: 16),
+                        SizedBox(height: 16),
 
-                      // Lot number & quantity
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _dialogField(
-                              label: 'Numéro de lot *',
-                              controller: numCtrl,
-                              required: true,
-                            ),
-                          ),
-                          SizedBox(width: 16),
-                          Expanded(
-                            child: _dialogField(
-                              label: 'Quantité reçue',
-                              controller: qtyCtrl,
-                              isNumber: true,
-                              required: true,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 16),
-
-                      // Expiration date
-                      _dialogField(
-                        label: 'Date d\'Expiration (AAAA-MM-JJ)',
-                        controller: dateCtrl,
-                        required: true,
-                      ),
-                    ],
+                        // Expiration date
+                        _dialogField(
+                          label: 'Date d\'Expiration (AAAA-MM-JJ)',
+                          controller: dateCtrl,
+                          required: true,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            actions: [
+              actions: [
                 TextButton(
                   child: Text(
                     'Annuler',
@@ -1667,8 +1683,7 @@ class _StockViewState extends State<StockView>
                   ),
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
-                      final date =
-                          DateTime.tryParse(dateCtrl.text) ??
+                      final date = DateTime.tryParse(dateCtrl.text) ??
                           DateTime.now().add(const Duration(days: 365));
                       final newLot = Lot(
                         id: 'LOT-${DateTime.now().millisecondsSinceEpoch}',
@@ -1681,6 +1696,12 @@ class _StockViewState extends State<StockView>
 
                       state.addLot(newLot);
                       Navigator.pop(context);
+                      ScaffoldMessenger.of(this.context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Lot enregistré avec succès.'),
+                          backgroundColor: Color(0xFF10B981),
+                        ),
+                      );
                     }
                   },
                 ),
@@ -1717,35 +1738,35 @@ class _StockViewState extends State<StockView>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'N° de lot : ${lot.lotNumber} • Expiration : ${DateFormat('dd/MM/yyyy').format(lot.expirationDate)}',
-                  style: GoogleFonts.inter(
-                    color: state.textSecondary,
-                    fontSize: 12.5,
+                children: [
+                  Text(
+                    'N° de lot : ${lot.lotNumber} • Expiration : ${DateFormat('dd/MM/yyyy').format(lot.expirationDate)}',
+                    style: GoogleFonts.inter(
+                      color: state.textSecondary,
+                      fontSize: 12.5,
+                    ),
                   ),
-                ),
-                SizedBox(height: 16),
-                _dialogField(
-                  label: 'Nouvelle Quantité Physique Comptée',
-                  controller: qtyCtrl,
-                  isNumber: true,
-                  required: true,
-                ),
-                SizedBox(height: 12),
-                _dialogField(
-                  label: 'Motif de la Correction',
-                  controller: reasonCtrl,
-                  required: true,
-                  maxLines: 2,
-                  hintText:
-                      'ex: Casse de flacon, Correction comptage inventaire trimestriel, vol, périmé',
-                ),
-              ],
+                  SizedBox(height: 16),
+                  _dialogField(
+                    label: 'Nouvelle Quantité Physique Comptée',
+                    controller: qtyCtrl,
+                    isNumber: true,
+                    required: true,
+                  ),
+                  SizedBox(height: 12),
+                  _dialogField(
+                    label: 'Motif de la Correction',
+                    controller: reasonCtrl,
+                    required: true,
+                    maxLines: 2,
+                    hintText:
+                        'ex: Casse de flacon, Correction comptage inventaire trimestriel, vol, périmé',
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        actions: [
+          actions: [
             TextButton(
               child: Text(
                 'Annuler',
@@ -1773,6 +1794,12 @@ class _StockViewState extends State<StockView>
                     reasonCtrl.text.trim(),
                   );
                   Navigator.pop(context);
+                  ScaffoldMessenger.of(this.context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Stock modifié avec succès.'),
+                      backgroundColor: Color(0xFF10B981),
+                    ),
+                  );
                 }
               },
             ),
@@ -1814,9 +1841,8 @@ class _StockViewState extends State<StockView>
           onChanged: onChanged,
           decoration: InputDecoration(
             filled: true,
-            fillColor: readOnly
-                ? Color(0xFF334155).withOpacity(0.3)
-                : state.bgPrimary,
+            fillColor:
+                readOnly ? Color(0xFF334155).withOpacity(0.3) : state.bgPrimary,
             hintText: hintText,
             hintStyle: GoogleFonts.inter(
               color: state.textSecondaryLight,
@@ -1857,13 +1883,12 @@ class _StockViewState extends State<StockView>
   // ==========================================
   Future<void> _exportStockPdf(AppStateProvider state) async {
     final filtered = state.products.where((p) {
-      final matchesQuery =
-          p.name.toLowerCase().contains(
-            state.productSearchQuery.toLowerCase(),
-          ) ||
+      final matchesQuery = p.name.toLowerCase().contains(
+                state.productSearchQuery.toLowerCase(),
+              ) ||
           p.description.toLowerCase().contains(
-            state.productSearchQuery.toLowerCase(),
-          ) ||
+                state.productSearchQuery.toLowerCase(),
+              ) ||
           p.barcode.contains(state.productSearchQuery);
       final matchesCat =
           _selectedCategory == 'Tous' || p.category == _selectedCategory;

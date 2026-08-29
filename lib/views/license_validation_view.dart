@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/app_state_provider.dart';
 import '../utils/license_key.dart';
 
@@ -17,6 +18,16 @@ class _LicenseValidationViewState extends State<LicenseValidationView> {
   String? _errorMessage;
   bool _isLoading = false;
   bool _obscureLicense = true;
+
+  Future<void> _openContact(Uri uri) async {
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) &&
+        mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Impossible d\'ouvrir cette application.')),
+      );
+    }
+  }
 
   void _handleValidate() async {
     if (!_formKey.currentState!.validate()) return;
@@ -159,6 +170,44 @@ class _LicenseValidationViewState extends State<LicenseValidationView> {
                           color: const Color(0xFF94A3B8),
                           height: 1.5,
                         ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _openContact(
+                                Uri.parse('https://wa.me/224624064642'),
+                              ),
+                              icon: const Icon(Icons.chat_rounded, size: 18),
+                              label: const Text('WhatsApp\n624064642'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: themeColor,
+                                side: const BorderSide(color: themeColor),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _openContact(
+                                Uri.parse('tel:+224663507183'),
+                              ),
+                              icon: const Icon(Icons.phone_rounded, size: 18),
+                              label: const Text('Appeler\n663507183'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF06B6D4),
+                                side: const BorderSide(
+                                  color: Color(0xFF06B6D4),
+                                ),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 32),
 

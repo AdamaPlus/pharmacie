@@ -221,10 +221,18 @@ class _LoginViewState extends State<LoginView>
         fit: StackFit.expand,
         children: [
           // ── Fond image pharmacie ──
-          Image.asset('assets/images/pharmacy_bg.png', fit: BoxFit.cover),
+          Image.asset(
+            'assets/images/pharmacy_bg.png',
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.high,
+          ),
 
           // Voile clair pour garder le formulaire lisible sur l'image.
-          Container(color: const Color(0xDDF8FAFC)),
+          Container(
+            color: showRegister
+                ? const Color(0x8AF8FAFC)
+                : const Color(0xDDF8FAFC),
+          ),
 
           // ── Formulaire centré ──
           Center(
@@ -238,16 +246,23 @@ class _LoginViewState extends State<LoginView>
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(28),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                    filter: ImageFilter.blur(
+                      sigmaX: showRegister ? 5 : 24,
+                      sigmaY: showRegister ? 5 : 24,
+                    ),
                     child: Container(
                       width: 460,
                       padding: const EdgeInsets.all(40),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.96),
+                        color: showRegister
+                            ? const Color(0xFFFDFEFE)
+                            : Colors.white.withOpacity(0.96),
                         borderRadius: BorderRadius.circular(28),
                         border: Border.all(
-                          color: const Color(0xFFE2E8F0),
-                          width: 1,
+                          color: showRegister
+                              ? const Color(0xFFCBD5E1)
+                              : const Color(0xFFE2E8F0),
+                          width: showRegister ? 1.4 : 1,
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -946,9 +961,9 @@ class _LoginViewState extends State<LoginView>
         Text(
           label,
           style: GoogleFonts.inter(
-            fontSize: 11.5,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF475569),
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF334155),
           ),
         ),
         const SizedBox(height: 6),
@@ -973,9 +988,11 @@ class _LoginViewState extends State<LoginView>
                   : null),
           style: GoogleFonts.inter(
             color: const Color(0xFF0F172A),
-            fontSize: 13.5,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
           ),
-          decoration: _glassDeco(
+          cursorColor: themeColor,
+          decoration: _registrationDeco(
             isPhone
                 ? 'Ex: 620000000 (9 chiffres)'
                 : (isPinCode ? 'Code PIN à 4 chiffres (Ex: 1234)' : label),
@@ -1003,6 +1020,42 @@ class _LoginViewState extends State<LoginView>
           },
         ),
       ],
+    );
+  }
+
+  InputDecoration _registrationDeco(
+    String hint,
+    IconData prefix,
+    Color themeColor, {
+    Widget? suffixIcon,
+  }) {
+    OutlineInputBorder border(Color color, double width) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: color, width: width),
+        );
+
+    return InputDecoration(
+      filled: true,
+      fillColor: Colors.white,
+      prefixIcon: Icon(prefix, color: const Color(0xFF475569), size: 19),
+      suffixIcon: suffixIcon,
+      hintText: hint,
+      hintStyle: GoogleFonts.inter(
+        color: const Color(0xFF94A3B8),
+        fontSize: 13.5,
+        fontWeight: FontWeight.w400,
+      ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      border: border(const Color(0xFFCBD5E1), 1.2),
+      enabledBorder: border(const Color(0xFFCBD5E1), 1.2),
+      focusedBorder: border(themeColor, 2),
+      errorBorder: border(const Color(0xFFEF4444), 1.3),
+      focusedErrorBorder: border(const Color(0xFFEF4444), 2),
+      errorStyle: GoogleFonts.inter(
+        color: const Color(0xFFDC2626),
+        fontSize: 11.5,
+        fontWeight: FontWeight.w500,
+      ),
     );
   }
 

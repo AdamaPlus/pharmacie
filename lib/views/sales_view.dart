@@ -270,7 +270,7 @@ class _SalesViewState extends State<SalesView> {
     final filteredProducts = state.products.where((p) {
       final matchesQuery =
           p.name.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-          p.barcode.contains(_searchController.text);
+              p.barcode.contains(_searchController.text);
       final matchesCat =
           _selectedCategory == 'Tous' || p.category == _selectedCategory;
       final isInStock = p.totalQuantity > 0;
@@ -391,48 +391,47 @@ class _SalesViewState extends State<SalesView> {
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
-                      children:
-                          (() {
-                            final dynamicCats = state.products
-                                .map((p) => p.category)
-                                .toSet()
-                                .toList();
-                            dynamicCats.sort(
-                              (a, b) =>
-                                  a.toLowerCase().compareTo(b.toLowerCase()),
-                            );
-                            return ['Tous', ...dynamicCats];
-                          })().map((cat) {
-                            final isSelected = _selectedCategory == cat;
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: ChoiceChip(
-                                label: Text(cat),
-                                selected: isSelected,
-                                onSelected: (selected) {
-                                  if (selected) {
-                                    setState(() {
-                                      _selectedCategory = cat;
-                                    });
-                                  }
-                                },
-                                selectedColor: themeColor,
-                                backgroundColor: state.bgSecondary,
-                                labelStyle: GoogleFonts.inter(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : state.textSecondaryLight,
-                                  fontSize: 12,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            );
-                          }).toList(),
+                      children: (() {
+                        final dynamicCats = state.products
+                            .map((p) => p.category)
+                            .toSet()
+                            .toList();
+                        dynamicCats.sort(
+                          (a, b) => a.toLowerCase().compareTo(b.toLowerCase()),
+                        );
+                        return ['Tous', ...dynamicCats];
+                      })()
+                          .map((cat) {
+                        final isSelected = _selectedCategory == cat;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text(cat),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              if (selected) {
+                                setState(() {
+                                  _selectedCategory = cat;
+                                });
+                              }
+                            },
+                            selectedColor: themeColor,
+                            backgroundColor: state.bgSecondary,
+                            labelStyle: GoogleFonts.inter(
+                              color: isSelected
+                                  ? Colors.white
+                                  : state.textSecondaryLight,
+                              fontSize: 12,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
                   SizedBox(height: 20),
@@ -460,17 +459,17 @@ class _SalesViewState extends State<SalesView> {
                           )
                         : LayoutBuilder(
                             builder: (context, constraints) {
-                              int crossAxisCount = (constraints.maxWidth / 260)
-                                  .floor();
+                              int crossAxisCount =
+                                  (constraints.maxWidth / 260).floor();
                               if (crossAxisCount < 1) crossAxisCount = 1;
                               return GridView.builder(
                                 gridDelegate:
                                     SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: crossAxisCount,
-                                      mainAxisSpacing: 8,
-                                      crossAxisSpacing: 8,
-                                      mainAxisExtent: 110,
-                                    ),
+                                  crossAxisCount: crossAxisCount,
+                                  mainAxisSpacing: 8,
+                                  crossAxisSpacing: 8,
+                                  mainAxisExtent: 110,
+                                ),
                                 itemCount: filteredProducts.length,
                                 itemBuilder: (context, index) {
                                   final prod = filteredProducts[index];
@@ -546,15 +545,15 @@ class _SalesViewState extends State<SalesView> {
                                                     color: state.bgPrimary,
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                          8,
-                                                        ),
+                                                      8,
+                                                    ),
                                                   ),
                                                   clipBehavior: Clip.antiAlias,
                                                   child:
                                                       _buildHorizontalProductImage(
-                                                        prod,
-                                                        68,
-                                                      ),
+                                                    prod,
+                                                    68,
+                                                  ),
                                                 ),
                                                 const SizedBox(width: 10),
 
@@ -575,26 +574,25 @@ class _SalesViewState extends State<SalesView> {
                                                             .ellipsis,
                                                         style:
                                                             GoogleFonts.outfit(
-                                                              color: state
-                                                                  .textPrimary,
-                                                              fontSize: 13.0,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                              height: 1.1,
-                                                            ),
+                                                          color:
+                                                              state.textPrimary,
+                                                          fontSize: 13.0,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          height: 1.1,
+                                                        ),
                                                       ),
                                                       const SizedBox(height: 2),
                                                       Text(
-                                                        prod
-                                                                .description
+                                                        prod.description
                                                                 .isNotEmpty
                                                             ? prod.description
                                                             : prod.category,
                                                         maxLines: 1,
                                                         overflow: TextOverflow
                                                             .ellipsis,
-                                                        style: GoogleFonts.inter(
+                                                        style:
+                                                            GoogleFonts.inter(
                                                           color: state
                                                               .textSecondary,
                                                           fontSize: 10.5,
@@ -607,15 +605,13 @@ class _SalesViewState extends State<SalesView> {
                                                         ),
                                                         style:
                                                             GoogleFonts.inter(
-                                                              color:
-                                                                  const Color(
-                                                                    0xFF3B82F6,
-                                                                  ),
-                                                              fontSize: 13.5,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                            ),
+                                                          color: const Color(
+                                                            0xFF3B82F6,
+                                                          ),
+                                                          fontSize: 13.5,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
                                                       ),
                                                     ],
                                                   ),
@@ -636,17 +632,17 @@ class _SalesViewState extends State<SalesView> {
                                                 ),
                                                 child: Center(
                                                   child: Container(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 10,
-                                                          vertical: 4,
-                                                        ),
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 4,
+                                                    ),
                                                     decoration: BoxDecoration(
                                                       color: Colors.redAccent,
                                                       borderRadius:
                                                           BorderRadius.circular(
-                                                            6,
-                                                          ),
+                                                        6,
+                                                      ),
                                                     ),
                                                     child: Text(
                                                       'RUPTURE',
@@ -804,15 +800,20 @@ class _SalesViewState extends State<SalesView> {
                             // Loyalty points badge if patient selected
                             if (state.selectedCartPatient != null) ...[
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                  color: const Color(0xFF10B981)
+                                      .withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                                  border: Border.all(
+                                      color: const Color(0xFF10B981)
+                                          .withValues(alpha: 0.3)),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.star_rounded, color: Color(0xFF10B981), size: 14),
+                                    const Icon(Icons.star_rounded,
+                                        color: Color(0xFF10B981), size: 14),
                                     const SizedBox(width: 4),
                                     Text(
                                       '${state.selectedCartPatient!.loyaltyPoints} pts',
@@ -958,9 +959,9 @@ class _SalesViewState extends State<SalesView> {
                                           ),
                                           onPressed: () =>
                                               state.updateCartItemQuantity(
-                                                item.productId,
-                                                item.quantity + 1,
-                                              ),
+                                            item.productId,
+                                            item.quantity + 1,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -1301,10 +1302,11 @@ class _SalesViewState extends State<SalesView> {
                       '- ${NumberFormat.decimalPattern('fr').format(sale.discountAmount)}',
                     ),
 
-                  Text(
-                    '------------------------------------',
-                    style: GoogleFonts.courierPrime(color: Colors.black),
-                  ),
+                  if (sale.discountAmount > 0)
+                    Text(
+                      '------------------------------------',
+                      style: GoogleFonts.courierPrime(color: Colors.black),
+                    ),
 
                   // Net Total
                   Row(
@@ -1328,7 +1330,11 @@ class _SalesViewState extends State<SalesView> {
                       ),
                     ],
                   ),
-                  _receiptRow('MODE DE PAIEMENT', sale.paymentMethod),
+                  _receiptRow(
+                    'MODE DE PAIEMENT',
+                    sale.paymentMethod,
+                    showCurrency: false,
+                  ),
 
                   Text(
                     '------------------------------------',
@@ -1349,7 +1355,7 @@ class _SalesViewState extends State<SalesView> {
                               fontSize: 11,
                             ),
                           ),
-                          SizedBox(height: 35),
+                          SizedBox(height: 8),
                           Text(
                             '........................',
                             style: GoogleFonts.courierPrime(
@@ -1429,7 +1435,11 @@ class _SalesViewState extends State<SalesView> {
     );
   }
 
-  Widget _receiptRow(String label, String value) {
+  Widget _receiptRow(
+    String label,
+    String value, {
+    bool showCurrency = true,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -1440,7 +1450,7 @@ class _SalesViewState extends State<SalesView> {
             style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11),
           ),
           Text(
-            '$value GNF',
+            showCurrency ? '$value GNF' : value,
             style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11),
           ),
         ],
@@ -1455,7 +1465,8 @@ class _SalesViewState extends State<SalesView> {
             orElse: () => state.patients.first)
         : null;
     final int? loyaltyPoints = patient?.loyaltyPoints;
-    final int? earned = sale.netAmount > 0 ? (sale.netAmount / 10000).floor() : null;
+    final int? earned =
+        sale.netAmount > 0 ? (sale.netAmount / 10000).floor() : null;
     await InvoicePrinter.printInvoice(
       sale,
       state.pharmacyLogo,

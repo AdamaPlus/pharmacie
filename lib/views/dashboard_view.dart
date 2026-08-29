@@ -22,7 +22,16 @@ class DashboardView extends StatelessWidget {
       '${NumberFormat.decimalPattern('fr_FR').format(n.round())} GNF';
   TextStyle text(double size, Color color,
           [FontWeight weight = FontWeight.w400]) =>
-      GoogleFonts.inter(fontSize: size, color: color, fontWeight: weight);
+      GoogleFonts.inter(
+        fontSize: size < 10
+            ? size + 2
+            : size < 14
+                ? size + 1.5
+                : size + 1,
+        color: color,
+        fontWeight: weight,
+        height: 1.2,
+      );
   BoxDecoration card() => BoxDecoration(
           color: Colors.white,
           border: Border.all(color: line),
@@ -43,10 +52,18 @@ class DashboardView extends StatelessWidget {
             DateUtils.getDaysInMonth(state.workingYear, systemNow.month)));
     final todaySales =
         state.sales.where((s) => DateUtils.isSameDay(s.date, now)).toList();
-    final todayRevenue = todaySales.fold<double>(0, (v, s) => v + s.netAmount);
+    final todayExpenses = state.expenses
+        .where((e) => DateUtils.isSameDay(e.date, now))
+        .fold<double>(0, (v, e) => v + e.amount);
+    final monthExpenses = state.expenses
+        .where((e) => e.date.year == now.year && e.date.month == now.month)
+        .fold<double>(0, (v, e) => v + e.amount);
+    final todayRevenue =
+        todaySales.fold<double>(0, (v, s) => v + s.netAmount) - todayExpenses;
     final monthRevenue = state.sales
-        .where((s) => s.date.year == now.year && s.date.month == now.month)
-        .fold<double>(0, (v, s) => v + s.netAmount);
+            .where((s) => s.date.year == now.year && s.date.month == now.month)
+            .fold<double>(0, (v, s) => v + s.netAmount) -
+        monthExpenses;
     final pendingOrders = state.suppliers
         .expand((s) => s.orders)
         .where((o) => o.status != 'RECUE' && o.status != 'ANNULEE')
@@ -96,41 +113,61 @@ class DashboardView extends StatelessWidget {
                                     fontSize: 24,
                                     fontWeight: FontWeight.w700,
                                     color: ink)),
-                            Row(mainAxisSize: MainAxisSize.min, children: [
-                              const Icon(Icons.calendar_month_rounded,
-                                  color: green, size: 20),
-                              const SizedBox(width: 8),
-                              Text('Année de travail',
-                                  style: text(11, muted, FontWeight.w600)),
-                              const SizedBox(width: 8),
-                              DropdownButton<int>(
-                                  value: state.workingYear,
-                                  underline: const SizedBox(),
-                                  style: text(15, ink, FontWeight.w800),
-                                  items: state.availableWorkingYears
-                                      .map((year) => DropdownMenuItem(
-                                          value: year, child: Text('$year')))
-                                      .toList(),
-                                  onChanged: (year) {
-                                    if (year != null)
-                                      state.setWorkingYear(year);
-                                  }),
-                              const SizedBox(width: 8),
-                              OutlinedButton.icon(
-                                  onPressed: () =>
-                                      _confirmNextYear(context, state),
-                                  icon: const Icon(Icons.arrow_forward_rounded,
-                                      size: 16),
-                                  label: Text('${state.workingYear + 1}'),
-                                  style: OutlinedButton.styleFrom(
-                                      foregroundColor: green,
-                                      side: const BorderSide(color: green)))
-                            ])
+                            Wrap(
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  ElevatedButton.icon(
+                                      onPressed: () {
+                                        state.refreshSystemAlerts();
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(const SnackBar(
+                                          content: Text(
+                                              'Tableau de bord actualisé avec succès.'),
+                                          backgroundColor: blue,
+                                          behavior: SnackBarBehavior.floating,
+                                        ));
+                                      },
+                                      icon: const Icon(Icons.refresh_rounded,
+                                          size: 17),
+                                      label: const Text('Actualiser'),
+                                      style: ElevatedButton.styleFrom(
+                                          backgroundColor: blue,
+                                          foregroundColor: Colors.white)),
+                                  const Icon(Icons.calendar_month_rounded,
+                                      color: green, size: 20),
+                                  Text('Année de travail',
+                                      style: text(12, muted, FontWeight.w600)),
+                                  DropdownButton<int>(
+                                      value: state.workingYear,
+                                      underline: const SizedBox(),
+                                      style: text(16, ink, FontWeight.w800),
+                                      items: state.availableWorkingYears
+                                          .map((year) => DropdownMenuItem(
+                                              value: year,
+                                              child: Text('$year')))
+                                          .toList(),
+                                      onChanged: (year) {
+                                        if (year != null)
+                                          state.setWorkingYear(year);
+                                      }),
+                                  OutlinedButton.icon(
+                                      onPressed: () =>
+                                          _confirmNextYear(context, state),
+                                      icon: const Icon(
+                                          Icons.arrow_forward_rounded,
+                                          size: 16),
+                                      label: Text('${state.workingYear + 1}'),
+                                      style: OutlinedButton.styleFrom(
+                                          foregroundColor: green,
+                                          side: const BorderSide(color: green)))
+                                ])
                           ]),
                       const SizedBox(height: 3),
                       Text(
                           'Bienvenue, voici l’activité générale de votre pharmacie.',
-                          style: text(11, muted)),
+                          style: text(12, muted)),
                       if (state.shouldShowPreviousYearDebtReminder) ...[
                         const SizedBox(height: 14),
                         _previousYearDebtReminder(state),
@@ -140,7 +177,7 @@ class DashboardView extends StatelessWidget {
                         (
                           'Ventes du jour',
                           money(todayRevenue),
-                          '${todaySales.length} vente(s) aujourd’hui',
+                          '${todaySales.length} vente(s), dépenses déduites',
                           Icons.shopping_cart_outlined,
                           green
                         ),
@@ -159,9 +196,9 @@ class DashboardView extends StatelessWidget {
                           purple
                         ),
                         (
-                          'Chiffre d’affaires',
+                          'Montant net',
                           money(monthRevenue),
-                          'Total de ce mois',
+                          'Ventes moins dépenses du mois',
                           Icons.monetization_on_outlined,
                           orange
                         )
@@ -246,7 +283,7 @@ class DashboardView extends StatelessWidget {
             crossAxisCount: cols,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            mainAxisExtent: 118),
+            mainAxisExtent: 126),
         itemBuilder: (_, i) {
           final d = data[i];
           return Container(
@@ -288,11 +325,11 @@ class DashboardView extends StatelessWidget {
     final evolution = _evolution(state.sales, referenceDate);
     final left = _panel(
         'Évolution des ventes', _salesChart(evolution, referenceDate),
-        action: '7 derniers jours');
+        action: '7 derniers jours', onTap: () => state.setActiveTab(10));
     final middle = _panel('Produits à stock faible', _lowStock(state, low),
         action: 'Voir tout', onTap: () => state.setActiveTab(1));
-    final right =
-        _panel('Répartition des ventes', _donut(categories), action: 'Ce mois');
+    final right = _panel('Répartition des ventes', _donut(categories),
+        action: 'Ce mois', onTap: () => state.setActiveTab(10));
     if (width < 900)
       return Column(children: [
         left,
@@ -519,7 +556,7 @@ class DashboardView extends StatelessWidget {
           itemBuilder: (_, i) {
             final s = sales[i];
             return SizedBox(
-                height: 34,
+                height: 40,
                 child: Row(children: [
                   Expanded(
                       flex: 3,
@@ -555,7 +592,7 @@ class DashboardView extends StatelessWidget {
           itemBuilder: (_, i) {
             final p = items[i];
             return SizedBox(
-                height: 34,
+                height: 40,
                 child: Row(children: [
                   Expanded(
                       flex: 3,

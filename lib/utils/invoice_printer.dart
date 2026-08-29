@@ -414,12 +414,20 @@ class InvoicePrinter {
       ),
     );
 
-    // Fixed 80 mm thermal-receipt width; the roll height follows the content.
-    final dynamicFormat = PdfPageFormat.roll80.copyWith(
-      marginBottom: 12.0,
-      marginTop: 12.0,
-      marginLeft: 12.0,
-      marginRight: 12.0,
+    // Largeur thermique fixe de 80 mm, avec une hauteur réellement adaptée
+    // au nombre de produits et aux noms qui occupent plusieurs lignes.
+    final itemsHeight = sale.items.fold<double>(0, (height, item) {
+      final nameLines = (item.productName.runes.length / 24).ceil();
+      return height + 12 + ((nameLines > 1 ? nameLines - 1 : 0) * 7);
+    });
+    final optionalHeight =
+        (sale.discountAmount > 0 ? 12.0 : 0.0) +
+        (patientLoyaltyPoints != null && sale.patientName != null ? 12.0 : 0.0);
+    final receiptHeight = 390.0 + itemsHeight + optionalHeight;
+    final dynamicFormat = PdfPageFormat(
+      PdfPageFormat.roll80.width,
+      receiptHeight,
+      marginAll: 0,
     );
 
     doc.addPage(

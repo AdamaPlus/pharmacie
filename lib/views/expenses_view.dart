@@ -403,8 +403,8 @@ class _ExpensesViewState extends State<ExpensesView> {
                                         context: dialogContext,
                                         initialDate: date,
                                         firstDate: DateTime(2020),
-                                        lastDate:
-                                            DateTime(state.workingYear, 12, 31));
+                                        lastDate: DateTime(
+                                            state.workingYear, 12, 31));
                                     if (d != null) setLocal(() => date = d);
                                   }),
                               const SizedBox(height: 12),
@@ -436,6 +436,11 @@ class _ExpensesViewState extends State<ExpensesView> {
                                 ? state.addExpense(item)
                                 : state.updateExpense(item);
                             Navigator.pop(dialogContext);
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text(expense == null
+                                    ? 'Dépense enregistrée avec succès.'
+                                    : 'Dépense modifiée avec succès.'),
+                                backgroundColor: _green));
                           },
                           style: ElevatedButton.styleFrom(
                               backgroundColor: _green,
@@ -461,6 +466,13 @@ class _ExpensesViewState extends State<ExpensesView> {
                       child: const Text('Supprimer',
                           style: TextStyle(color: Colors.red)))
                 ]));
-    if (ok == true) state.deleteExpense(expense.id);
+    if (ok == true) {
+      state.deleteExpense(expense.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Dépense supprimée avec succès.'),
+            backgroundColor: _green));
+      }
+    }
   }
 }

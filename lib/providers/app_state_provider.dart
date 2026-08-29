@@ -173,8 +173,10 @@ class AppStateProvider extends ChangeNotifier {
       }
     }
 
+    final today = DateUtils.dateOnly(now);
     for (final lot in _db.lots.where((lot) => lot.quantity > 0)) {
-      final diff = lot.expirationDate.difference(now).inDays;
+      final expirationDay = DateUtils.dateOnly(lot.expirationDate);
+      final diff = expirationDay.difference(today).inDays;
       if (lot.expirationDate.isBefore(now)) {
         nextAlerts.add('Périmé : ${lot.productName} (${lot.lotNumber})');
       } else if (diff <= 30) {
@@ -188,6 +190,7 @@ class AppStateProvider extends ChangeNotifier {
     final newAlerts = nextAlerts
         .where((message) => !existingMessages.contains(message))
         .toList();
+    _activeAlerts.removeWhere((entry) => !nextAlerts.contains(entry.message));
     for (final message in nextAlerts) {
       if (!_activeAlerts.any((entry) => entry.message == message)) {
         _activeAlerts.add(_AlertEntry(message: message, createdAt: now));
@@ -612,12 +615,7 @@ class AppStateProvider extends ChangeNotifier {
 
   Future<void> _init() async {
     await _db.init();
-    final currentYear = DateTime.now().year;
-    if (_db.workingYear < currentYear) {
-      _db.workingYear = currentYear;
-      await _db.save();
-    }
-    _cleanOldSales();
+    _activeTab = _db.activeTab;
     _ensureDefaultUserExists();
     _initialized = true;
     if (_db.pharmacyLogoBase64.isNotEmpty) {
@@ -632,24 +630,9 @@ class AppStateProvider extends ChangeNotifier {
 
   void setActiveTab(int index) {
     _activeTab = index;
+    _db.activeTab = index;
+    _db.save();
     notifyListeners();
-  }
-
-  void _cleanOldSales() {
-    final now = DateTime.now();
-    bool hasRemoved = false;
-    _db.sales.removeWhere((s) {
-      if (now.difference(s.date).inDays > 30) {
-        hasRemoved = true;
-        return true;
-      }
-      return false;
-    });
-    if (hasRemoved) {
-      _db.logAction('NETTOYAGE',
-          'Suppression automatique des historiques de ventes de plus de 30 jours.');
-      _db.save();
-    }
   }
 
   // ==========================================
@@ -738,6 +721,7 @@ class AppStateProvider extends ChangeNotifier {
           user.role.isNotEmpty && user.role != 'GUEST' ? user.role : 'ADMIN';
       _db.logAction('CONNEXION',
           'Utilisateur ${user.username} s\'est connecté avec le rôle ${_db.currentUserRole}.');
+      _db.save();
       notifyListeners();
       return true;
     }
@@ -749,6 +733,7 @@ class AppStateProvider extends ChangeNotifier {
           u.role.isNotEmpty && u.role != 'GUEST' ? u.role : 'ADMIN';
       _db.logAction('CONNEXION',
           'Connexion secours effectuée pour l\'utilisateur ${u.username}.');
+      _db.save();
       notifyListeners();
       return true;
     }
@@ -764,9 +749,11 @@ class AppStateProvider extends ChangeNotifier {
     _db.currentUsername = 'anonymous';
     _db.currentUserRole = 'GUEST';
     _activeTab = 0;
+    _db.activeTab = 0;
     _cart.clear();
     _cartDiscount = 0.0;
     _selectedCartPatient = null;
+    _db.save();
     notifyListeners();
   }
 
@@ -1301,12 +1288,85 @@ class AppStateProvider extends ChangeNotifier {
   }
 
   // ── DETTES & EMPRUNTS OPERATIONS ──────────────────────────────────────────
-  void addLoan(MedicamentLoan loan) {
+  Map<String, int> _loanQuantities(MedicamentLoan loan) {
+    final quantities = <String, int>{};
+    for (final item in loan.items) {
+      quantities.update(item.productName, (value) => value + item.quantity,
+          ifAbsent: () => item.quantity);
+    }
+    return quantities;
+  }
+
+  bool _applyManualLoanStockChange(
+      MedicamentLoan? previous, MedicamentLoan? next) {
+    // Une dette créée par une vente à crédit a déjà été sortie par checkoutCart.
+    if ((previous?.saleId ?? next?.saleId) != null) return true;
+    final before =
+        previous == null ? <String, int>{} : _loanQuantities(previous);
+    final after = next == null ? <String, int>{} : _loanQuantities(next);
+    final names = {...before.keys, ...after.keys};
+
+    for (final name in names) {
+      final delta = (after[name] ?? 0) - (before[name] ?? 0);
+      if (delta <= 0) continue;
+      final productIndex = _db.products.indexWhere((p) => p.name == name);
+      if (productIndex == -1 ||
+          _db.products[productIndex].totalQuantity < delta) return false;
+    }
+
+    for (final name in names) {
+      final delta = (after[name] ?? 0) - (before[name] ?? 0);
+      if (delta == 0) continue;
+      final productIndex = _db.products.indexWhere((p) => p.name == name);
+      if (productIndex == -1) continue;
+      final product = _db.products[productIndex];
+      if (delta > 0) {
+        var remaining = delta;
+        final productLots = _db.lots
+            .where((lot) => lot.productId == product.id && lot.quantity > 0)
+            .toList()
+          ..sort((a, b) => a.expirationDate.compareTo(b.expirationDate));
+        for (final lot in productLots) {
+          if (remaining == 0) break;
+          final taken = lot.quantity < remaining ? lot.quantity : remaining;
+          lot.quantity -= taken;
+          remaining -= taken;
+        }
+        product.totalQuantity -= delta;
+        _registerMovement(
+            productId: product.id,
+            productName: product.name,
+            type: 'SORTIE',
+            quantity: delta,
+            reason: 'Dette de médicaments ${next?.id ?? previous?.id}');
+      } else {
+        final returned = -delta;
+        final productLots = _db.lots
+            .where((lot) => lot.productId == product.id)
+            .toList()
+          ..sort((a, b) => a.expirationDate.compareTo(b.expirationDate));
+        if (productLots.isNotEmpty) productLots.first.quantity += returned;
+        product.totalQuantity += returned;
+        _registerMovement(
+            productId: product.id,
+            productName: product.name,
+            type: 'ENTREE',
+            quantity: returned,
+            reason: 'Correction de la dette ${next?.id ?? previous?.id}');
+      }
+    }
+    return true;
+  }
+
+  bool addLoan(MedicamentLoan loan) {
+    if (!_applyManualLoanStockChange(null, loan)) return false;
     _db.loans.insert(0, loan);
     _db.logAction('LOAN_ADD',
         'Dette enregistrée : ${loan.lenderName} (${loan.totalValue} GNF)');
     _db.save();
+    refreshSystemAlerts(shouldNotify: true);
     notifyListeners();
+    return true;
   }
 
   void addExpense(Expense expense) {
@@ -1337,14 +1397,18 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateLoan(MedicamentLoan loan) {
+  bool updateLoan(MedicamentLoan loan) {
     final idx = _db.loans.indexWhere((l) => l.id == loan.id);
     if (idx != -1) {
+      if (!_applyManualLoanStockChange(_db.loans[idx], loan)) return false;
       _db.loans[idx] = loan;
       _db.logAction('LOAN_UPDATE', 'Dette mise à jour : ${loan.lenderName}');
       _db.save();
+      refreshSystemAlerts(shouldNotify: true);
       notifyListeners();
+      return true;
     }
+    return false;
   }
 
   void deleteLoan(String loanId) {
