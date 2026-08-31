@@ -615,6 +615,13 @@ class AppStateProvider extends ChangeNotifier {
 
   Future<void> _init() async {
     await _db.init();
+
+    // Une connexion n'est valable que pour l'exécution en cours de
+    // l'application. Au prochain démarrage, toujours demander à
+    // l'utilisateur de s'authentifier de nouveau.
+    _db.currentUsername = 'anonymous';
+    _db.currentUserRole = 'GUEST';
+
     final currentYear = DateTime.now().year;
     if (_db.workingYear < currentYear) {
       final previousYear = _db.workingYear;
