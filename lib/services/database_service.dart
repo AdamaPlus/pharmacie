@@ -91,16 +91,42 @@ class DatabaseService {
 
   Future<Directory> _resolveDatabaseDirectory() async {
     if (Platform.isWindows) {
-      for (final path in windowsDataDirectoryCandidates(
-        Platform.environment,
-      )) {
+      final candidates = windowsDataDirectoryCandidates(Platform.environment);
+
+      try {
+        final appDocsDir = await getApplicationDocumentsDirectory();
+        final docsPath = p.join(appDocsDir.path, 'PharmaGuinee');
+        if (!candidates.contains(docsPath)) candidates.add(docsPath);
+      } catch (e) {
+        debugPrint('Dossier Documents via path_provider non disponible: $e');
+      }
+
+      try {
+        final appSupportDir = await getApplicationSupportDirectory();
+        final supportPath = p.join(appSupportDir.path, 'PharmaGuinee');
+        if (!candidates.contains(supportPath)) candidates.add(supportPath);
+      } catch (e) {
+        debugPrint('Dossier AppSupport via path_provider non disponible: $e');
+      }
+
+      final sysTempPath = p.join(Directory.systemTemp.path, 'PharmaGuinee');
+      if (!candidates.contains(sysTempPath)) candidates.add(sysTempPath);
+
+      for (final path in candidates) {
         final target = Directory(path);
         try {
-          if (!await target.exists()) await target.create(recursive: true);
-          await _migrateLegacyWindowsDatabase(target);
+          if (!await target.exists()) {
+            await target.create(recursive: true);
+          }
+          final testFile = File(p.join(target.path, '.write_test'));
+          await testFile.writeAsString('ok');
+          await testFile.delete();
+
           return target;
         } on FileSystemException catch (e) {
           debugPrint('Dossier de données Windows inutilisable ($path) : $e');
+        } catch (e) {
+          debugPrint('Erreur lors du test d\'accès au dossier Windows ($path) : $e');
         }
       }
     }
@@ -110,19 +136,6 @@ class DatabaseService {
         Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
     if (home != null && home.isNotEmpty) {
       preferredRoots.add(p.join(home, 'Documents', 'Pharma Guinée'));
-    }
-
-    final windowsUserProfile = Platform.environment['USERPROFILE'] ?? '';
-    final windowsHomeDrive = Platform.environment['HOMEDRIVE'] ?? '';
-    final windowsHomePath = Platform.environment['HOMEPATH'] ?? '';
-    if (Platform.isWindows && windowsUserProfile.isNotEmpty) {
-      preferredRoots
-          .add(p.join(windowsUserProfile, 'Documents', 'Pharma Guinée'));
-    } else if (Platform.isWindows &&
-        windowsHomeDrive.isNotEmpty &&
-        windowsHomePath.isNotEmpty) {
-      preferredRoots.add(p.join(
-          windowsHomeDrive + windowsHomePath, 'Documents', 'Pharma Guinée'));
     }
 
     if (Platform.isMacOS && home != null && home.isNotEmpty) {
@@ -160,8 +173,6 @@ class DatabaseService {
       }
     }
 
-    // Dernier recours : évite que l'application refuse de démarrer même si
-    // Windows ne fournit aucune variable de profil utilisateur exploitable.
     final fallback =
         Directory(p.join(Directory.systemTemp.path, 'PharmaGuinee'));
     if (!await fallback.exists()) await fallback.create(recursive: true);
@@ -179,48 +190,50 @@ class DatabaseService {
       if (!candidates.contains(path)) candidates.add(path);
     }
 
+    // 1. APPDATA (%APPDATA% - Priorité si présent)
     addRoot(environment['APPDATA']);
+
+    // 2. LOCALAPPDATA (%LOCALAPPDATA%)
     addRoot(environment['LOCALAPPDATA']);
 
+    // 3. USERPROFILE
     final userProfile = environment['USERPROFILE']?.trim();
     if (userProfile != null && userProfile.isNotEmpty) {
       addRoot(p.join(userProfile, 'AppData', 'Roaming'));
+      addRoot(p.join(userProfile, 'AppData', 'Local'));
       addRoot(p.join(userProfile, 'Documents'));
     }
 
+    // 4. HOMEDRIVE + HOMEPATH
     final homeDrive = environment['HOMEDRIVE']?.trim() ?? '';
     final homePath = environment['HOMEPATH']?.trim() ?? '';
     if (homeDrive.isNotEmpty && homePath.isNotEmpty) {
       final profile = '$homeDrive$homePath';
       addRoot(p.join(profile, 'AppData', 'Roaming'));
+      addRoot(p.join(profile, 'AppData', 'Local'));
       addRoot(p.join(profile, 'Documents'));
     }
-    return candidates;
-  }
 
-  Future<void> _migrateLegacyWindowsDatabase(Directory target) async {
-    final targetDatabase = File(p.join(target.path, 'pharma_guinee.db'));
-    if (await targetDatabase.exists()) return;
-
-    final userProfile = Platform.environment['USERPROFILE'];
-    if (userProfile == null || userProfile.isEmpty) return;
-    final legacyDirectories = [
-      p.join(userProfile, 'Documents', 'Pharma Guinée'),
-      p.join(userProfile, 'Documents', 'pharmaguinee'),
-    ];
-    for (final legacyDirectory in legacyDirectories) {
-      final legacyDatabase = File(p.join(legacyDirectory, 'pharma_guinee.db'));
-      if (await legacyDatabase.exists()) {
-        await legacyDatabase.copy(targetDatabase.path);
-        for (final suffix in ['-wal', '-shm']) {
-          final sidecar = File('${legacyDatabase.path}$suffix');
-          if (await sidecar.exists()) {
-            await sidecar.copy('${targetDatabase.path}$suffix');
-          }
-        }
-        return;
-      }
+    // 5. Dossiers de secours Windows (si pas d'AppData ni profil)
+    final publicDir = environment['PUBLIC']?.trim();
+    if (publicDir != null && publicDir.isNotEmpty) {
+      addRoot(p.join(publicDir, 'Documents'));
+      addRoot(publicDir);
     }
+
+    final programData = environment['PROGRAMDATA']?.trim();
+    if (programData != null && programData.isNotEmpty) {
+      addRoot(programData);
+    }
+
+    final systemDrive = environment['SystemDrive']?.trim() ?? '';
+    if (systemDrive.isNotEmpty) {
+      addRoot(systemDrive);
+    } else {
+      addRoot(r'C:');
+    }
+
+    return candidates;
   }
 
   // ────────────────────────────────────────────────────────────────
