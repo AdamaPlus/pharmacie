@@ -53,4 +53,38 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: deskto
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
 
 [Dirs]
-Name: "{userappdata}\PharmaGuinee"
+Name: "{userappdata}\PharmaGuinee"; Flags: uninsalwaysuninstall
+
+[UninstallDelete]
+; Supprime toutes les données créées par les versions actuelles et anciennes.
+Type: filesandordirs; Name: "{userappdata}\PharmaGuinee"
+Type: filesandordirs; Name: "{localappdata}\PharmaGuinee"
+Type: filesandordirs; Name: "{userdocs}\PharmaGuinee"
+Type: filesandordirs; Name: "{userdocs}\Pharma Guinée"
+Type: filesandordirs; Name: "{tmp}\PharmaGuinee"
+
+[Code]
+function DeleteDataDirectory(Path: String): Boolean;
+begin
+  Result := (not DirExists(Path)) or DelTree(Path, True, True, True);
+end;
+
+function ResetUserData: Boolean;
+begin
+  { Une réinstallation doit toujours démarrer comme une installation neuve. }
+  Result := DeleteDataDirectory(ExpandConstant('{userappdata}\PharmaGuinee'));
+  Result := DeleteDataDirectory(ExpandConstant('{localappdata}\PharmaGuinee')) and Result;
+  Result := DeleteDataDirectory(ExpandConstant('{userdocs}\PharmaGuinee')) and Result;
+  Result := DeleteDataDirectory(ExpandConstant('{userdocs}\Pharma Guinée')) and Result;
+  Result := DeleteDataDirectory(ExpandConstant('{tmp}\PharmaGuinee')) and Result;
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  if not ResetUserData then
+    Result := 'Impossible de supprimer les anciennes données. Fermez PharmaGuinee puis relancez l''installation.'
+  else if not ForceDirectories(ExpandConstant('{userappdata}\PharmaGuinee')) then
+    Result := 'Impossible de créer le dossier de données dans le profil utilisateur.'
+  else
+    Result := '';
+end;

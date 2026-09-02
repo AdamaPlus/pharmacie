@@ -79,6 +79,11 @@ Filename: "netsh"; Parameters: "advfirewall firewall delete rule name=""{#AppNam
 [UninstallDelete]
 Type: filesandordirs; Name: "{userappdata}\{#AppPublisher}\{#AppName}"
 Type: filesandordirs; Name: "{localappdata}\{#AppPublisher}\{#AppName}"
+Type: filesandordirs; Name: "{userappdata}\PharmaGuinee"
+Type: filesandordirs; Name: "{localappdata}\PharmaGuinee"
+Type: filesandordirs; Name: "{userdocs}\PharmaGuinee"
+Type: filesandordirs; Name: "{userdocs}\Pharma Guinée"
+Type: filesandordirs; Name: "{tmp}\PharmaGuinee"
 
 [Code]
 function InitializeSetup(): Boolean;
@@ -90,10 +95,36 @@ begin
   end;
 end;
 
+function DeleteDataDirectory(Path: String): Boolean;
+begin
+  Result := (not DirExists(Path)) or DelTree(Path, True, True, True);
+end;
+
+function ResetUserData: Boolean;
+begin
+  { Une réinstallation doit toujours démarrer comme une installation neuve. }
+  Result := DeleteDataDirectory(ExpandConstant('{userappdata}\{#AppPublisher}\{#AppName}'));
+  Result := DeleteDataDirectory(ExpandConstant('{localappdata}\{#AppPublisher}\{#AppName}')) and Result;
+  Result := DeleteDataDirectory(ExpandConstant('{userappdata}\PharmaGuinee')) and Result;
+  Result := DeleteDataDirectory(ExpandConstant('{localappdata}\PharmaGuinee')) and Result;
+  Result := DeleteDataDirectory(ExpandConstant('{userdocs}\PharmaGuinee')) and Result;
+  Result := DeleteDataDirectory(ExpandConstant('{userdocs}\Pharma Guinée')) and Result;
+  Result := DeleteDataDirectory(ExpandConstant('{tmp}\PharmaGuinee')) and Result;
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  if not ResetUserData then
+    Result := 'Impossible de supprimer les anciennes données. Fermez pharmaguinee puis relancez l''installation.'
+  else if not ForceDirectories(ExpandConstant('{userappdata}\PharmaGuinee')) then
+    Result := 'Impossible de créer le dossier de données dans le profil utilisateur.'
+  else
+    Result := '';
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then begin
-    CreateDir(ExpandConstant('{localappdata}\{#AppPublisher}'));
-    CreateDir(ExpandConstant('{localappdata}\{#AppPublisher}\{#AppName}'));
+    ForceDirectories(ExpandConstant('{userappdata}\PharmaGuinee'));
   end;
 end;
