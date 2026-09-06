@@ -1677,7 +1677,7 @@ class _LoginViewState extends State<LoginView>
                                 LengthLimitingTextInputFormatter(9),
                               ],
                               style: GoogleFonts.inter(
-                                color: Colors.white,
+                                color: const Color(0xFF0F172A),
                                 fontSize: 14,
                               ),
                               decoration: _glassDeco(
@@ -1728,7 +1728,7 @@ class _LoginViewState extends State<LoginView>
                                 LengthLimitingTextInputFormatter(4),
                               ],
                               style: GoogleFonts.inter(
-                                color: Colors.white,
+                                color: const Color(0xFF0F172A),
                                 fontSize: 16,
                                 letterSpacing: 8,
                                 fontWeight: FontWeight.bold,
@@ -1776,7 +1776,7 @@ class _LoginViewState extends State<LoginView>
                               controller: newPassCtrl,
                               obscureText: obscureNewPass,
                               style: GoogleFonts.inter(
-                                color: Colors.white,
+                                color: const Color(0xFF0F172A),
                                 fontSize: 14,
                               ),
                               decoration: _glassDeco(
@@ -1788,7 +1788,7 @@ class _LoginViewState extends State<LoginView>
                                     obscureNewPass
                                         ? Icons.visibility_off_outlined
                                         : Icons.visibility_outlined,
-                                    color: Colors.white38,
+                                    color: const Color(0xFF64748B),
                                     size: 18,
                                   ),
                                   onPressed: () => setLocalState(
@@ -1817,7 +1817,7 @@ class _LoginViewState extends State<LoginView>
                               controller: newPassConfirmCtrl,
                               obscureText: obscureNewPassConfirm,
                               style: GoogleFonts.inter(
-                                color: Colors.white,
+                                color: const Color(0xFF0F172A),
                                 fontSize: 14,
                               ),
                               decoration: _glassDeco(
@@ -1829,7 +1829,7 @@ class _LoginViewState extends State<LoginView>
                                     obscureNewPassConfirm
                                         ? Icons.visibility_off_outlined
                                         : Icons.visibility_outlined,
-                                    color: Colors.white38,
+                                    color: const Color(0xFF64748B),
                                     size: 18,
                                   ),
                                   onPressed: () => setLocalState(
@@ -1890,8 +1890,7 @@ class _LoginViewState extends State<LoginView>
 
                           setLocalState(() {
                             currentStep = 2;
-                            localSuccess =
-                                'Le message de confirmation a été envoyé sur son numéro de téléphone.';
+                            localSuccess = 'Code reçu : $generatedCode';
                           });
 
                           ScaffoldMessenger.of(context).showSnackBar(

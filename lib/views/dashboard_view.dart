@@ -13,10 +13,7 @@ class DashboardView extends StatelessWidget {
       blue = Color(0xFF2F7DF4),
       purple = Color(0xFF9254DE),
       orange = Color(0xFFF59E0B),
-      red = Color(0xFFE84D5B),
-      ink = Color(0xFF17212B),
-      muted = Color(0xFF697586),
-      line = Color(0xFFE7ECF1);
+      red = Color(0xFFE84D5B);
 
   String money(num n) =>
       '${NumberFormat.decimalPattern('fr_FR').format(n.round())} GNF';
@@ -32,9 +29,9 @@ class DashboardView extends StatelessWidget {
         fontWeight: weight,
         height: 1.2,
       );
-  BoxDecoration card() => BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: line),
+  BoxDecoration card(AppStateProvider state) => BoxDecoration(
+          color: state.cardBg,
+          border: Border.all(color: state.borderTheme),
           borderRadius: BorderRadius.circular(8),
           boxShadow: const [
             BoxShadow(
@@ -96,7 +93,7 @@ class DashboardView extends StatelessWidget {
     }
 
     return Scaffold(
-        backgroundColor: const Color(0xFFF7F9FC),
+        backgroundColor: state.bgPrimary,
         body: LayoutBuilder(
             builder: (_, box) => SingleChildScrollView(
                 padding: EdgeInsets.all(box.maxWidth < 700 ? 16 : 22),
@@ -112,7 +109,7 @@ class DashboardView extends StatelessWidget {
                                 style: GoogleFonts.outfit(
                                     fontSize: 24,
                                     fontWeight: FontWeight.w700,
-                                    color: ink)),
+                                    color: state.textPrimary)),
                             Wrap(
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 spacing: 8,
@@ -138,11 +135,13 @@ class DashboardView extends StatelessWidget {
                                   const Icon(Icons.calendar_month_rounded,
                                       color: green, size: 20),
                                   Text('Année de travail',
-                                      style: text(12, muted, FontWeight.w600)),
+                                      style: text(12, state.textSecondary,
+                                          FontWeight.w600)),
                                   DropdownButton<int>(
                                       value: state.workingYear,
                                       underline: const SizedBox(),
-                                      style: text(16, ink, FontWeight.w800),
+                                      style: text(16, state.textPrimary,
+                                          FontWeight.w800),
                                       items: state.availableWorkingYears
                                           .map((year) => DropdownMenuItem(
                                               value: year,
@@ -167,13 +166,13 @@ class DashboardView extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                           'Bienvenue, voici l’activité générale de votre pharmacie.',
-                          style: text(12, muted)),
+                          style: text(12, state.textSecondary)),
                       if (state.shouldShowPreviousYearDebtReminder) ...[
                         const SizedBox(height: 14),
                         _previousYearDebtReminder(state),
                       ],
                       const SizedBox(height: 18),
-                      _metrics(box.maxWidth, [
+                      _metrics(box.maxWidth, state, [
                         (
                           'Ventes du jour',
                           money(todayRevenue),
@@ -268,8 +267,8 @@ class DashboardView extends StatelessWidget {
     if (confirmed == true) await state.setWorkingYear(nextYear);
   }
 
-  Widget _metrics(
-      double width, List<(String, String, String, IconData, Color)> data) {
+  Widget _metrics(double width, AppStateProvider state,
+      List<(String, String, String, IconData, Color)> data) {
     final cols = width >= 1000
         ? 4
         : width >= 560
@@ -288,7 +287,7 @@ class DashboardView extends StatelessWidget {
           final d = data[i];
           return Container(
               padding: const EdgeInsets.all(16),
-              decoration: card(),
+              decoration: card(state),
               child: Row(children: [
                 Container(
                     width: 47,
@@ -302,13 +301,16 @@ class DashboardView extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                      Text(d.$1, style: text(11, muted, FontWeight.w600)),
+                      Text(d.$1,
+                          style:
+                              text(11, state.textSecondary, FontWeight.w600)),
                       const SizedBox(height: 7),
                       FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
                           child: Text(d.$2,
-                              style: text(17, ink, FontWeight.w800))),
+                              style: text(
+                                  17, state.textPrimary, FontWeight.w800))),
                       const SizedBox(height: 7),
                       Text(d.$3,
                           maxLines: 1,
@@ -323,12 +325,14 @@ class DashboardView extends StatelessWidget {
       Map<String, double> categories) {
     final referenceDate = state.workingDate;
     final evolution = _evolution(state.sales, referenceDate);
-    final left = _panel(
-        'Évolution des ventes', _salesChart(evolution, referenceDate),
+    final left = _panel(state, 'Évolution des ventes',
+        _salesChart(state, evolution, referenceDate),
         action: '7 derniers jours', onTap: () => state.setActiveTab(10));
-    final middle = _panel('Produits à stock faible', _lowStock(state, low),
+    final middle = _panel(
+        state, 'Produits à stock faible', _lowStock(state, low),
         action: 'Voir tout', onTap: () => state.setActiveTab(1));
-    final right = _panel('Répartition des ventes', _donut(categories),
+    final right = _panel(
+        state, 'Répartition des ventes', _donut(state, categories),
         action: 'Ce mois', onTap: () => state.setActiveTab(10));
     if (width < 900)
       return Column(children: [
@@ -349,11 +353,12 @@ class DashboardView extends StatelessWidget {
 
   Widget _bottomGrid(double width, AppStateProvider state, List<Sale> sales,
       List<_Purchase> purchases, List<Product> low) {
-    final a = _panel('Ventes récentes', _recentSales(sales),
+    final a = _panel(state, 'Ventes récentes', _recentSales(state, sales),
         action: 'Voir tout', onTap: () => state.setActiveTab(11), height: 245);
-    final b = _panel('Derniers achats', _purchases(purchases),
+    final b = _panel(state, 'Derniers achats', _purchases(state, purchases),
         action: 'Voir tout', onTap: () => state.setActiveTab(6), height: 245);
-    final c = _panel('Alertes importantes', _alerts(state, low), height: 245);
+    final c =
+        _panel(state, 'Alertes importantes', _alerts(state, low), height: 245);
     if (width < 900)
       return Column(children: [
         a,
@@ -371,16 +376,17 @@ class DashboardView extends StatelessWidget {
     ]);
   }
 
-  Widget _panel(String title, Widget child,
+  Widget _panel(AppStateProvider state, String title, Widget child,
           {String? action, VoidCallback? onTap, double height = 320}) =>
       Container(
           height: height,
           padding: const EdgeInsets.all(14),
-          decoration: card(),
+          decoration: card(state),
           child: Column(children: [
             Row(children: [
               Expanded(
-                  child: Text(title, style: text(12, ink, FontWeight.w700))),
+                  child: Text(title,
+                      style: text(12, state.textPrimary, FontWeight.w700))),
               if (action != null)
                 TextButton(
                     onPressed: onTap,
@@ -388,7 +394,9 @@ class DashboardView extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 6)),
                     child: Text(action,
                         style: text(
-                            9, onTap == null ? muted : blue, FontWeight.w600)))
+                            9,
+                            onTap == null ? state.textSecondary : blue,
+                            FontWeight.w600)))
             ]),
             const SizedBox(height: 7),
             Expanded(child: child)
@@ -405,7 +413,8 @@ class DashboardView extends StatelessWidget {
     return values;
   }
 
-  Widget _salesChart(List<double> values, DateTime now) {
+  Widget _salesChart(
+      AppStateProvider state, List<double> values, DateTime now) {
     final top = max(10.0, values.fold<double>(0, max) * 1.2), chartDate = now;
     return LineChart(LineChartData(
         minY: 0,
@@ -414,7 +423,7 @@ class DashboardView extends StatelessWidget {
             show: true,
             drawVerticalLine: false,
             getDrawingHorizontalLine: (_) =>
-                const FlLine(color: line, strokeWidth: 1)),
+                FlLine(color: state.borderTheme, strokeWidth: 1)),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
             topTitles:
@@ -425,8 +434,8 @@ class DashboardView extends StatelessWidget {
                 sideTitles: SideTitles(
                     showTitles: true,
                     reservedSize: 36,
-                    getTitlesWidget: (v, _) =>
-                        Text(_compact(v), style: text(8, muted)))),
+                    getTitlesWidget: (v, _) => Text(_compact(v),
+                        style: text(8, state.textSecondary)))),
             bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
                     showTitles: true,
@@ -439,7 +448,7 @@ class DashboardView extends StatelessWidget {
                           child: Text(
                               DateFormat('dd MMM', 'fr_FR').format(
                                   chartDate.subtract(Duration(days: 6 - i))),
-                              style: text(7.5, muted)));
+                              style: text(7.5, state.textSecondary)));
                     }))),
         lineBarsData: [
           LineChartBarData(
@@ -460,10 +469,11 @@ class DashboardView extends StatelessWidget {
           : n.round().toString();
 
   Widget _lowStock(AppStateProvider state, List<Product> items) => items.isEmpty
-      ? _empty('Aucun stock faible')
+      ? _empty(state, 'Aucun stock faible')
       : ListView.separated(
           itemCount: min(4, items.length),
-          separatorBuilder: (_, __) => const Divider(height: 1, color: line),
+          separatorBuilder: (_, __) =>
+              Divider(height: 1, color: state.borderTheme),
           itemBuilder: (_, i) {
             final p = items[i], danger = p.totalQuantity <= 5;
             return InkWell(
@@ -475,7 +485,7 @@ class DashboardView extends StatelessWidget {
                           width: 34,
                           height: 34,
                           decoration: BoxDecoration(
-                              color: const Color(0xFFF5F7FA),
+                              color: state.bgPrimary,
                               borderRadius: BorderRadius.circular(6)),
                           child: const Icon(Icons.medication_outlined,
                               color: blue, size: 19)),
@@ -487,11 +497,12 @@ class DashboardView extends StatelessWidget {
                             Text(p.name,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: text(10, ink, FontWeight.w700)),
+                                style: text(
+                                    10, state.textPrimary, FontWeight.w700)),
                             Text(p.category,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: text(8, muted))
+                                style: text(8, state.textSecondary))
                           ])),
                       Container(
                           padding: const EdgeInsets.symmetric(
@@ -507,11 +518,11 @@ class DashboardView extends StatelessWidget {
                     ])));
           });
 
-  Widget _donut(Map<String, double> input) {
+  Widget _donut(AppStateProvider state, Map<String, double> input) {
     final entries = input.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final shown = entries.take(5).toList();
-    if (shown.isEmpty) return _empty('Aucune vente ce mois');
+    if (shown.isEmpty) return _empty(state, 'Aucune vente ce mois');
     final total = shown.fold<double>(0, (v, e) => v + e.value);
     const colors = [blue, green, orange, red, purple];
     return Column(children: [
@@ -528,8 +539,9 @@ class DashboardView extends StatelessWidget {
                     radius: 24,
                     showTitle: false)))),
         Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(_compact(total), style: text(14, ink, FontWeight.w800)),
-          Text('GNF', style: text(8, muted))
+          Text(_compact(total),
+              style: text(14, state.textPrimary, FontWeight.w800)),
+          Text('GNF', style: text(8, state.textSecondary))
         ])
       ])),
       ...List.generate(
@@ -542,15 +554,15 @@ class DashboardView extends StatelessWidget {
                 Expanded(
                     child: Text(shown[i].key,
                         overflow: TextOverflow.ellipsis,
-                        style: text(8, muted))),
+                        style: text(8, state.textSecondary))),
                 Text('${(shown[i].value / total * 100).round()}%',
-                    style: text(8, ink, FontWeight.w700))
+                    style: text(8, state.textPrimary, FontWeight.w700))
               ])))
     ]);
   }
 
-  Widget _recentSales(List<Sale> sales) => sales.isEmpty
-      ? _empty('Aucune vente récente')
+  Widget _recentSales(AppStateProvider state, List<Sale> sales) => sales.isEmpty
+      ? _empty(state, 'Aucune vente récente')
       : ListView.builder(
           itemCount: min(5, sales.length),
           itemBuilder: (_, i) {
@@ -563,17 +575,17 @@ class DashboardView extends StatelessWidget {
                       child: Text(s.id,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: text(8, ink, FontWeight.w700))),
+                          style: text(8, state.textPrimary, FontWeight.w700))),
                   Expanded(
                       flex: 3,
                       child: Text(
                           DateFormat('dd MMM, HH:mm', 'fr_FR').format(s.date),
-                          style: text(8, muted))),
+                          style: text(8, state.textSecondary))),
                   Expanded(
                       flex: 3,
                       child: Text(money(s.netAmount),
                           textAlign: TextAlign.right,
-                          style: text(8, ink, FontWeight.w700))),
+                          style: text(8, state.textPrimary, FontWeight.w700))),
                   const SizedBox(width: 8),
                   Container(
                       padding: const EdgeInsets.symmetric(
@@ -585,43 +597,46 @@ class DashboardView extends StatelessWidget {
                           Text('Payée', style: text(7, green, FontWeight.w700)))
                 ]));
           });
-  Widget _purchases(List<_Purchase> items) => items.isEmpty
-      ? _empty('Aucun achat récent')
-      : ListView.builder(
-          itemCount: min(5, items.length),
-          itemBuilder: (_, i) {
-            final p = items[i];
-            return SizedBox(
-                height: 40,
-                child: Row(children: [
-                  Expanded(
-                      flex: 3,
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(p.order.id,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: text(8, ink, FontWeight.w700)),
-                            Text(p.supplier,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: text(7, muted))
-                          ])),
-                  Expanded(
-                      flex: 2,
-                      child: Text(
-                          DateFormat('dd MMM yyyy', 'fr_FR')
-                              .format(p.order.date),
-                          style: text(7, muted))),
-                  Expanded(
-                      flex: 2,
-                      child: Text(money(p.order.totalAmount),
-                          textAlign: TextAlign.right,
-                          style: text(8, ink, FontWeight.w700)))
-                ]));
-          });
+  Widget _purchases(AppStateProvider state, List<_Purchase> items) =>
+      items.isEmpty
+          ? _empty(state, 'Aucun achat récent')
+          : ListView.builder(
+              itemCount: min(5, items.length),
+              itemBuilder: (_, i) {
+                final p = items[i];
+                return SizedBox(
+                    height: 40,
+                    child: Row(children: [
+                      Expanded(
+                          flex: 3,
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(p.order.id,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: text(
+                                        8, state.textPrimary, FontWeight.w700)),
+                                Text(p.supplier,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: text(7, state.textSecondary))
+                              ])),
+                      Expanded(
+                          flex: 2,
+                          child: Text(
+                              DateFormat('dd MMM yyyy', 'fr_FR')
+                                  .format(p.order.date),
+                              style: text(7, state.textSecondary))),
+                      Expanded(
+                          flex: 2,
+                          child: Text(money(p.order.totalAmount),
+                              textAlign: TextAlign.right,
+                              style:
+                                  text(8, state.textPrimary, FontWeight.w700)))
+                    ]));
+              });
 
   Widget _alerts(AppStateProvider state, List<Product> low) {
     final expiring = state.lots
@@ -636,6 +651,7 @@ class DashboardView extends StatelessWidget {
             .length;
     return Column(children: [
       _alert(
+          state,
           '${low.length} médicament(s) en rupture ou stock faible',
           'Vérifiez les quantités disponibles',
           red,
@@ -643,6 +659,7 @@ class DashboardView extends StatelessWidget {
           () => state.setActiveTab(1)),
       const SizedBox(height: 8),
       _alert(
+          state,
           '$expiring médicament(s) expirent bientôt',
           'Vérifiez les dates de péremption',
           orange,
@@ -650,6 +667,7 @@ class DashboardView extends StatelessWidget {
           () => state.setActiveTab(1)),
       const SizedBox(height: 8),
       _alert(
+          state,
           '$pending commande(s) en attente',
           'Confirmez les réceptions fournisseurs',
           blue,
@@ -658,8 +676,8 @@ class DashboardView extends StatelessWidget {
     ]);
   }
 
-  Widget _alert(String title, String sub, Color color, IconData icon,
-          VoidCallback tap) =>
+  Widget _alert(AppStateProvider state, String title, String sub, Color color,
+          IconData icon, VoidCallback tap) =>
       Expanded(
           child: InkWell(
               onTap: tap,
@@ -684,16 +702,16 @@ class DashboardView extends StatelessWidget {
                           Text(sub,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: text(7, muted))
+                              style: text(7, state.textSecondary))
                         ])),
-                    const Icon(Icons.chevron_right_rounded,
-                        color: muted, size: 17)
+                    Icon(Icons.chevron_right_rounded,
+                        color: state.textSecondary, size: 17)
                   ]))));
-  Widget _empty(String label) => Center(
+  Widget _empty(AppStateProvider state, String label) => Center(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.inbox_outlined, color: Color(0xFFCBD5E1), size: 36),
         const SizedBox(height: 8),
-        Text(label, style: text(10, muted))
+        Text(label, style: text(10, state.textSecondary))
       ]));
 }
 
