@@ -904,7 +904,7 @@ class _MainLayoutState extends State<MainLayout> {
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold)),
                           const SizedBox(height: 2),
-                          Text("Étudiant — Université de Labé",
+                          Text("Informaticien",
                               style: GoogleFonts.inter(
                                   color: state.textSecondary, fontSize: 12)),
                           Text("Département Informatique",
@@ -922,7 +922,7 @@ class _MainLayoutState extends State<MainLayout> {
               _detailRow(Icons.phone_rounded, 'Téléphone',
                   '624 064 642 / 663 507 183', state),
               const SizedBox(height: 8),
-              _detailRow(Icons.location_on_rounded, 'Adresse', 'Kankan, Guinée',
+              _detailRow(Icons.location_on_rounded, 'Adresse', 'Guinée',
                   state),
               const SizedBox(height: 16),
 
