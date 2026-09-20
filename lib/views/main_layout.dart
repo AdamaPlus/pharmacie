@@ -1009,100 +1009,290 @@ class _MainLayoutState extends State<MainLayout> {
   // ==========================================
   void _showDocumentationDialog(BuildContext context, AppStateProvider state) {
     const themeColor = Color(0xFF10B981);
+
+    // Sections de documentation avec leur contenu
+    final List<Map<String, dynamic>> docSections = [
+      {
+        'key': 'general',
+        'label': 'Présentation Générale',
+        'icon': Icons.info_outline_rounded,
+        'iconColor': Colors.purple,
+        'emoji': '🚀',
+        'subtitle': 'Découvrez PharmaGuinée et ses fonctionnalités clés',
+      },
+      {
+        'key': 'pos',
+        'label': 'Ventes (Point de Vente)',
+        'icon': Icons.point_of_sale_rounded,
+        'iconColor': Colors.amber,
+        'emoji': '🛒',
+        'subtitle': 'Comment réaliser des transactions et encaissements',
+      },
+      {
+        'key': 'stock',
+        'label': 'Stock & Médicaments',
+        'icon': Icons.inventory_2_rounded,
+        'iconColor': Colors.teal,
+        'emoji': '📦',
+        'subtitle': 'Gérer les produits, lots et alertes de rupture',
+      },
+      {
+        'key': 'dettes',
+        'label': 'Dettes & Crédits Clients',
+        'icon': Icons.account_balance_wallet_rounded,
+        'iconColor': Colors.indigo,
+        'emoji': '💳',
+        'subtitle': 'Suivre et gérer les crédits accordés aux patients',
+      },
+      {
+        'key': 'recu',
+        'label': 'Reçus & Impression PDF',
+        'icon': Icons.receipt_long_rounded,
+        'iconColor': Colors.blueGrey,
+        'emoji': '📄',
+        'subtitle': 'Imprimer et partager les factures professionnelles',
+      },
+      {
+        'key': 'roles',
+        'label': 'Rôles & Permissions',
+        'icon': Icons.manage_accounts_rounded,
+        'iconColor': Colors.orange,
+        'emoji': '🔐',
+        'subtitle': 'Comprendre les droits ADMIN et VENDEUR',
+      },
+      {
+        'key': 'sauvegarde',
+        'label': 'Sauvegarde & Restauration',
+        'icon': Icons.backup_rounded,
+        'iconColor': Colors.green,
+        'emoji': '💾',
+        'subtitle': 'Protéger et restaurer les données de la pharmacie',
+      },
+    ];
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: state.bgSecondary,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: themeColor.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
+      builder: (context) {
+        String? selectedSection;
+        return StatefulBuilder(
+          builder: (context, setDocState) {
+            return AlertDialog(
+              backgroundColor: state.bgSecondary,
+              insetPadding:
+                  const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+              title: Row(
+                children: [
+                  if (selectedSection != null)
+                    IconButton(
+                      icon: Icon(Icons.arrow_back_rounded,
+                          color: themeColor, size: 22),
+                      onPressed: () => setDocState(() => selectedSection = null),
+                      tooltip: 'Retour aux sections',
+                    ),
+                  if (selectedSection != null) const SizedBox(width: 4),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: themeColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.menu_book_rounded,
+                        color: themeColor, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          selectedSection == null
+                              ? 'Documentation & Mode d\'emploi'
+                              : docSections.firstWhere(
+                                  (s) => s['key'] == selectedSection)['label'],
+                          style: GoogleFonts.outfit(
+                            color: state.textPrimary,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (selectedSection != null)
+                          Text(
+                            docSections.firstWhere(
+                                (s) => s['key'] == selectedSection)['subtitle'],
+                            style: GoogleFonts.inter(
+                                color: state.textSecondary, fontSize: 12),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              child: const Icon(Icons.menu_book_rounded,
-                  color: themeColor, size: 24),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Documentation & Mode d\'emploi',
-              style: GoogleFonts.outfit(
-                color: state.textPrimary,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: Container(
-          width: 750,
-          height: 600,
-          child: DefaultTabController(
-            length: 5,
-            child: Column(
-              children: [
-                TabBar(
-                  isScrollable: true,
-                  labelColor: themeColor,
-                  unselectedLabelColor: state.textSecondary,
-                  indicatorColor: themeColor,
-                  labelStyle: GoogleFonts.inter(
-                      fontWeight: FontWeight.bold, fontSize: 13),
-                  unselectedLabelStyle: GoogleFonts.inter(fontSize: 13),
-                  tabs: const [
-                    Tab(
-                        text: 'Général',
-                        icon: Icon(Icons.info_outline, size: 18)),
-                    Tab(
-                        text: 'Ventes (POS)',
-                        icon: Icon(Icons.point_of_sale, size: 18)),
-                    Tab(
-                        text: 'Stock & Lots',
-                        icon: Icon(Icons.inventory_2, size: 18)),
-                    Tab(
-                        text: 'Dettes',
-                        icon: Icon(Icons.account_balance_wallet, size: 18)),
-                    Tab(
-                        text: 'Reçus & PDF',
-                        icon: Icon(Icons.receipt_long, size: 18)),
-                  ],
+              content: SizedBox(
+                width: 750,
+                height: 580,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: selectedSection == null
+                      // ── Grille des boutons de sélection ──
+                      ? _buildDocSectionGrid(
+                          state, docSections, themeColor,
+                          (key) => setDocState(() => selectedSection = key))
+                      // ── Contenu de la section sélectionnée ──
+                      : _buildDocSectionContent(
+                          state, selectedSection!, themeColor),
                 ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      _buildDocGeneral(state),
-                      _buildDocPOS(state),
-                      _buildDocStock(state),
-                      _buildDocDettes(state),
-                      _buildDocExport(state),
-                    ],
+              ),
+              actions: [
+                if (selectedSection != null)
+                  TextButton.icon(
+                    icon: const Icon(Icons.arrow_back_rounded,
+                        size: 16, color: Color(0xFF10B981)),
+                    label: Text(
+                      'Retour',
+                      style: GoogleFonts.inter(
+                          color: themeColor, fontWeight: FontWeight.bold),
+                    ),
+                    onPressed: () => setDocState(() => selectedSection = null),
+                  ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Fermer',
+                    style: GoogleFonts.inter(
+                      color: state.textSecondaryLight,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDocSectionGrid(
+    AppStateProvider state,
+    List<Map<String, dynamic>> sections,
+    Color themeColor,
+    void Function(String key) onSelect,
+  ) {
+    return SingleChildScrollView(
+      key: const ValueKey('grid'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 18),
+            child: Text(
+              'Choisissez un module pour lire son guide complet :',
+              style: GoogleFonts.inter(
+                  color: state.textSecondary, fontSize: 13.5),
             ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Fermer',
-              style: GoogleFonts.inter(
-                color: themeColor,
-                fontWeight: FontWeight.bold,
-              ),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 14,
+              crossAxisSpacing: 14,
+              childAspectRatio: 2.6,
             ),
+            itemCount: sections.length,
+            itemBuilder: (context, i) {
+              final s = sections[i];
+              return InkWell(
+                onTap: () => onSelect(s['key']),
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: state.isDarkMode
+                        ? const Color(0xFF1E293B)
+                        : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: state.borderTheme),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(9),
+                        decoration: BoxDecoration(
+                          color:
+                              (s['iconColor'] as Color).withOpacity(0.13),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(s['icon'] as IconData,
+                            color: s['iconColor'] as Color, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              s['label'],
+                              style: GoogleFonts.outfit(
+                                color: state.textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              s['subtitle'],
+                              style: GoogleFonts.inter(
+                                color: state.textSecondary,
+                                fontSize: 11,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded,
+                          color: state.textSecondaryLight, size: 18),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
+  Widget _buildDocSectionContent(
+      AppStateProvider state, String key, Color themeColor) {
+    switch (key) {
+      case 'general':
+        return _buildDocGeneral(state);
+      case 'pos':
+        return _buildDocPOS(state);
+      case 'stock':
+        return _buildDocStock(state);
+      case 'dettes':
+        return _buildDocDettes(state);
+      case 'recu':
+        return _buildDocExport(state);
+      case 'roles':
+        return _buildDocRoles(state);
+      case 'sauvegarde':
+        return _buildDocSauvegarde(state);
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
   Widget _buildDocGeneral(AppStateProvider state) {
     return SingleChildScrollView(
+      key: const ValueKey('general'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1112,23 +1302,26 @@ class _MainLayoutState extends State<MainLayout> {
           _docCard(
             title: 'À propos de la plateforme',
             description:
-                'PharmaGuinée permet de centraliser et d\'automatiser l\'intégralité des opérations de votre pharmacie :\n'
-                '• Encaissement rapide et fiable des clients.\n'
-                '• Gestion en temps réel du stock global et des alertes de rupture.\n'
-                '• Traçabilité absolue des ventes passées et des crédits accordés.\n'
-                '• Tableau de bord analytique des indicateurs de performance.',
+                'PharmaGuinée est une application de gestion complète pour les pharmacies. Elle centralise et automatise l\'intégralité des opérations de votre officine :\n'
+                '• Encaissement rapide et fiable des clients avec impression de reçus thermiques.\n'
+                '• Gestion en temps réel du stock global et des alertes de rupture par seuil configurable.\n'
+                '• Traçabilité absolue des ventes passées, des crédits accordés et de l\'historique complet.\n'
+                '• Tableau de bord analytique avec indicateurs de performance (chiffre d\'affaires, top produits, flux de trésorerie).\n'
+                '• Gestion multi-utilisateurs avec des rôles ADMIN et VENDEUR distincts.',
             icon: Icons.auto_awesome_rounded,
             iconColor: Colors.purple,
             state: state,
           ),
           const SizedBox(height: 12),
           _docCard(
-            title: 'Sécurité et Permissions',
+            title: 'Navigation dans l\'application',
             description:
-                'L\'accès est sécurisé par un code PIN à 4 chiffres unique pour chaque utilisateur. '
-                'Le rôle ADMIN détient l\'accès complet (tarification, comptes, configurations), '
-                'tandis que les VENDEURS sont restreints aux fonctionnalités de caisse et de consultation des stocks selon leurs droits.',
-            icon: Icons.shield_rounded,
+                'La barre de navigation à gauche affiche uniquement les modules auxquels vous avez accès selon votre rôle.\n'
+                '• Cliquez sur un module pour l\'ouvrir directement.\n'
+                '• Le titre du module actif s\'affiche en haut de la page.\n'
+                '• L\'onglet actif est mémorisé : au prochain démarrage, vous revenez directement sur le dernier module consulté.\n'
+                '• Sur la barre latérale, vous pouvez la réduire (icône flèche) pour gagner de l\'espace sur l\'écran.',
+            icon: Icons.menu_open_rounded,
             iconColor: Colors.blue,
             state: state,
           ),
@@ -1136,10 +1329,26 @@ class _MainLayoutState extends State<MainLayout> {
           _docCard(
             title: 'Gestion automatique des années',
             description:
-                'Au début d\'une nouvelle année civile, l\'année de travail est mise à jour automatiquement au démarrage de l\'application. '
-                'Les opérations des années précédentes restent intactes et peuvent toujours être consultées depuis la sélection d\'année du tableau de bord.',
+                'Au début d\'une nouvelle année civile, l\'année de travail est mise à jour automatiquement au démarrage de l\'application.\n'
+                '• Les opérations des années précédentes restent intactes et consultables.\n'
+                '• Depuis le tableau de bord, vous pouvez sélectionner une année passée pour consulter ses opérations (ventes, dépenses, dettes).\n'
+                '• Le catalogue produits et le stock ne sont jamais remis à zéro lors du changement d\'année.',
             icon: Icons.calendar_month_rounded,
             iconColor: Colors.orange,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: 'Tableau de Bord',
+            description:
+                'Le tableau de bord affiche une vue globale de la santé financière de la pharmacie :\n'
+                '• Chiffre d\'affaires du jour, de la semaine et du mois.\n'
+                '• Nombre de ventes réalisées dans la période sélectionnée.\n'
+                '• Alertes actives : produits en rupture de stock ou lots expirés.\n'
+                '• Top 5 des produits les plus vendus et graphique d\'évolution des ventes.\n'
+                '• Sélecteur d\'année pour naviguer entre les exercices.',
+            icon: Icons.dashboard_rounded,
+            iconColor: Colors.teal,
             state: state,
           ),
         ],
@@ -1149,6 +1358,7 @@ class _MainLayoutState extends State<MainLayout> {
 
   Widget _buildDocPOS(AppStateProvider state) {
     return SingleChildScrollView(
+      key: const ValueKey('pos'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1156,35 +1366,64 @@ class _MainLayoutState extends State<MainLayout> {
               'Comment réaliser des transactions rapidement et imprimer les reçus.'),
           const SizedBox(height: 16),
           _docCard(
-            title: '1. Sélectionner les produits',
+            title: '1. Ouvrir le module POS',
             description:
-                'Recherchez un produit par son nom ou scannez son code-barres dans la barre de recherche POS. '
-                'Cliquez sur un produit en stock pour l\'ajouter au panier. La quantité du produit dans le panier s\'incrémente automatiquement.',
+                'Cliquez sur "Point de ventes" dans la barre de navigation à gauche.\n'
+                'Si ce module n\'est pas visible, contactez l\'administrateur pour obtenir la permission "pos".\n'
+                'L\'écran se divise en deux parties : à gauche la liste des produits disponibles, à droite le panier d\'achat.',
+            icon: Icons.point_of_sale_rounded,
+            iconColor: Colors.blue,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: '2. Sélectionner les produits',
+            description:
+                'Recherchez un produit par son nom ou scannez son code-barres dans la barre de recherche POS.\n'
+                '• Cliquez sur un produit en stock pour l\'ajouter au panier. La quantité s\'incrémente automatiquement à chaque clic.\n'
+                '• Les produits en rupture de stock sont grisés et non cliquables.\n'
+                '• Filtrez par catégorie thérapeutique pour trouver rapidement un médicament.',
             icon: Icons.search_rounded,
             iconColor: Colors.amber,
             state: state,
           ),
           const SizedBox(height: 12),
           _docCard(
-            title: '2. Configurer le Panier',
+            title: '3. Configurer le Panier',
             description:
-                'Dans le panneau de droite, vous pouvez ajuster la quantité de chaque ligne avec les boutons (+) et (-). '
-                'Vous pouvez appliquer une remise en GNF ou saisir le nom du patient (facultatif).',
+                'Dans le panneau de droite, vous pouvez :\n'
+                '• Ajuster la quantité de chaque ligne avec les boutons (+) et (-).\n'
+                '• Supprimer un article du panier avec l\'icône poubelle.\n'
+                '• Appliquer une remise globale en GNF dans le champ "Remise".\n'
+                '• Saisir le nom du patient (facultatif) pour associer la vente à un client.',
             icon: Icons.shopping_basket_rounded,
             iconColor: Colors.green,
             state: state,
           ),
           const SizedBox(height: 12),
           _docCard(
-            title: '3. Mode de Paiement et Validation',
+            title: '4. Mode de Paiement et Validation',
             description:
                 'Sélectionnez le mode de paiement directement en bas du panier :\n'
-                '• Espèces (par défaut)\n'
-                '• Crédit (génère une dette dans l\'onglet Dettes)\n'
-                '• Orange Money (validation électronique)\n\n'
-                'Cliquez ensuite sur "Traiter le paiement" pour valider la vente.',
+                '• Espèces : saisissez le montant reçu, la monnaie à rendre est calculée automatiquement.\n'
+                '• Crédit : génère automatiquement une dette dans l\'onglet Dettes associée au nom du patient.\n'
+                '• Orange Money : validation électronique, aucun rendu de monnaie requis.\n\n'
+                'Cliquez sur "Traiter le paiement" pour finaliser. Un reçu thermique s\'ouvre immédiatement.',
             icon: Icons.payment_rounded,
             iconColor: Colors.teal,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: '5. Après la Vente',
+            description:
+                'Après validation :\n'
+                '• Le stock est automatiquement déduit en utilisant les lots qui expirent le plus tôt en priorité.\n'
+                '• La vente apparaît dans l\'historique des ventes et dans les archives de reçus.\n'
+                '• Si la vente était à crédit, la dette est visible dans le module Dettes.\n'
+                '• Le tableau de bord met à jour les statistiques en temps réel.',
+            icon: Icons.check_circle_outline_rounded,
+            iconColor: Colors.indigo,
             state: state,
           ),
         ],
@@ -1194,6 +1433,7 @@ class _MainLayoutState extends State<MainLayout> {
 
   Widget _buildDocStock(AppStateProvider state) {
     return SingleChildScrollView(
+      key: const ValueKey('stock'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1201,20 +1441,49 @@ class _MainLayoutState extends State<MainLayout> {
               'Optimisez votre approvisionnement et évitez les ruptures ou produits périmés.'),
           const SizedBox(height: 16),
           _docCard(
-            title: 'Suivi et Recherche des Médicaments',
+            title: 'Consulter et Rechercher les Médicaments',
             description:
-                'L\'onglet Stock présente l\'ensemble de vos produits avec leur prix d\'achat, prix de vente, et niveau de stock actuel. '
-                'Vous pouvez filtrer par catégorie thérapeutique pour cibler un médicament particulier.',
+                'L\'onglet Stock présente l\'ensemble de vos produits avec leur prix d\'achat, prix de vente, et niveau de stock actuel.\n'
+                '• Utilisez la barre de recherche pour trouver un produit par nom ou code-barres.\n'
+                '• Filtrez par catégorie thérapeutique (antibiotiques, antalgiques, etc.) pour cibler un médicament.\n'
+                '• Triez la liste par niveau de stock croissant pour identifier rapidement les produits à réapprovisionner.',
             icon: Icons.inventory_rounded,
             iconColor: Colors.teal,
             state: state,
           ),
           const SizedBox(height: 12),
           _docCard(
+            title: 'Ajouter un Nouveau Produit',
+            description:
+                'Cliquez sur le bouton "Ajouter un produit" (si vous avez la permission "add_product") :\n'
+                '• Renseignez le nom, la catégorie, le prix d\'achat et le prix de vente.\n'
+                '• Définissez le seuil d\'alerte minimal (ex: 10 unités) pour activer les alertes de rupture.\n'
+                '• Ajoutez éventuellement un code-barres, une image ou un fournisseur habituel.',
+            icon: Icons.add_box_rounded,
+            iconColor: Colors.green,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: 'Gestion des Lots',
+            description:
+                'Chaque livraison de médicaments est enregistrée comme un lot distinct :\n'
+                '• Un lot possède un numéro de lot, une date d\'expiration et une quantité.\n'
+                '• L\'application suit chaque lot individuellement pour signaler les péremptions imminentes (moins de 30 jours).\n'
+                '• Lors d\'une vente, les lots les plus anciens (date d\'expiration la plus proche) sont utilisés en priorité (méthode FEFO).',
+            icon: Icons.view_module_rounded,
+            iconColor: Colors.orange,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
             title: 'Alertes Automatiques',
-            description: 'L\'application vous alerte de façon proactive :\n'
-                '• Niveau faible/rupture : si un stock descend sous le seuil d\'alerte minimal spécifié.\n'
-                '• Produits périmés : l\'application suit chaque lot individuellement pour signaler les péremptions imminentes.',
+            description:
+                'L\'application vous alerte de façon proactive via des badges rouges dans la barre de navigation :\n'
+                '• 🔴 Niveau faible/rupture : stock inférieur ou égal au seuil d\'alerte minimal.\n'
+                '• 🟡 Produits périmés : un ou plusieurs lots d\'un produit ont dépassé leur date d\'expiration.\n'
+                '• ⚠️ Péremption imminente : un lot expire dans moins de 30 jours.\n'
+                'Ces alertes sont aussi visibles dans le tableau de bord pour une vue globale.',
             icon: Icons.warning_amber_rounded,
             iconColor: Colors.redAccent,
             state: state,
@@ -1223,10 +1492,13 @@ class _MainLayoutState extends State<MainLayout> {
           _docCard(
             title: 'Réapprovisionnement et Fournisseurs',
             description:
-                'Utilisez le module Réapprovisionnement pour enregistrer les nouvelles livraisons de médicaments, '
-                'spécifier les numéros de lots, dates de péremption, et assigner un fournisseur.',
+                'Utilisez le module "Réapprovisionnement" pour enregistrer les nouvelles livraisons :\n'
+                '• Sélectionnez le produit à réapprovisionner et spécifiez la quantité livrée.\n'
+                '• Renseignez le numéro de lot et la date de péremption de la livraison.\n'
+                '• Associez un fournisseur à la livraison pour une traçabilité complète.\n'
+                '• Le stock du produit est automatiquement mis à jour après l\'enregistrement.',
             icon: Icons.local_shipping_rounded,
-            iconColor: Colors.orange,
+            iconColor: Colors.blue,
             state: state,
           ),
         ],
@@ -1236,6 +1508,7 @@ class _MainLayoutState extends State<MainLayout> {
 
   Widget _buildDocDettes(AppStateProvider state) {
     return SingleChildScrollView(
+      key: const ValueKey('dettes'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1243,29 +1516,53 @@ class _MainLayoutState extends State<MainLayout> {
               'Gardez le contrôle sur les encaissements différés de vos clients.'),
           const SizedBox(height: 16),
           _docCard(
-            title: 'Création d\'un crédit',
+            title: 'Création d\'un crédit depuis le POS',
             description:
-                'Lorsqu\'un client achète à crédit, sélectionnez l\'option "Crédit" dans le panier POS avant de cliquer sur "Traiter le paiement". '
-                'Une entrée de dette sera créée automatiquement associée au nom du patient.',
+                'Lorsqu\'un client souhaite acheter à crédit :\n'
+                '1. Ajoutez les produits au panier normalement.\n'
+                '2. Saisissez obligatoirement le nom du patient dans le champ prévu.\n'
+                '3. Sélectionnez l\'option "Crédit" dans les modes de paiement.\n'
+                '4. Cliquez sur "Traiter le paiement".\n'
+                'Une entrée de dette est créée automatiquement et le stock est déduit immédiatement.',
             icon: Icons.add_card_rounded,
             iconColor: Colors.indigo,
             state: state,
           ),
           const SizedBox(height: 12),
           _docCard(
-            title: 'Suivi et Remboursement',
+            title: 'Consulter les Dettes',
             description:
-                'Dans l\'onglet Dettes, vous pouvez consulter les dettes de l\'année sélectionnée et marquer une dette comme réglée dès que son paiement est terminé.',
+                'Dans l\'onglet "Dettes", vous voyez la liste de toutes les dettes de l\'année sélectionnée :\n'
+                '• Nom du patient débiteur, montant dû, date de la vente à crédit.\n'
+                '• Statut : Impayée (rouge) ou Réglée (vert).\n'
+                '• Filtrez par statut pour n\'afficher que les dettes en cours.\n'
+                '• Le total des dettes impayées est affiché en haut de l\'onglet.',
+            icon: Icons.list_alt_rounded,
+            iconColor: Colors.blue,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: 'Marquer une Dette comme Réglée',
+            description:
+                'Lorsqu\'un patient rembourse sa dette :\n'
+                '• Trouvez la dette dans la liste (recherchez par nom du patient).\n'
+                '• Cliquez sur le bouton "Marquer comme Réglée" ou cochez la case de paiement.\n'
+                '• Le statut passe à "Réglé" et la dette disparaît des dettes en cours.\n'
+                '• Cette action est enregistrée dans le journal d\'audit.',
             icon: Icons.price_check_rounded,
             iconColor: Colors.green,
             state: state,
           ),
           const SizedBox(height: 12),
           _docCard(
-            title: 'Rappel des dettes des années précédentes',
+            title: 'Rappel des Dettes des Années Précédentes',
             description:
-                'Après le passage à une nouvelle année, un message jaune apparaît en haut du tableau de bord lorsqu\'une dette d\'une année précédente reste impayée. '
-                'Le message peut être masqué pour la journée. Il réapparaît le lendemain tant que la dette n\'est pas réglée.',
+                'Après le passage à une nouvelle année, un bandeau jaune apparaît en haut du tableau de bord si une dette d\'une année précédente reste impayée.\n'
+                '• Le message indique le montant total des dettes en souffrance.\n'
+                '• Vous pouvez masquer ce message pour la journée en cliquant sur "Ignorer".\n'
+                '• Il réapparaît automatiquement le lendemain tant que la dette n\'est pas réglée.\n'
+                '• Changez l\'année dans le tableau de bord pour consulter et régler ces anciennes dettes.',
             icon: Icons.notification_important_rounded,
             iconColor: Colors.amber,
             state: state,
@@ -1277,6 +1574,7 @@ class _MainLayoutState extends State<MainLayout> {
 
   Widget _buildDocExport(AppStateProvider state) {
     return SingleChildScrollView(
+      key: const ValueKey('recu'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1286,30 +1584,193 @@ class _MainLayoutState extends State<MainLayout> {
           _docCard(
             title: 'Aperçu Virtuel Thermique',
             description:
-                'Chaque validation de vente ouvre automatiquement un reçu virtuel compact au format thermique (80mm). '
-                'Il respecte la mise en page standard des tickets de caisse avec toutes les mentions obligatoires.',
+                'Chaque validation de vente ouvre automatiquement un reçu virtuel compact au format thermique (80mm).\n'
+                '• Il affiche le nom de la pharmacie, l\'adresse, la date et l\'heure de la vente.\n'
+                '• La liste des produits vendus avec les quantités, prix unitaires et total.\n'
+                '• Le montant total, la remise éventuelle, le mode de paiement et la monnaie rendue.\n'
+                '• La mise en page respecte les standards des tickets de caisse thermiques.',
             icon: Icons.receipt_rounded,
             iconColor: Colors.blueGrey,
             state: state,
           ),
           const SizedBox(height: 12),
           _docCard(
-            title: 'Impression direct physique',
+            title: 'Impression Directe (Imprimante Physique)',
             description:
-                'Cliquez sur le bouton "Imprimer Facture" pour envoyer le document PDF dynamique directement '
-                'à l\'imprimante de reçus de l\'officine via le gestionnaire d\'impression.',
+                'Pour imprimer le reçu sur votre imprimante thermique :\n'
+                '• Cliquez sur le bouton "Imprimer Facture" dans la fenêtre du reçu.\n'
+                '• Le gestionnaire d\'impression système s\'ouvre avec le document préformaté.\n'
+                '• Sélectionnez votre imprimante thermique et validez.\n'
+                '• Assurez-vous que l\'imprimante est connectée et que le pilote est installé.',
             icon: Icons.print_rounded,
             iconColor: Colors.green,
             state: state,
           ),
           const SizedBox(height: 12),
           _docCard(
-            title: 'Export et Partage Numérique',
+            title: 'Exporter au Format PDF',
             description:
-                'Cliquez sur le bouton "Exporter" pour enregistrer la facture au format PDF, ou la partager instantanément '
-                'par e-mail, messagerie ou toute autre application de votre ordinateur.',
-            icon: Icons.share_rounded,
+                'Pour sauvegarder une facture au format PDF :\n'
+                '• Cliquez sur "Exporter" dans la fenêtre du reçu.\n'
+                '• Choisissez l\'emplacement de sauvegarde sur votre ordinateur.\n'
+                '• Le fichier PDF est généré et enregistré instantanément.\n'
+                '• Vous pouvez ensuite envoyer ce fichier par e-mail ou messagerie.',
+            icon: Icons.picture_as_pdf_rounded,
+            iconColor: Colors.redAccent,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: 'Retrouver les Anciens Reçus',
+            description:
+                'Tous les reçus sont archivés dans le module "Archives Reçu" :\n'
+                '• Recherchez par date, nom du patient ou montant.\n'
+                '• Cliquez sur une vente archivée pour rouvrir et réimprimer son reçu.\n'
+                '• L\'historique des ventes dans "Historique des Ventes" offre une vue tabulaire complète.\n'
+                '• Les rapports de ventes résument les performances par période.',
+            icon: Icons.archive_rounded,
+            iconColor: Colors.orange,
+            state: state,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocRoles(AppStateProvider state) {
+    return SingleChildScrollView(
+      key: const ValueKey('roles'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _docSectionHeader('🔐 Rôles & Permissions',
+              'Comprendre les droits d\'accès de l\'ADMIN et des VENDEURS.'),
+          const SizedBox(height: 16),
+          _docCard(
+            title: 'Rôle ADMIN — Accès Complet',
+            description:
+                'L\'administrateur a un accès illimité à tous les modules de l\'application :\n'
+                '• Tableau de bord, Point de Vente, Stock, Rapports, Archives.\n'
+                '• Dettes, Réapprovisionnement, Fournisseurs, Historique des ventes.\n'
+                '• Gestion des Comptes Vendeurs : créer, modifier, supprimer des comptes.\n'
+                '• Paramètres : nom de la pharmacie, logo, code PIN, sauvegarde/restauration.\n'
+                '• Dépenses : enregistrer et consulter les charges de la pharmacie.\n'
+                '• Consulter les ventes réalisées par chaque vendeur individuellement.',
+            icon: Icons.admin_panel_settings_rounded,
+            iconColor: const Color(0xFFF59E0B),
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: 'Rôle VENDEUR — Accès Limité par Permissions',
+            description:
+                'Un compte vendeur ne peut accéder qu\'aux modules autorisés par l\'administrateur.\n'
+                'Chaque permission est activée ou désactivée individuellement :\n'
+                '• "Tableau de bord" — voir les statistiques générales.\n'
+                '• "Point de Vente (POS)" — effectuer des ventes et encaissements.\n'
+                '• "Ajouter un produit" — ajouter de nouveaux médicaments au catalogue.\n'
+                '• "Nouveaux médicaments" — consulter et modifier le stock.\n'
+                '• "Rapports des Ventes" — consulter les rapports analytiques.\n'
+                '• "Archives Reçu" — accéder aux factures passées.\n'
+                '• "Dettes" — voir et gérer les crédits clients.\n'
+                '• "Réapprovisionnement" — enregistrer les nouvelles livraisons.\n'
+                '• "Fournisseurs" — gérer la liste des fournisseurs.\n'
+                '• "Historique des Ventes" — consulter l\'historique complet.',
+            icon: Icons.person_rounded,
+            iconColor: const Color(0xFF10B981),
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: 'Créer un Compte Vendeur (Nombre illimité)',
+            description:
+                'Seul l\'ADMIN peut créer et gérer les comptes vendeurs (ajout illimité, autant de vendeurs que désiré) :\n'
+                '1. Ouvrez le module "Gestion des Comptes" dans la barre de navigation.\n'
+                '2. Cliquez sur "Ajouter un Vendeur".\n'
+                '3. Renseignez l\'identifiant (unique), le nom complet, l\'email et le mot de passe.\n'
+                '4. Cochez les permissions que le vendeur doit avoir.\n'
+                '5. Cliquez sur "Créer le Compte".\n'
+                'Le vendeur peut maintenant se connecter avec ses identifiants.',
+            icon: Icons.person_add_rounded,
             iconColor: Colors.blue,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: 'Connexion et Sécurité',
+            description:
+                'Chaque utilisateur se connecte avec son identifiant et son mot de passe.\n'
+                '• Un code PIN à 4 chiffres peut être défini pour un verrouillage rapide.\n'
+                '• L\'administrateur peut réinitialiser le mot de passe d\'un vendeur à tout moment.\n'
+                '• En cas d\'inactivité prolongée, l\'application peut demander de ressaisir le PIN.\n'
+                '• Toutes les actions importantes sont tracées dans le journal d\'audit.',
+            icon: Icons.lock_outline_rounded,
+            iconColor: Colors.redAccent,
+            state: state,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocSauvegarde(AppStateProvider state) {
+    return SingleChildScrollView(
+      key: const ValueKey('sauvegarde'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _docSectionHeader('💾 Sauvegarde & Restauration',
+              'Protégez vos données et restaurez-les en cas de besoin.'),
+          const SizedBox(height: 16),
+          _docCard(
+            title: 'Pourquoi Sauvegarder ?',
+            description:
+                'Les données de PharmaGuinée sont stockées localement sur votre ordinateur dans une base SQLite.\n'
+                '• En cas de panne matérielle, de virus ou de formatage, les données peuvent être perdues.\n'
+                '• La sauvegarde régulière est la seule protection contre la perte de données.\n'
+                '• Recommandé : effectuer une sauvegarde au minimum une fois par semaine, idéalement chaque jour de clôture.',
+            icon: Icons.warning_amber_rounded,
+            iconColor: Colors.orange,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: 'Effectuer une Sauvegarde',
+            description:
+                'Dans le module "Paramètres" (accessible uniquement à l\'ADMIN) :\n'
+                '1. Cliquez sur le bouton "Exporter la Sauvegarde".\n'
+                '2. Choisissez l\'emplacement de sauvegarde (clé USB, dossier réseau, etc.).\n'
+                '3. Un fichier JSON contenant toutes les données est généré instantanément.\n'
+                'Ce fichier contient : tous les produits, ventes, dettes, fournisseurs, utilisateurs et paramètres.',
+            icon: Icons.backup_rounded,
+            iconColor: Colors.green,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: 'Restaurer une Sauvegarde',
+            description:
+                'Pour restaurer une sauvegarde précédente :\n'
+                '1. Dans "Paramètres", cliquez sur "Restaurer depuis une Sauvegarde".\n'
+                '2. Sélectionnez le fichier de sauvegarde JSON sur votre ordinateur.\n'
+                '3. L\'application vérifie la validité du fichier avant tout remplacement.\n'
+                '4. Confirmez la restauration (les données actuelles seront remplacées).\n'
+                '⚠️ Attention : la restauration est irréversible. Les données actuelles seront remplacées par celles de la sauvegarde.',
+            icon: Icons.restore_rounded,
+            iconColor: Colors.blue,
+            state: state,
+          ),
+          const SizedBox(height: 12),
+          _docCard(
+            title: 'Bonnes Pratiques',
+            description:
+                '• Conservez toujours une copie de sauvegarde sur un support EXTERNE à l\'ordinateur (clé USB, disque dur externe, cloud).\n'
+                '• Ne jamais modifier directement le fichier SQLite pendant que l\'application est ouverte.\n'
+                '• Tester périodiquement la restauration d\'une sauvegarde pour vérifier qu\'elle est valide.\n'
+                '• Fermer normalement l\'application avant de déplacer ou copier la base de données.\n'
+                '• En cas de mise à jour Windows, l\'ancienne base est automatiquement migrée vers le nouvel emplacement.',
+            icon: Icons.tips_and_updates_rounded,
+            iconColor: Colors.teal,
             state: state,
           ),
         ],

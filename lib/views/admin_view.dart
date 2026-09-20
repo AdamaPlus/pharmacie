@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state_provider.dart';
@@ -268,6 +269,16 @@ class _AdminViewState extends State<AdminView> {
                 ),
 
                 // Actions
+                IconButton(
+                  icon: Icon(
+                    Icons.bar_chart_rounded,
+                    color: const Color(0xFF10B981),
+                    size: 20,
+                  ),
+                  tooltip: 'Voir les ventes de ce vendeur',
+                  onPressed: () => _showVendorSalesDialog(context, state, u),
+                ),
+                const SizedBox(width: 4),
                 IconButton(
                   icon: Icon(
                     Icons.edit_outlined,
@@ -669,6 +680,402 @@ class _AdminViewState extends State<AdminView> {
           },
         );
       },
+    );
+  }
+
+  // ==========================================
+  // DIALOG : VENTES D'UN VENDEUR (ADMIN ONLY)
+  // ==========================================
+  void _showVendorSalesDialog(
+    BuildContext context,
+    AppStateProvider state,
+    UserAccount vendor,
+  ) {
+    const themeColor = Color(0xFF10B981);
+    final fmt = NumberFormat('#,##0', 'fr_FR');
+    final dateFmt = DateFormat('dd/MM/yyyy HH:mm', 'fr_FR');
+
+    // Filtrer les ventes par cashierName == vendor.username ou vendor.fullName
+    final vendorSales = state.sales
+        .where((s) =>
+            s.cashierName == vendor.username ||
+            s.cashierName == vendor.fullName)
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    final totalAmount =
+        vendorSales.fold<double>(0, (sum, s) => sum + s.netAmount);
+    final creditSales =
+        vendorSales.where((s) => s.paymentMethod == 'CREDIT').length;
+    final cashSales =
+        vendorSales.where((s) => s.paymentMethod == 'ESPECES').length;
+    final omSales =
+        vendorSales.where((s) => s.paymentMethod == 'ORANGE_MONEY').length;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: state.bgSecondary,
+        insetPadding:
+            const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+        title: Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: themeColor.withOpacity(0.1),
+              backgroundImage:
+                  (vendor.profileImageBase64 != null &&
+                      vendor.profileImageBase64!.isNotEmpty)
+                  ? MemoryImage(base64Decode(vendor.profileImageBase64!))
+                  : null,
+              child:
+                  (vendor.profileImageBase64 == null ||
+                      vendor.profileImageBase64!.isEmpty)
+                  ? Text(
+                      vendor.fullName.isNotEmpty
+                          ? vendor.fullName.substring(0, 1).toUpperCase()
+                          : vendor.username.substring(0, 1).toUpperCase(),
+                      style: GoogleFonts.outfit(
+                        color: themeColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Ventes de ${vendor.fullName.isNotEmpty ? vendor.fullName : vendor.username}',
+                    style: GoogleFonts.outfit(
+                      color: state.textPrimary,
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '${vendorSales.length} vente${vendorSales.length > 1 ? 's' : ''} au total',
+                    style: GoogleFonts.inter(
+                        color: state.textSecondary, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 680,
+          height: 560,
+          child: Column(
+            children: [
+              // ── Statistiques récapitulatives ──
+              Row(
+                children: [
+                  _vendorStatCard(
+                    label: 'Total Ventes',
+                    value: '${vendorSales.length}',
+                    icon: Icons.receipt_long_rounded,
+                    color: themeColor,
+                    state: state,
+                  ),
+                  const SizedBox(width: 10),
+                  _vendorStatCard(
+                    label: 'Montant Total',
+                    value: '${fmt.format(totalAmount)} GNF',
+                    icon: Icons.monetization_on_rounded,
+                    color: Colors.blue,
+                    state: state,
+                  ),
+                  const SizedBox(width: 10),
+                  _vendorStatCard(
+                    label: 'Espèces',
+                    value: '$cashSales',
+                    icon: Icons.payments_rounded,
+                    color: Colors.green,
+                    state: state,
+                  ),
+                  const SizedBox(width: 10),
+                  _vendorStatCard(
+                    label: 'Crédit',
+                    value: '$creditSales',
+                    icon: Icons.credit_card_rounded,
+                    color: Colors.redAccent,
+                    state: state,
+                  ),
+                  if (omSales > 0) ...[
+                    const SizedBox(width: 10),
+                    _vendorStatCard(
+                      label: 'Orange Money',
+                      value: '$omSales',
+                      icon: Icons.mobile_friendly_rounded,
+                      color: Colors.orange,
+                      state: state,
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // ── Liste des ventes ──
+              Expanded(
+                child: vendorSales.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.receipt_long_outlined,
+                                size: 56,
+                                color: state.textSecondaryLight),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Aucune vente enregistrée pour ce vendeur.',
+                              style: GoogleFonts.inter(
+                                color: state.textSecondary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: vendorSales.length,
+                        itemBuilder: (context, idx) {
+                          final sale = vendorSales[idx];
+                          final payIcon = sale.paymentMethod == 'CREDIT'
+                              ? Icons.credit_card_rounded
+                              : sale.paymentMethod == 'ORANGE_MONEY'
+                                  ? Icons.mobile_friendly_rounded
+                                  : Icons.payments_rounded;
+                          final payColor = sale.paymentMethod == 'CREDIT'
+                              ? Colors.redAccent
+                              : sale.paymentMethod == 'ORANGE_MONEY'
+                                  ? Colors.orange
+                                  : Colors.green;
+                          final payLabel = sale.paymentMethod == 'CREDIT'
+                              ? 'Crédit'
+                              : sale.paymentMethod == 'ORANGE_MONEY'
+                                  ? 'Orange Money'
+                                  : 'Espèces';
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                              color: state.isDarkMode
+                                  ? const Color(0xFF1E293B)
+                                  : const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: state.borderTheme),
+                            ),
+                            child: ExpansionTile(
+                              tilePadding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 4),
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: payColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(9),
+                                ),
+                                child: Icon(payIcon,
+                                    color: payColor, size: 18),
+                              ),
+                              title: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      dateFmt.format(sale.date),
+                                      style: GoogleFonts.inter(
+                                        color: state.textPrimary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: payColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      payLabel,
+                                      style: GoogleFonts.inter(
+                                        color: payColor,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              subtitle: Row(
+                                children: [
+                                  Text(
+                                    '${sale.items.length} article${sale.items.length > 1 ? 's' : ''}',
+                                    style: GoogleFonts.inter(
+                                        color: state.textSecondary,
+                                        fontSize: 11.5),
+                                  ),
+                                  if (sale.patientName != null &&
+                                      sale.patientName!.isNotEmpty) ...[
+                                    const SizedBox(width: 10),
+                                    Icon(Icons.person_outline,
+                                        size: 12,
+                                        color: state.textSecondaryLight),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      sale.patientName!,
+                                      style: GoogleFonts.inter(
+                                          color: state.textSecondary,
+                                          fontSize: 11.5),
+                                    ),
+                                  ],
+                                  const Spacer(),
+                                  Text(
+                                    '${fmt.format(sale.netAmount)} GNF',
+                                    style: GoogleFonts.outfit(
+                                      color: themeColor,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                      14, 0, 14, 12),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Divider(color: state.borderTheme),
+                                      ...sale.items.map((item) => Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 3),
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.medication_rounded,
+                                                    size: 13,
+                                                    color:
+                                                        state.textSecondaryLight),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    item.productName,
+                                                    style: GoogleFonts.inter(
+                                                      color: state.textPrimary,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Text(
+                                                  '×${item.quantity}',
+                                                  style: GoogleFonts.inter(
+                                                    color: state.textSecondary,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 16),
+                                                Text(
+                                                  '${fmt.format(item.total)} GNF',
+                                                  style: GoogleFonts.inter(
+                                                    color: state.textPrimary,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          )),
+                                      if (sale.discountAmount > 0) ...[
+                                        const SizedBox(height: 6),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.end,
+                                          children: [
+                                            Text(
+                                              'Remise : -${fmt.format(sale.discountAmount)} GNF',
+                                              style: GoogleFonts.inter(
+                                                color: Colors.orange,
+                                                fontSize: 12,
+                                                fontStyle: FontStyle.italic,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Fermer',
+              style: GoogleFonts.inter(
+                color: state.textSecondaryLight,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _vendorStatCard({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required AppStateProvider state,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.07),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withOpacity(0.18)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: GoogleFonts.outfit(
+                color: color,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                color: state.textSecondary,
+                fontSize: 10.5,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
