@@ -356,6 +356,20 @@ class _SalesHistoryViewState extends State<SalesHistoryView> {
                         elevation: 0,
                       ),
                     ),
+                  ] else ...[
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      onPressed: () => _confirmClearDeletionHistory(context, state),
+                      icon: const Icon(Icons.delete_sweep_rounded, size: 18),
+                      label: const Text('Nettoyer les suppressions'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        elevation: 0,
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -954,6 +968,65 @@ class _SalesHistoryViewState extends State<SalesHistoryView> {
           fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
           color: isHeader ? PdfColors.white : PdfColors.black,
         ),
+      ),
+    );
+  }
+
+  void _confirmClearDeletionHistory(
+      BuildContext context, AppStateProvider state) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: state.bgSecondary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded,
+                color: Colors.redAccent, size: 26),
+            const SizedBox(width: 10),
+            Text(
+              'Nettoyer l\'historique ?',
+              style: GoogleFonts.outfit(
+                  color: state.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Text(
+          'Cette action va supprimer définitivement tous les enregistrements de suppressions de l\'historique d\'audit.\n\nCette opération est irréversible.',
+          style: GoogleFonts.inter(
+              color: state.textSecondary, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Annuler',
+                style: GoogleFonts.inter(color: state.textSecondaryLight)),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              state.clearDeletionLogs();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                      'Historique des suppressions effacé avec succès.'),
+                  backgroundColor: Color(0xFF10B981),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            },
+            icon: const Icon(Icons.delete_sweep_rounded, size: 18),
+            label: const Text('Nettoyer'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ],
       ),
     );
   }

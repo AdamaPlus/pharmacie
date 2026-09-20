@@ -299,6 +299,14 @@ class AppStateProvider extends ChangeNotifier {
   String get pharmacyPinCode => _db.pharmacyPinCode;
   String get pharmacyContact1 => _db.pharmacyContact1;
   String get pharmacyContact2 => _db.pharmacyContact2;
+  double get priceMultiplier => _db.priceMultiplier;
+
+  void setPriceMultiplier(double multiplier) {
+    if (multiplier <= 0) return;
+    _db.priceMultiplier = multiplier;
+    _db.save();
+    notifyListeners();
+  }
 
   void registerPharmacy({
     required String name,
@@ -793,6 +801,23 @@ class AppStateProvider extends ChangeNotifier {
     _db.users.removeWhere((u) => u.username == username);
     _db.logAction(
         'ADMIN_USER_DELETE', 'Suppression du compte utilisateur : $username.');
+    _db.save();
+    notifyListeners();
+  }
+
+  void clearDeletionLogs() {
+    const deleteKeywords = [
+      'DELETE', 'SUPPRESSION', 'ANNULER', 'REMOVE', 'PURGE',
+      'LOAN_DELETE', 'VENTE_DELETE', 'VENTE_ANNULER',
+      'STOCK_DELETE', 'PATIENT_DELETE', 'STAFF_DELETE',
+      'SUPPLIER_DELETE', 'ADMIN_USER_DELETE', 'STAFF_SHIFT_REMOVE',
+      'LOGS_PURGE',
+    ];
+    _db.auditLogs.removeWhere((log) {
+      final actionUpper = log.action.toUpperCase();
+      return deleteKeywords.any((kw) => actionUpper.contains(kw));
+    });
+    _db.logAction('PURGE_SUPPRESSIONS', 'L\'historique des suppressions a été effacé.');
     _db.save();
     notifyListeners();
   }

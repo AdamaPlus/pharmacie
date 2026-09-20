@@ -50,6 +50,7 @@ class DatabaseService {
   int workingYear = DateTime.now().year;
   int activeTab = 0;
   String debtReminderDismissedDate = '';
+  double priceMultiplier = 1.4;
 
   // ────────────────────────────────────────────────────────────────
   // INITIALISATION
@@ -330,6 +331,8 @@ class DatabaseService {
     debtReminderDismissedDate = settings['debtReminderDismissedDate'] ?? '';
     currentUsername = settings['currentUsername'] ?? 'anonymous';
     currentUserRole = settings['currentUserRole'] ?? 'GUEST';
+    priceMultiplier =
+        double.tryParse(settings['priceMultiplier'] ?? '') ?? 1.4;
 
     if (firstLaunchDate.isEmpty) {
       firstLaunchDate = DateTime.now().toIso8601String();
@@ -405,6 +408,7 @@ class DatabaseService {
       upsertSetting('debtReminderDismissedDate', debtReminderDismissedDate);
       upsertSetting('currentUsername', currentUsername);
       upsertSetting('currentUserRole', currentUserRole);
+      upsertSetting('priceMultiplier', priceMultiplier.toString());
 
       // Les listes en mémoire sont la source de vérité. Vider puis réinsérer
       // dans le même batch atomique empêche les éléments supprimés de
@@ -640,6 +644,7 @@ class DatabaseService {
         'isLicensed': isLicensed,
         'workingYear': workingYear,
         'debtReminderDismissedDate': debtReminderDismissedDate,
+        'priceMultiplier': priceMultiplier,
       };
       logAction('BACKUP', 'Sauvegarde exportée avec succès.');
       return const JsonEncoder.withIndent('  ').convert(data);
@@ -745,6 +750,7 @@ class DatabaseService {
       isLicensed = data['isLicensed'] ?? false;
       workingYear = data['workingYear'] ?? DateTime.now().year;
       debtReminderDismissedDate = data['debtReminderDismissedDate'] ?? '';
+      priceMultiplier = (data['priceMultiplier'] as num?)?.toDouble() ?? 1.4;
 
       // Persister vers SQLite
       await save();

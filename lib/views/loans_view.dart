@@ -384,8 +384,7 @@ class _LoansViewState extends State<LoansView>
                     'N° Dette',
                     'Date',
                     'Client / Prêteur',
-                    'Points',
-                    'Médicaments',
+                    'Quantité',
                     'Montant Total',
                     'Statut'
                   ]
@@ -399,7 +398,6 @@ class _LoansViewState extends State<LoansView>
                       .toList(),
                 ),
                 ...loans.map((loan) {
-                  final patient = _findMatchingPatient(state, loan);
                   return pw.TableRow(children: [
                     pw.Padding(
                         padding: const pw.EdgeInsets.all(4),
@@ -427,14 +425,7 @@ class _LoansViewState extends State<LoansView>
                         )),
                     pw.Padding(
                         padding: const pw.EdgeInsets.all(4),
-                        child: pw.Text(
-                            patient != null
-                                ? '${patient.loyaltyPoints} pts'
-                                : '—',
-                            style: pw.TextStyle(fontSize: 7.5))),
-                    pw.Padding(
-                        padding: const pw.EdgeInsets.all(4),
-                        child: pw.Text(loan.medicamentName,
+                        child: pw.Text('${loan.quantity}',
                             style: pw.TextStyle(fontSize: 7.5))),
                     pw.Padding(
                         padding: const pw.EdgeInsets.all(4),
@@ -652,16 +643,6 @@ class _LoansViewState extends State<LoansView>
                       style:
                           pw.TextStyle(fontSize: 8, color: PdfColors.grey800),
                     ),
-                    if (patient != null) ...[
-                      pw.SizedBox(height: 2),
-                      pw.Text(
-                        '⭐ Points de fidélité accumulés : ${patient.loyaltyPoints} pts',
-                        style: pw.TextStyle(
-                            fontSize: 8.5,
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColors.amber900),
-                      ),
-                    ],
                     if (loan.notes.isNotEmpty)
                       pw.Text(
                         'Note: ${loan.notes}',

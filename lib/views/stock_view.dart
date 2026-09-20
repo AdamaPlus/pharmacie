@@ -1160,6 +1160,18 @@ class _StockViewState extends State<StockView>
                                 controller: purchaseCtrl,
                                 isNumber: true,
                                 required: true,
+                                onChanged: (val) {
+                                  if (state.priceMultiplier > 0) {
+                                    final parsed = double.tryParse(val.replaceAll(',', '.'));
+                                    if (parsed != null && parsed > 0) {
+                                      final calc = parsed * state.priceMultiplier;
+                                      final rounded = (calc * 100).round() / 100;
+                                      sellCtrl.text = (rounded % 1 == 0)
+                                          ? rounded.toInt().toString()
+                                          : rounded.toStringAsFixed(2);
+                                    }
+                                  }
+                                },
                               ),
                             ),
                           ],
@@ -1169,10 +1181,15 @@ class _StockViewState extends State<StockView>
                           children: [
                             Expanded(
                               child: _dialogField(
-                                label: 'Prix unitaire (Vente) *',
+                                label: state.priceMultiplier > 0
+                                    ? 'Prix unitaire (Vente) * (Coef: ${state.priceMultiplier % 1 == 0 ? state.priceMultiplier.toInt() : state.priceMultiplier})'
+                                    : 'Prix unitaire (Vente) *',
                                 controller: sellCtrl,
                                 isNumber: true,
                                 required: true,
+                                hintText: state.priceMultiplier > 0
+                                    ? 'Calculé automatiquement (x${state.priceMultiplier % 1 == 0 ? state.priceMultiplier.toInt() : state.priceMultiplier})'
+                                    : null,
                               ),
                             ),
                             SizedBox(width: 16),
@@ -2064,7 +2081,10 @@ class _StockViewState extends State<StockView>
             final name = parts[1];
             final category = parts[2];
             final pPrice = double.tryParse(parts[3]) ?? 0.0;
-            final sPrice = double.tryParse(parts[4]) ?? 0.0;
+            final rawSPrice = double.tryParse(parts[4]) ?? 0.0;
+            final sPrice = rawSPrice > 0
+                ? rawSPrice
+                : (state.priceMultiplier > 0 ? (pPrice * state.priceMultiplier) : rawSPrice);
             final qty = int.tryParse(parts[5]) ?? 0;
             final minStock = int.tryParse(parts[6]) ?? 10;
             final supplierName = parts.length > 7 ? parts[7] : 'Inconnu';

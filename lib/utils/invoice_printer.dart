@@ -10,7 +10,7 @@ class InvoicePrinter {
     Sale sale,
     Uint8List? logoBytes, {
     String pharmacyName = 'PHARMACIE GUINÉE',
-    String quartier = 'Ratoma, Conakry – Guinée',
+    String quartier = '',
     String contact1 = '+224 622 34 56 78',
     String contact2 = '',
     bool share = false,

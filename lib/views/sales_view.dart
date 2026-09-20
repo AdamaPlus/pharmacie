@@ -460,7 +460,7 @@ class _SalesViewState extends State<SalesView> {
                         : LayoutBuilder(
                             builder: (context, constraints) {
                               int crossAxisCount =
-                                  (constraints.maxWidth / 260).floor();
+                                  (constraints.maxWidth / 200).floor();
                               if (crossAxisCount < 1) crossAxisCount = 1;
                               return GridView.builder(
                                 gridDelegate:
@@ -756,7 +756,7 @@ class _SalesViewState extends State<SalesView> {
           // ==========================================
           if (_isCartVisible)
             Container(
-              width: 440,
+              width: 360,
               decoration: BoxDecoration(
                 color: state.bgSecondary,
                 border: Border(

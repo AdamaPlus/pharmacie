@@ -181,6 +181,14 @@ class _ExpensesViewState extends State<ExpensesView> {
                                                       color: _ink)),
                                               const SizedBox(width: 12),
                                               IconButton(
+                                                  tooltip: 'Imprimer le reçu',
+                                                  onPressed: () =>
+                                                      _printSingleExpense(state, e),
+                                                  icon: const Icon(
+                                                      Icons.print_outlined,
+                                                      size: 19,
+                                                      color: _green)),
+                                              IconButton(
                                                   tooltip: 'Modifier',
                                                   onPressed: () =>
                                                       _openForm(state, e),
@@ -199,6 +207,166 @@ class _ExpensesViewState extends State<ExpensesView> {
                                             ]));
                                   })))
                 ])));
+  }
+
+  Future<void> _printSingleExpense(AppStateProvider state, Expense expense) async {
+    final document = pw.Document();
+    final pharmaName = state.pharmacyName.isEmpty ? 'PharmaGuinée' : state.pharmacyName;
+
+    document.addPage(pw.Page(
+      pageFormat: PdfPageFormat.a5,
+      margin: const pw.EdgeInsets.all(24),
+      build: (_) => pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(pharmaName,
+                      style: pw.TextStyle(
+                          fontSize: 16,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.green700)),
+                  if (state.pharmacyQuartier.isNotEmpty)
+                    pw.Text(state.pharmacyQuartier,
+                        style: const pw.TextStyle(
+                            fontSize: 8, color: PdfColors.grey700)),
+                ],
+              ),
+              pw.Text('REÇU DE DÉPENSE',
+                  style: pw.TextStyle(
+                      fontSize: 12,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.grey800)),
+            ],
+          ),
+          pw.SizedBox(height: 8),
+          pw.Divider(thickness: 1, color: PdfColors.green700),
+          pw.SizedBox(height: 12),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('N° Dépense : ${expense.id}',
+                  style: pw.TextStyle(
+                      fontSize: 9, fontWeight: pw.FontWeight.bold)),
+              pw.Text(
+                  'Date : ${DateFormat('dd/MM/yyyy HH:mm').format(expense.date)}',
+                  style: const pw.TextStyle(
+                      fontSize: 9, color: PdfColors.grey700)),
+            ],
+          ),
+          pw.SizedBox(height: 16),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey300),
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Libellé / Motifs :',
+                        style: pw.TextStyle(
+                            fontSize: 9, color: PdfColors.grey600)),
+                    pw.Text(expense.label,
+                        style: pw.TextStyle(
+                            fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                  ],
+                ),
+                pw.SizedBox(height: 6),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Catégorie :',
+                        style: pw.TextStyle(
+                            fontSize: 9, color: PdfColors.grey600)),
+                    pw.Text(expense.category,
+                        style: const pw.TextStyle(fontSize: 10)),
+                  ],
+                ),
+                pw.SizedBox(height: 6),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Mode de paiement :',
+                        style: pw.TextStyle(
+                            fontSize: 9, color: PdfColors.grey600)),
+                    pw.Text(expense.paymentMethod,
+                        style: const pw.TextStyle(fontSize: 10)),
+                  ],
+                ),
+                if (expense.notes.isNotEmpty) ...[
+                  pw.SizedBox(height: 6),
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('Notes :',
+                          style: pw.TextStyle(
+                              fontSize: 9, color: PdfColors.grey600)),
+                      pw.Text(expense.notes,
+                          style: const pw.TextStyle(fontSize: 9)),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 16),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: const pw.BoxDecoration(color: PdfColors.green50),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text('MONTANT TOTAL DÉPENSÉ :',
+                    style: pw.TextStyle(
+                        fontSize: 11,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.green900)),
+                pw.Text('${_money.format(expense.amount.round())} GNF',
+                    style: pw.TextStyle(
+                        fontSize: 14,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.green900)),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 30),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('Signature du caissier / gérant :',
+                      style: const pw.TextStyle(fontSize: 8)),
+                  pw.SizedBox(height: 25),
+                  pw.Text('_________________________',
+                      style: const pw.TextStyle(fontSize: 8)),
+                ],
+              ),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('Visa / Cachet :',
+                      style: const pw.TextStyle(fontSize: 8)),
+                  pw.SizedBox(height: 25),
+                  pw.Text('_________________________',
+                      style: const pw.TextStyle(fontSize: 8)),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    ));
+    await Printing.layoutPdf(onLayout: (_) async => document.save());
   }
 
   Future<void> _printExpenses(

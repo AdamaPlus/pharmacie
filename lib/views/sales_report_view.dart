@@ -576,8 +576,9 @@ class _SalesReportViewState extends State<SalesReportView> {
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text('PharmaGuinée', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: PdfColors.teal800)),
-                    pw.Text('Ratoma, Conakry - Guinée', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+                    pw.Text(state.pharmacyName.isNotEmpty ? state.pharmacyName : 'PharmaGuinée', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: PdfColors.teal800)),
+                    if (state.pharmacyQuartier.isNotEmpty)
+                      pw.Text(state.pharmacyQuartier, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
                   ],
                 ),
                 pw.Column(

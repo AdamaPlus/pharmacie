@@ -42,8 +42,10 @@ class _MainLayoutState extends State<MainLayout> {
 
   late final TextEditingController _nameController;
   late final TextEditingController _subtitleController;
+  late final TextEditingController _multiplierController;
   late final FocusNode _nameFocusNode;
   late final FocusNode _subtitleFocusNode;
+  late final FocusNode _multiplierFocusNode;
   bool _isBackingUp = false;
   bool _isRestoring = false;
 
@@ -53,16 +55,23 @@ class _MainLayoutState extends State<MainLayout> {
     final appState = Provider.of<AppStateProvider>(context, listen: false);
     _nameController = TextEditingController(text: appState.pharmacyName);
     _subtitleController = TextEditingController(text: _pharmacySubtitle);
+    final initialM = appState.priceMultiplier > 0 ? appState.priceMultiplier : 1.4;
+    _multiplierController = TextEditingController(
+      text: (initialM % 1 == 0) ? initialM.toInt().toString() : initialM.toString(),
+    );
     _nameFocusNode = FocusNode();
     _subtitleFocusNode = FocusNode();
+    _multiplierFocusNode = FocusNode();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _subtitleController.dispose();
+    _multiplierController.dispose();
     _nameFocusNode.dispose();
     _subtitleFocusNode.dispose();
+    _multiplierFocusNode.dispose();
     super.dispose();
   }
 
@@ -1905,6 +1914,15 @@ class _MainLayoutState extends State<MainLayout> {
         !_nameFocusNode.hasFocus) {
       _nameController.text = state.pharmacyName;
     }
+    if (!_multiplierFocusNode.hasFocus) {
+      final currentM = state.priceMultiplier > 0 ? state.priceMultiplier : 1.4;
+      final formattedM = (currentM % 1 == 0)
+          ? currentM.toInt().toString()
+          : currentM.toString();
+      if (_multiplierController.text.isEmpty) {
+        _multiplierController.text = formattedM;
+      }
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 24),
@@ -1988,6 +2006,33 @@ class _MainLayoutState extends State<MainLayout> {
                 onChanged: (val) {
                   setState(() => _pharmacySubtitle = val);
                 },
+              ),
+              SizedBox(height: 24),
+              Text('Tarification & Marges',
+                  style: GoogleFonts.inter(
+                      color: state.textPrimary, fontWeight: FontWeight.bold)),
+              SizedBox(height: 8),
+              Text(
+                'Définissez le coefficient de multiplication pour calculer automatiquement le prix de vente à partir du prix d\'achat (Exemple: 1.4).',
+                style: GoogleFonts.inter(color: state.textSecondary, fontSize: 12),
+              ),
+              SizedBox(height: 12),
+              TextField(
+                controller: _multiplierController,
+                focusNode: _multiplierFocusNode,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                style: TextStyle(color: state.textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'Coefficient de multiplication (ex: 1.4)',
+                  labelStyle: TextStyle(color: state.textSecondary),
+                  hintText: '1.4',
+                  prefixIcon: const Icon(Icons.calculate_rounded, color: Color(0xFF10B981)),
+                  filled: true,
+                  fillColor: Theme.of(context).scaffoldBackgroundColor,
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none),
+                ),
               ),
               SizedBox(height: 32),
               Text('Logo / Image de la Pharmacie',
@@ -2207,14 +2252,59 @@ class _MainLayoutState extends State<MainLayout> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   ElevatedButton.icon(
+                    onPressed: () {
+                      final adminUser = state.users.firstWhere(
+                        (u) => u.role == 'ADMIN',
+                        orElse: () => UserAccount(username: '', role: 'ADMIN'),
+                      );
+                      state.registerPharmacy(
+                        name: _nameController.text.trim(),
+                        quartier: state.pharmacyQuartier,
+                        adminFullName: adminUser.fullName,
+                        username: adminUser.username.isNotEmpty
+                            ? adminUser.username
+                            : state.pharmacyPinCode,
+                        password: state.pharmacyPassword,
+                        pinCode: state.pharmacyPinCode,
+                        contact1: state.pharmacyContact1,
+                        contact2: state.pharmacyContact2,
+                      );
+
+                      final multText = _multiplierController.text.replaceAll(',', '.').trim();
+                      final double? multVal = double.tryParse(multText);
+                      if (multVal != null && multVal > 0) {
+                        state.setPriceMultiplier(multVal);
+                      }
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Paramètres enregistrés avec succès !'),
+                          backgroundColor: Color(0xFF10B981),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.save_rounded, size: 18),
+                    label: const Text('Enregistrer',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10B981),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  OutlinedButton.icon(
                     onPressed: () => state.setActiveTab(0),
                     icon: const Icon(Icons.close, size: 16),
                     label: const Text('Fermer'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey.shade800,
-                      foregroundColor: Colors.white,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: state.textPrimary,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 12),
+                          horizontal: 20, vertical: 14),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
                     ),
