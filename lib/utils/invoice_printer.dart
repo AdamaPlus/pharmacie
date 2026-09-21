@@ -6,14 +6,13 @@ import 'package:intl/intl.dart';
 import '../models/pharmacy_models.dart';
 
 class InvoicePrinter {
-  static Future<void> printInvoice(
+  static Future<Uint8List> buildInvoicePdf(
     Sale sale,
     Uint8List? logoBytes, {
     String pharmacyName = 'PHARMACIE GUINÉE',
     String quartier = '',
     String contact1 = '+224 622 34 56 78',
     String contact2 = '',
-    bool share = false,
     int? patientLoyaltyPoints,
     int? loyaltyPointsEarned,
   }) async {
@@ -372,12 +371,20 @@ class InvoicePrinter {
               style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
             ),
             pw.SizedBox(height: 4),
-            pw.BarcodeWidget(
-              barcode: pw.Barcode.qrCode(),
-              data: qrData,
-              width: 64,
-              height: 64,
-              drawText: false,
+            // Keep a generous white quiet zone around the code: without it,
+            // phone cameras have difficulty detecting a QR on a receipt.
+            pw.Container(
+              color: PdfColors.white,
+              padding: const pw.EdgeInsets.all(7),
+              child: pw.BarcodeWidget(
+                barcode: pw.Barcode.qrCode(),
+                data: qrData,
+                width: 82,
+                height: 82,
+                color: PdfColors.black,
+                backgroundColor: PdfColors.white,
+                drawText: false,
+              ),
             ),
             pw.SizedBox(height: 3),
             pw.Text(
@@ -420,10 +427,9 @@ class InvoicePrinter {
       final nameLines = (item.productName.runes.length / 24).ceil();
       return height + 12 + ((nameLines > 1 ? nameLines - 1 : 0) * 7);
     });
-    final optionalHeight =
-        (sale.discountAmount > 0 ? 12.0 : 0.0) +
+    final optionalHeight = (sale.discountAmount > 0 ? 12.0 : 0.0) +
         (patientLoyaltyPoints != null && sale.patientName != null ? 12.0 : 0.0);
-    final receiptHeight = 390.0 + itemsHeight + optionalHeight;
+    final receiptHeight = 430.0 + itemsHeight + optionalHeight;
     final dynamicFormat = PdfPageFormat(
       PdfPageFormat.roll80.width,
       receiptHeight,
@@ -447,14 +453,39 @@ class InvoicePrinter {
       ),
     );
 
+    return doc.save();
+  }
+
+  static Future<void> printInvoice(
+    Sale sale,
+    Uint8List? logoBytes, {
+    String pharmacyName = 'PHARMACIE GUINÉE',
+    String quartier = '',
+    String contact1 = '+224 622 34 56 78',
+    String contact2 = '',
+    bool share = false,
+    int? patientLoyaltyPoints,
+    int? loyaltyPointsEarned,
+  }) async {
+    final bytes = await buildInvoicePdf(
+      sale,
+      logoBytes,
+      pharmacyName: pharmacyName,
+      quartier: quartier,
+      contact1: contact1,
+      contact2: contact2,
+      patientLoyaltyPoints: patientLoyaltyPoints,
+      loyaltyPointsEarned: loyaltyPointsEarned,
+    );
+
     if (share) {
       await Printing.sharePdf(
-        bytes: await doc.save(),
-        filename: 'facture_${sale.id.replaceAll(RegExp(r'[^\w-]'), "_")}.pdf',
+        bytes: bytes,
+        filename: 'recu_${sale.id.replaceAll(RegExp(r'[^\w-]'), "_")}.pdf',
       );
     } else {
       await Printing.layoutPdf(
-        onLayout: (PdfPageFormat format) async => doc.save(),
+        onLayout: (PdfPageFormat format) async => bytes,
       );
     }
   }
