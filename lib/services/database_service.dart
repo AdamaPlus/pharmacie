@@ -4,9 +4,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:sqflite_common_ffi/open.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:sqlite3/open.dart' show OperatingSystem, open;
 import '../models/pharmacy_models.dart';
 
 class DatabaseService {
@@ -64,7 +64,7 @@ class DatabaseService {
           (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
         if (Platform.isLinux) {
           try {
-            open.overrideFor(LinuxProcess(), () {
+            open.overrideFor(OperatingSystem.linux, () {
               try {
                 return DynamicLibrary.open('libsqlite3.so');
               } catch (_) {

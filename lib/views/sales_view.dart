@@ -1036,6 +1036,7 @@ class _SalesViewState extends State<SalesView> {
                                 ),
                               ),
                             ],
+                          ],
                         ),
                       ],
                     ),
