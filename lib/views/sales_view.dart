@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:pdf/pdf.dart';
-import 'package:printing/printing.dart';
 import 'dart:convert';
 import '../providers/app_state_provider.dart';
 import '../models/pharmacy_models.dart';
@@ -1156,40 +1154,229 @@ class _SalesViewState extends State<SalesView> {
   // Printable Virtual Receipt Dialog
   void _showReceiptDialog(BuildContext context, Sale sale) {
     final state = Provider.of<AppStateProvider>(context, listen: false);
-    final patient = sale.patientId != null
-        ? state.patients.where((p) => p.id == sale.patientId).firstOrNull
-        : null;
-    final earned = sale.netAmount > 0 ? (sale.netAmount / 10000).floor() : null;
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           backgroundColor: state.bgSecondary,
-          contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          content: SizedBox(
-            width: 430,
-            height: MediaQuery.sizeOf(context).height * 0.72,
-            child: ClipRRect(
+          content: Container(
+            width: 380,
+            decoration: BoxDecoration(
+              color: Colors.white,
               borderRadius: BorderRadius.circular(8),
-              child: PdfPreview(
-                build: (_) => InvoicePrinter.buildInvoicePdf(
-                  sale,
-                  state.pharmacyLogo,
-                  pharmacyName: state.pharmacyName,
-                  quartier: state.pharmacyQuartier,
-                  contact1: state.pharmacyContact1,
-                  contact2: state.pharmacyContact2,
-                  patientLoyaltyPoints: patient?.loyaltyPoints,
-                  loyaltyPointsEarned: earned,
-                ),
-                initialPageFormat: PdfPageFormat.roll80,
-                allowPrinting: false,
-                allowSharing: false,
-                canChangePageFormat: false,
-                canChangeOrientation: false,
-                canDebug: false,
-                pdfFileName:
-                    'recu_${sale.id.replaceAll(RegExp(r'[^\w-]'), '_')}.pdf',
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Logo in virtual receipt
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      state.pharmacyLogo != null
+                          ? Image.memory(
+                              state.pharmacyLogo!,
+                              width: 24,
+                              height: 24,
+                              fit: BoxFit.cover,
+                            )
+                          : Container(
+                              width: 22,
+                              height: 22,
+                              decoration: BoxDecoration(
+                                color: Color(0xFF0D9488),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      width: 4,
+                                      height: 14,
+                                      color: Colors.white,
+                                    ),
+                                    Container(
+                                      width: 14,
+                                      height: 4,
+                                      color: Colors.white,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                      SizedBox(width: 8),
+                      Text(
+                        state.pharmacyName.toUpperCase(),
+                        style: GoogleFonts.courierPrime(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '${state.pharmacyQuartier}\nTel: ${state.pharmacyContact2.isNotEmpty ? "${state.pharmacyContact1} / ${state.pharmacyContact2}" : state.pharmacyContact1}\nNIF: 998274-A',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.courierPrime(
+                      color: Colors.black,
+                      fontSize: 11,
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    '------------------------------------',
+                    style: GoogleFonts.courierPrime(color: Colors.black),
+                  ),
+                  Text(
+                    'REÇU DE PAIEMENT\nN°: ${sale.id}\nDate: ${DateFormat("dd/MM/yyyy HH:mm").format(sale.date)}\n${(sale.cashierName.toLowerCase().contains("admin") || sale.cashierName.toLowerCase().contains("responsable") || state.users.any((u) => u.role == "ADMIN" && (u.username.toLowerCase() == sale.cashierName.toLowerCase() || u.fullName.toLowerCase() == sale.cashierName.toLowerCase()))) ? "Admin" : "Caissier"}: ${sale.cashierName}\nClient: ${sale.patientName ?? "Passage"}',
+                    style: GoogleFonts.courierPrime(
+                      color: Colors.black,
+                      fontSize: 11,
+                    ),
+                  ),
+                  Text(
+                    '------------------------------------',
+                    style: GoogleFonts.courierPrime(color: Colors.black),
+                  ),
+
+                  // Items lines
+                  ...sale.items.map((item) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.productName,
+                                  style: GoogleFonts.courierPrime(
+                                    color: Colors.black,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '   ${item.quantity} x ${NumberFormat.decimalPattern('fr').format(item.unitPrice)} GNF',
+                                style: GoogleFonts.courierPrime(
+                                  color: Colors.black,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              Text(
+                                '${NumberFormat.decimalPattern('fr').format(item.total)} GNF',
+                                style: GoogleFonts.courierPrime(
+                                  color: Colors.black,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+
+                  Text(
+                    '------------------------------------',
+                    style: GoogleFonts.courierPrime(color: Colors.black),
+                  ),
+
+                  // Calculations
+                  if (sale.discountAmount > 0)
+                    _receiptRow(
+                      'REMISE APPLIQUÉE',
+                      '- ${NumberFormat.decimalPattern('fr').format(sale.discountAmount)}',
+                    ),
+
+                  if (sale.discountAmount > 0)
+                    Text(
+                      '------------------------------------',
+                      style: GoogleFonts.courierPrime(color: Colors.black),
+                    ),
+
+                  // Net Total
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'TOTAL NET PAYÉ',
+                        style: GoogleFonts.courierPrime(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        '${NumberFormat.decimalPattern('fr').format(sale.netAmount)} GNF',
+                        style: GoogleFonts.courierPrime(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  _receiptRow(
+                    'MODE DE PAIEMENT',
+                    sale.paymentMethod,
+                    showCurrency: false,
+                  ),
+
+                  Text(
+                    '------------------------------------',
+                    style: GoogleFonts.courierPrime(color: Colors.black),
+                  ),
+                  SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Signature',
+                            style: GoogleFonts.courierPrime(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            '........................',
+                            style: GoogleFonts.courierPrime(
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'Merci de votre confiance !\nOn vous souhaite prompt rétablissement.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.courierPrime(
+                      color: Colors.black,
+                      fontSize: 10,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -1202,17 +1389,22 @@ class _SalesViewState extends State<SalesView> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                Navigator.pop(context);
+              },
             ),
             ElevatedButton.icon(
-              onPressed: () => _exportInvoice(sale),
-              icon: const Icon(Icons.share_rounded, size: 18),
+              onPressed: () {
+                Navigator.pop(context);
+                _exportInvoice(sale);
+              },
+              icon: Icon(Icons.share_rounded, size: 18),
               label: Text(
-                'Partager',
+                'Exporter',
                 style: GoogleFonts.inter(fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3B82F6),
+                backgroundColor: Color(0xFF3B82F6),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -1220,14 +1412,17 @@ class _SalesViewState extends State<SalesView> {
               ),
             ),
             ElevatedButton.icon(
-              onPressed: () => _printInvoice(sale),
-              icon: const Icon(Icons.print_rounded, size: 18),
+              onPressed: () {
+                Navigator.pop(context);
+                _printInvoice(sale);
+              },
+              icon: Icon(Icons.print_rounded, size: 18),
               label: Text(
                 'Imprimer',
                 style: GoogleFonts.inter(fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF10B981),
+                backgroundColor: Color(0xFF10B981),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -1240,10 +1435,34 @@ class _SalesViewState extends State<SalesView> {
     );
   }
 
+  Widget _receiptRow(
+    String label,
+    String value, {
+    bool showCurrency = true,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11),
+          ),
+          Text(
+            showCurrency ? '$value GNF' : value,
+            style: GoogleFonts.courierPrime(color: Colors.black, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _printInvoice(Sale sale) async {
     final state = Provider.of<AppStateProvider>(context, listen: false);
     final patient = sale.patientId != null
-        ? state.patients.where((p) => p.id == sale.patientId).firstOrNull
+        ? state.patients.firstWhere((p) => p.id == sale.patientId,
+            orElse: () => state.patients.first)
         : null;
     final int? loyaltyPoints = patient?.loyaltyPoints;
     final int? earned =
@@ -1263,9 +1482,9 @@ class _SalesViewState extends State<SalesView> {
   Future<void> _exportInvoice(Sale sale) async {
     final state = Provider.of<AppStateProvider>(context, listen: false);
     final patient = sale.patientId != null
-        ? state.patients.where((p) => p.id == sale.patientId).firstOrNull
+        ? state.patients.firstWhere((p) => p.id == sale.patientId,
+            orElse: () => state.patients.first)
         : null;
-    final earned = sale.netAmount > 0 ? (sale.netAmount / 10000).floor() : null;
     await InvoicePrinter.printInvoice(
       sale,
       state.pharmacyLogo,
@@ -1275,7 +1494,6 @@ class _SalesViewState extends State<SalesView> {
       contact2: state.pharmacyContact2,
       share: true,
       patientLoyaltyPoints: patient?.loyaltyPoints,
-      loyaltyPointsEarned: earned,
     );
   }
 }
