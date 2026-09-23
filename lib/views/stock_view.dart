@@ -337,7 +337,10 @@ class _StockViewState extends State<StockView>
           p.description.toLowerCase().contains(
                 state.productSearchQuery.toLowerCase(),
               ) ||
-          p.barcode.contains(state.productSearchQuery);
+          p.barcode.contains(state.productSearchQuery) ||
+          p.location.toLowerCase().contains(
+                state.productSearchQuery.toLowerCase(),
+              );
       final matchesCat =
           _selectedCategory == 'Tous' || p.category == _selectedCategory;
       return matchesQuery && matchesCat;
@@ -454,7 +457,7 @@ class _StockViewState extends State<StockView>
                               ),
                               SizedBox(height: 4),
                               Text(
-                                'C.B: ${prod.barcode} • Fourn: ${prod.supplierName}',
+                                'C.B: ${prod.barcode} • Fourn: ${prod.supplierName}${prod.location.isNotEmpty ? ' • Emplacement: ${prod.location}' : ''}',
                                 style: GoogleFonts.inter(
                                   color: state.textSecondaryLight,
                                   fontSize: 11,
@@ -851,6 +854,9 @@ class _StockViewState extends State<StockView>
     final minStockCtrl = TextEditingController(
       text: isEdit ? original.minStock.toString() : '',
     );
+    final locationCtrl = TextEditingController(
+      text: isEdit ? original.location : '',
+    );
 
     String catVal = isEdit ? original.category : 'Autre';
     final customCatCtrl = TextEditingController();
@@ -1193,7 +1199,14 @@ class _StockViewState extends State<StockView>
                               ),
                             ),
                             SizedBox(width: 16),
-                            Expanded(child: SizedBox()),
+                            Expanded(
+                              child: _dialogField(
+                                label: 'Numéro de classeur ou rang (optionnel)',
+                                controller: locationCtrl,
+                                required: false,
+                                hintText: 'ex: R1 ou CL1',
+                              ),
+                            ),
                           ],
                         ),
                         SizedBox(height: 16),
@@ -1389,6 +1402,7 @@ class _StockViewState extends State<StockView>
                                 (firstLot?.quantity ?? 0) +
                                 finalQty)
                             : 0,
+                        location: locationCtrl.text.trim(),
                       );
 
                       if (isEdit) {
@@ -2046,11 +2060,11 @@ class _StockViewState extends State<StockView>
     if (outputFile != null) {
       final buffer = StringBuffer();
       buffer.writeln(
-        "ID;Nom;Categorie;Prix Achat;Prix Vente;Quantite Actuelle;Stock Minimum;Fournisseur;Code-Barres",
+        "ID;Nom;Categorie;Prix Achat;Prix Vente;Quantite Actuelle;Stock Minimum;Fournisseur;Code-Barres;Emplacement",
       );
       for (var p in state.products) {
         buffer.writeln(
-          "${p.id};${p.name};${p.category};${p.purchasePrice};${p.sellingPrice};${p.totalQuantity};${p.minStock};${p.supplierName};${p.barcode}",
+          "${p.id};${p.name};${p.category};${p.purchasePrice};${p.sellingPrice};${p.totalQuantity};${p.minStock};${p.supplierName};${p.barcode};${p.location}",
         );
       }
       await File(outputFile).writeAsString(buffer.toString());
@@ -2089,6 +2103,7 @@ class _StockViewState extends State<StockView>
             final minStock = int.tryParse(parts[6]) ?? 10;
             final supplierName = parts.length > 7 ? parts[7] : 'Inconnu';
             final barcode = parts.length > 8 ? parts[8] : '';
+            final location = parts.length > 9 ? parts[9] : '';
 
             final existing = state.products.where((p) => p.id == id).toList();
             if (existing.isNotEmpty) {
@@ -2105,6 +2120,7 @@ class _StockViewState extends State<StockView>
                 image: existing.first.image,
                 minStock: minStock,
                 totalQuantity: qty,
+                location: location.isNotEmpty ? location : existing.first.location,
               );
               state.editProduct(newP);
             } else {
@@ -2121,6 +2137,7 @@ class _StockViewState extends State<StockView>
                 image: '',
                 minStock: minStock,
                 totalQuantity: qty,
+                location: location,
               );
               state.addProduct(newP);
             }

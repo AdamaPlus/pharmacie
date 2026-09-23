@@ -15,6 +15,7 @@ class Product {
   final String image;
   final int minStock;
   int totalQuantity;
+  final String location;
 
   Product({
     required this.id,
@@ -29,6 +30,7 @@ class Product {
     required this.image,
     required this.minStock,
     this.totalQuantity = 0,
+    this.location = '',
   });
 
   Map<String, dynamic> toMap() {
@@ -45,6 +47,7 @@ class Product {
       'image': image,
       'minStock': minStock,
       'totalQuantity': totalQuantity,
+      'location': location,
     };
   }
 
@@ -62,6 +65,7 @@ class Product {
       image: map['image'] ?? '',
       minStock: (map['minStock'] as num?)?.toInt() ?? 0,
       totalQuantity: (map['totalQuantity'] as num?)?.toInt() ?? 0,
+      location: map['location'] ?? map['classeurRang'] ?? '',
     );
   }
 }

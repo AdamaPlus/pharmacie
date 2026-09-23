@@ -270,7 +270,8 @@ class _SalesViewState extends State<SalesView> {
     final filteredProducts = state.products.where((p) {
       final matchesQuery =
           p.name.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-              p.barcode.contains(_searchController.text);
+              p.barcode.contains(_searchController.text) ||
+              p.location.toLowerCase().contains(_searchController.text.toLowerCase());
       final matchesCat =
           _selectedCategory == 'Tous' || p.category == _selectedCategory;
       final isInStock = p.totalQuantity > 0;
@@ -599,6 +600,19 @@ class _SalesViewState extends State<SalesView> {
                                                           height: 1.2,
                                                         ),
                                                       ),
+                                                      if (prod.location.isNotEmpty) ...[
+                                                        const SizedBox(height: 2),
+                                                        Text(
+                                                          prod.location,
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                          style: GoogleFonts.inter(
+                                                            color: const Color(0xFF10B981),
+                                                            fontSize: 11,
+                                                            fontWeight: FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                      ],
                                                       Text(
                                                         _formatCurrency(
                                                           prod.sellingPrice,
