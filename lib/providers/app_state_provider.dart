@@ -26,26 +26,28 @@ class AppStateProvider extends ChangeNotifier {
   // Getters for data collections
   List<Product> get products => _db.products;
   List<Lot> get lots => _db.lots;
-  List<StockMovement> get stockMovements => _db.stockMovements
-      .where((movement) => movement.date.year == workingYear)
-      .toList(growable: false);
-  List<Sale> get sales => _db.sales
-      .where((sale) => sale.date.year == workingYear)
-      .toList(growable: false);
+  List<StockMovement> get stockMovements => _db.stockMovements;
+  List<StockMovement> get allStockMovements => _db.stockMovements;
+  List<Sale> get sales => _db.sales;
+  List<Sale> get allSales => _db.sales;
   List<Prescription> get prescriptions => _db.prescriptions;
   List<Patient> get patients => _db.patients;
   List<Employee> get employees => _db.employees;
   List<Supplier> get suppliers => _db.suppliers;
   List<UserAccount> get users => _db.users;
-  List<MedicamentLoan> get loans => _db.loans
-      .where((loan) => loan.loanDate.year == workingYear)
-      .toList(growable: false);
-  List<Expense> get expenses => _db.expenses
-      .where((expense) => expense.date.year == workingYear)
-      .toList(growable: false);
+  List<MedicamentLoan> get loans => _db.loans;
+  List<MedicamentLoan> get allLoans => _db.loans;
+  List<Expense> get expenses => _db.expenses;
+  List<Expense> get allExpenses => _db.expenses;
   List<AuditLog> get auditLogs => _db.auditLogs;
 
-  int get workingYear => _db.workingYear;
+  int get workingYear {
+    final currentRealYear = DateTime.now().year;
+    if (_db.workingYear < currentRealYear) {
+      _db.workingYear = currentRealYear;
+    }
+    return _db.workingYear;
+  }
 
   List<MedicamentLoan> get unpaidLoansFromPreviousYears => _db.loans
       .where((loan) => !loan.isReturned && loan.loanDate.year < workingYear)

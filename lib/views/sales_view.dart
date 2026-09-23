@@ -24,6 +24,7 @@ class _SalesViewState extends State<SalesView> {
 
   // Selection states
   bool _isCartVisible = true;
+  bool _showOnlySelected = false;
 
   @override
   void dispose() {
@@ -275,6 +276,9 @@ class _SalesViewState extends State<SalesView> {
       final matchesCat =
           _selectedCategory == 'Tous' || p.category == _selectedCategory;
       final isInStock = p.totalQuantity > 0;
+      final isSelected = state.cart.any((item) => item.productId == p.id);
+
+      if (_showOnlySelected && !isSelected) return false;
       return matchesQuery && matchesCat && isInStock;
     }).toList();
 
@@ -304,40 +308,83 @@ class _SalesViewState extends State<SalesView> {
                   // Fast POS bar
                   Row(
                     children: [
-                      if (state.cart.isNotEmpty) ...[
-                        Container(
+                      InkWell(
+                        onTap: () {
+                          if (state.cart.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Aucun produit n\'est actuellement sélectionné dans le panier.'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                            return;
+                          }
+                          setState(() {
+                            _showOnlySelected = !_showOnlySelected;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: themeColor.withOpacity(0.1),
+                            color: _showOnlySelected
+                                ? themeColor
+                                : (state.cart.isNotEmpty
+                                    ? themeColor.withOpacity(0.12)
+                                    : state.bgSecondary),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: themeColor.withOpacity(0.3),
+                              color: state.cart.isNotEmpty
+                                  ? themeColor
+                                  : Colors.white.withOpacity(0.1),
+                              width: 1.5,
                             ),
                           ),
                           child: Row(
                             children: [
                               Icon(
-                                Icons.check_circle_rounded,
-                                color: themeColor,
+                                _showOnlySelected
+                                    ? Icons.grid_view_rounded
+                                    : Icons.check_circle_rounded,
+                                color: _showOnlySelected
+                                    ? Colors.white
+                                    : (state.cart.isNotEmpty
+                                        ? themeColor
+                                        : state.textSecondaryLight),
                                 size: 18,
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                '${state.cart.length} Sélectionné(s)',
+                                _showOnlySelected
+                                    ? 'Voir tous les produits'
+                                    : 'Produits sélectionnés (${state.cart.length})',
                                 style: GoogleFonts.inter(
-                                  color: themeColor,
+                                  color: _showOnlySelected
+                                      ? Colors.white
+                                      : (state.cart.isNotEmpty
+                                          ? themeColor
+                                          : state.textSecondaryLight),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
                                 ),
                               ),
+                              if (_showOnlySelected) ...[
+                                const SizedBox(width: 6),
+                                const Icon(
+                                  Icons.close_rounded,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ],
                             ],
                           ),
                         ),
-                        const SizedBox(width: 16),
-                      ],
+                      ),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: TextField(
                           controller: _searchController,
@@ -388,51 +435,93 @@ class _SalesViewState extends State<SalesView> {
                   ),
                   SizedBox(height: 16),
 
-                  // Category chips
+                  // Category chips bar
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
-                      children: (() {
-                        final dynamicCats = state.products
-                            .map((p) => p.category)
-                            .toSet()
-                            .toList();
-                        dynamicCats.sort(
-                          (a, b) => a.toLowerCase().compareTo(b.toLowerCase()),
-                        );
-                        return ['Tous', ...dynamicCats];
-                      })()
-                          .map((cat) {
-                        final isSelected = _selectedCategory == cat;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: Text(cat),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              if (selected) {
+                      children: [
+                        if (state.cart.isNotEmpty) ...[
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              avatar: Icon(
+                                Icons.check_circle_rounded,
+                                size: 16,
+                                color: _showOnlySelected
+                                    ? Colors.white
+                                    : themeColor,
+                              ),
+                              label: Text('Sélectionnés (${state.cart.length})'),
+                              selected: _showOnlySelected,
+                              onSelected: (selected) {
                                 setState(() {
-                                  _selectedCategory = cat;
+                                  _showOnlySelected = selected;
+                                  if (selected) _selectedCategory = 'Tous';
                                 });
-                              }
-                            },
-                            selectedColor: themeColor,
-                            backgroundColor: state.bgSecondary,
-                            labelStyle: GoogleFonts.inter(
-                              color: isSelected
-                                  ? Colors.white
-                                  : state.textSecondaryLight,
-                              fontSize: 12,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              },
+                              selectedColor: themeColor,
+                              backgroundColor: themeColor.withOpacity(0.12),
+                              labelStyle: GoogleFonts.inter(
+                                color: _showOnlySelected
+                                    ? Colors.white
+                                    : themeColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: BorderSide(
+                                  color: themeColor.withOpacity(0.3),
+                                ),
+                              ),
                             ),
                           ),
-                        );
-                      }).toList(),
+                        ],
+                        ...(() {
+                          final dynamicCats = state.products
+                              .map((p) => p.category)
+                              .toSet()
+                              .toList();
+                          dynamicCats.sort(
+                            (a, b) =>
+                                a.toLowerCase().compareTo(b.toLowerCase()),
+                          );
+                          return ['Tous', ...dynamicCats];
+                        })()
+                            .map((cat) {
+                          final isSelected =
+                              !_showOnlySelected && _selectedCategory == cat;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text(cat),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                if (selected) {
+                                  setState(() {
+                                    _selectedCategory = cat;
+                                    _showOnlySelected = false;
+                                  });
+                                }
+                              },
+                              selectedColor: themeColor,
+                              backgroundColor: state.bgSecondary,
+                              labelStyle: GoogleFonts.inter(
+                                color: isSelected
+                                    ? Colors.white
+                                    : state.textSecondaryLight,
+                                fontSize: 12,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ],
                     ),
                   ),
                   SizedBox(height: 20),
@@ -449,12 +538,39 @@ class _SalesViewState extends State<SalesView> {
                                 ),
                                 SizedBox(height: 16),
                                 Text(
-                                  'Aucun produit trouvé',
+                                  _showOnlySelected
+                                      ? 'Aucun produit sélectionné pour le moment'
+                                      : 'Aucun produit trouvé',
                                   style: GoogleFonts.outfit(
                                     color: state.textPrimary,
                                     fontSize: 16,
                                   ),
                                 ),
+                                if (_showOnlySelected) ...[
+                                  const SizedBox(height: 12),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        _showOnlySelected = false;
+                                      });
+                                    },
+                                    icon: const Icon(
+                                      Icons.grid_view_rounded,
+                                      size: 16,
+                                    ),
+                                    label: Text(
+                                      'Afficher tous les produits',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: themeColor,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           )
@@ -603,13 +719,15 @@ class _SalesViewState extends State<SalesView> {
                                                       if (prod.location.isNotEmpty) ...[
                                                         const SizedBox(height: 2),
                                                         Text(
-                                                          prod.location,
+                                                          'Emp: ${prod.location}',
                                                           maxLines: 1,
                                                           overflow: TextOverflow.ellipsis,
                                                           style: GoogleFonts.inter(
-                                                            color: const Color(0xFF10B981),
-                                                            fontSize: 11,
-                                                            fontWeight: FontWeight.bold,
+                                                            color: state.isDarkMode
+                                                                ? Colors.white
+                                                                : Colors.black,
+                                                            fontSize: 13.5,
+                                                            fontWeight: FontWeight.w900,
                                                           ),
                                                         ),
                                                       ],
@@ -796,43 +914,120 @@ class _SalesViewState extends State<SalesView> {
                       children: [
                         Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.shopping_basket_rounded,
                               color: Color(0xFF10B981),
                               size: 20,
                             ),
-                            SizedBox(width: 10),
+                            const SizedBox(width: 6),
                             Text(
-                              'Panier Actif',
+                              'Panier',
                               style: GoogleFonts.outfit(
                                 color: state.textPrimary,
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            Spacer(),
-                            // Loyalty points badge if patient selected
+                            const Spacer(),
                             if (state.selectedCartPatient != null) ...[
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 5),
+                                    horizontal: 6, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF10B981)
-                                      .withValues(alpha: 0.12),
+                                      .withOpacity(0.12),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                       color: const Color(0xFF10B981)
-                                          .withValues(alpha: 0.3)),
+                                          .withOpacity(0.3)),
                                 ),
                                 child: Row(
                                   children: [
                                     const Icon(Icons.star_rounded,
-                                        color: Color(0xFF10B981), size: 14),
-                                    const SizedBox(width: 4),
+                                        color: Color(0xFF10B981), size: 12),
+                                    const SizedBox(width: 3),
                                     Text(
                                       '${state.selectedCartPatient!.loyaltyPoints} pts',
                                       style: GoogleFonts.inter(
                                         color: const Color(0xFF10B981),
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                            ],
+                            if (state.cart.isNotEmpty) ...[
+                              Tooltip(
+                                message: 'Imprimer ou Exporter le Devis Proforma pour ce marché',
+                                child: InkWell(
+                                  onTap: () {
+                                    _showProformaDialog(context);
+                                  },
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF3B82F6)
+                                          .withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: const Color(0xFF3B82F6)
+                                            .withOpacity(0.3),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.request_quote_rounded,
+                                          color: Color(0xFF3B82F6),
+                                          size: 13,
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          'Devis',
+                                          style: GoogleFonts.inter(
+                                            color: const Color(0xFF3B82F6),
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              TextButton(
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  backgroundColor: Colors.redAccent.withOpacity(0.1),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onPressed: () {
+                                  state.clearCart();
+                                  _discountController.clear();
+                                  _cashReceivedController.clear();
+                                  setState(() {
+                                    _showOnlySelected = false;
+                                  });
+                                },
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 14),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      'Vider',
+                                      style: GoogleFonts.inter(
+                                        color: Colors.redAccent,
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -840,24 +1035,7 @@ class _SalesViewState extends State<SalesView> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
                             ],
-                            TextButton(
-                              onPressed: () {
-                                state.clearCart();
-                                _discountController.clear();
-                                _cashReceivedController.clear();
-                              },
-                              child: Text(
-                                'Vider',
-                                style: GoogleFonts.inter(
-                                  color: Colors.redAccent,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
                       ],
                     ),
@@ -1509,5 +1687,39 @@ class _SalesViewState extends State<SalesView> {
       share: true,
       patientLoyaltyPoints: patient?.loyaltyPoints,
     );
+  }
+
+  void _showProformaDialog(BuildContext context) {
+    final state = Provider.of<AppStateProvider>(context, listen: false);
+    if (state.cart.isEmpty) return;
+
+    final proformaSale = Sale(
+      id: 'DEVIS-${DateFormat("yyMMddHHmm").format(DateTime.now())}',
+      date: DateTime.now(),
+      items: state.cart
+          .map(
+            (item) => SaleItem(
+              productId: item.productId,
+              productName: item.productName,
+              unitPrice: item.unitPrice,
+              quantity: item.quantity,
+              vat: item.vat,
+              total: item.total,
+            ),
+          )
+          .toList(),
+      totalAmount: state.cartTotal,
+      discountAmount: 0.0,
+      netAmount: state.cartNetTotal,
+      paymentMethod: 'DEVIS PROFORMA',
+      cashReceived: state.cartNetTotal,
+      changeReturned: 0.0,
+      cashierName: state.currentUsername,
+      patientName: state.selectedCartPatient != null
+          ? '${state.selectedCartPatient!.firstName} ${state.selectedCartPatient!.lastName}'
+          : 'Client Marché (Proforma)',
+    );
+
+    _showReceiptDialog(context, proformaSale);
   }
 }

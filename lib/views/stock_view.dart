@@ -456,11 +456,26 @@ class _StockViewState extends State<StockView>
                                 ),
                               ),
                               SizedBox(height: 4),
-                              Text(
-                                'C.B: ${prod.barcode} • Fourn: ${prod.supplierName}${prod.location.isNotEmpty ? ' • Emplacement: ${prod.location}' : ''}',
-                                style: GoogleFonts.inter(
-                                  color: state.textSecondaryLight,
-                                  fontSize: 11,
+                              RichText(
+                                text: TextSpan(
+                                  style: GoogleFonts.inter(
+                                    color: state.textSecondaryLight,
+                                    fontSize: 11,
+                                  ),
+                                  children: [
+                                    TextSpan(text: 'C.B: ${prod.barcode} • Fourn: ${prod.supplierName}'),
+                                    if (prod.location.isNotEmpty) ...[
+                                      const TextSpan(text: ' • Emplacement: '),
+                                      TextSpan(
+                                        text: prod.location,
+                                        style: GoogleFonts.inter(
+                                          color: state.isDarkMode ? Colors.white : Colors.black,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ),
                             ],

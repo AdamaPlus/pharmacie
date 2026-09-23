@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:sqflite_common_ffi/open.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite/sqflite.dart';
 import '../models/pharmacy_models.dart';
@@ -60,6 +62,19 @@ class DatabaseService {
       // Activer FFI pour Linux / Windows / macOS
       if (!kIsWeb &&
           (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
+        if (Platform.isLinux) {
+          try {
+            open.overrideFor(LinuxProcess(), () {
+              try {
+                return DynamicLibrary.open('libsqlite3.so');
+              } catch (_) {
+                return DynamicLibrary.open('libsqlite3.so.0');
+              }
+            });
+          } catch (e) {
+            debugPrint('Override sqlite library failed: $e');
+          }
+        }
         sqfliteFfiInit();
         databaseFactory = databaseFactoryFfi;
       }
