@@ -110,36 +110,20 @@ class _LoginViewState extends State<LoginView>
     final bool isUserOrAdminMatch = provider.users.any((u) {
           final uName = u.username.trim().toLowerCase();
           final uEmail = (u.email ?? '').trim().toLowerCase();
-          final uFull = (u.fullName ?? '').trim().toLowerCase();
           final uPin = u.pinCode.trim().toLowerCase();
           final uEmpId = u.employeeId.trim().toLowerCase();
 
-          return (uName.isNotEmpty &&
-                  (input == uName || uName.contains(input))) ||
-              (uEmail.isNotEmpty &&
-                  (input == uEmail || uEmail.contains(input))) ||
-              (uFull.isNotEmpty &&
-                  (input == uFull ||
-                      uFull.startsWith(input) ||
-                      uFull.split(' ').contains(input))) ||
+          return (uName.isNotEmpty && input == uName) ||
+              (uEmail.isNotEmpty && input == uEmail) ||
               (uPin.isNotEmpty && input == uPin) ||
               (uEmpId.isNotEmpty && input == uEmpId);
         }) ||
         (provider.pharmacyContact2.trim().toLowerCase().isNotEmpty &&
-            (input == provider.pharmacyContact2.trim().toLowerCase() ||
-                provider.pharmacyContact2
-                    .trim()
-                    .toLowerCase()
-                    .contains(input))) ||
+            input == provider.pharmacyContact2.trim().toLowerCase()) ||
         (provider.pharmacyContact1.trim().toLowerCase().isNotEmpty &&
-            (input == provider.pharmacyContact1.trim().toLowerCase() ||
-                provider.pharmacyContact1
-                    .trim()
-                    .toLowerCase()
-                    .contains(input))) ||
+            input == provider.pharmacyContact1.trim().toLowerCase()) ||
         (provider.pharmacyName.trim().toLowerCase().isNotEmpty &&
-            (input == provider.pharmacyName.trim().toLowerCase() ||
-                provider.pharmacyName.trim().toLowerCase().contains(input)));
+            input == provider.pharmacyName.trim().toLowerCase());
 
     if (!isUserOrAdminMatch && provider.users.isNotEmpty) {
       _usernameError = 'Identifiant incorrect ou inexistant';

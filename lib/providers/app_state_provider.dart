@@ -434,7 +434,8 @@ class AppStateProvider extends ChangeNotifier {
     _ensureDefaultUserExists();
 
     final input = usernameOrEmail.trim().toLowerCase();
-    final inputRaw = usernameOrEmail.trim();
+    if (input.isEmpty) return false;
+
     final passRaw = password;
     final passTrim = password.trim();
     final passLower = password.trim().toLowerCase();
@@ -445,36 +446,22 @@ class AppStateProvider extends ChangeNotifier {
     final dbPassword = _db.pharmacyPassword;
     final dbPinCode = _db.pharmacyPinCode;
 
-    // 1. Chercher parmi tous les comptes ADMIN existants (ou tous les comptes)
-    final adminUsers = _db.users.where((user) => user.role == 'ADMIN').toList();
-    if (adminUsers.isEmpty && _db.users.isNotEmpty) {
-      adminUsers.addAll(_db.users);
-    }
+    // Chercher uniquement parmi les comptes utilisateurs existants
+    for (final u in _db.users) {
+      final uName = u.username.trim().toLowerCase();
+      final uEmail = (u.email ?? '').trim().toLowerCase();
+      final uPin = u.pinCode.trim().toLowerCase();
+      final uEmpId = u.employeeId.trim().toLowerCase();
 
-    for (final u in adminUsers) {
-      final adminUser = u.username.trim().toLowerCase();
-      final adminEmail = (u.email ?? '').trim().toLowerCase();
-      final adminFull = (u.fullName ?? '').trim().toLowerCase();
-      final adminPin = u.pinCode.trim().toLowerCase();
-      final adminEmpId = u.employeeId.trim().toLowerCase();
+      final inputMatches = (uName.isNotEmpty && input == uName) ||
+          (uEmail.isNotEmpty && input == uEmail) ||
+          (uPin.isNotEmpty && input == uPin) ||
+          (uEmpId.isNotEmpty && input == uEmpId) ||
+          (dbEmail.isNotEmpty && input == dbEmail) ||
+          (dbPhone.isNotEmpty && input == dbPhone) ||
+          (dbName.isNotEmpty && input == dbName);
 
-      final inputMatches = input.isEmpty ||
-          (adminUser.isNotEmpty &&
-              (input == adminUser || adminUser.contains(input))) ||
-          (adminEmail.isNotEmpty &&
-              (input == adminEmail || adminEmail.contains(input))) ||
-          (adminFull.isNotEmpty &&
-              (input == adminFull ||
-                  adminFull.contains(input) ||
-                  adminFull.startsWith(input) ||
-                  adminFull.split(' ').contains(input))) ||
-          (adminPin.isNotEmpty && input == adminPin) ||
-          (adminEmpId.isNotEmpty && input == adminEmpId) ||
-          (dbEmail.isNotEmpty &&
-              (input == dbEmail || dbEmail.contains(input))) ||
-          (dbPhone.isNotEmpty &&
-              (input == dbPhone || dbPhone.contains(input))) ||
-          (dbName.isNotEmpty && (input == dbName || dbName.contains(input)));
+      if (!inputMatches) continue;
 
       final passwordMatches = (passRaw.isNotEmpty &&
               dbPassword.isNotEmpty &&
@@ -522,10 +509,8 @@ class AppStateProvider extends ChangeNotifier {
               passLower == 'adama' ||
               passLower == 'adama624');
 
-      if (inputMatches && passwordMatches) {
-        _db.currentUsername = u.username.isNotEmpty
-            ? u.username
-            : (inputRaw.isNotEmpty ? inputRaw : 'admin');
+      if (passwordMatches) {
+        _db.currentUsername = u.username;
         _db.currentUserRole =
             u.role.isNotEmpty && u.role != 'GUEST' ? u.role : 'ADMIN';
         _db.logAction('CONNEXION',
@@ -536,46 +521,8 @@ class AppStateProvider extends ChangeNotifier {
       }
     }
 
-    // 2. Si mot de passe ou code PIN correspond au mot de passe de la pharmacie globale ou fallback
-    final passwordMatchesGlobal = (passRaw.isNotEmpty &&
-            dbPassword.isNotEmpty &&
-            (passRaw == dbPassword ||
-                passLower == dbPassword.trim().toLowerCase())) ||
-        (passTrim.isNotEmpty &&
-            dbPassword.isNotEmpty &&
-            (passTrim == dbPassword.trim() ||
-                passLower == dbPassword.trim().toLowerCase())) ||
-        (passRaw.isNotEmpty &&
-            dbPinCode.isNotEmpty &&
-            (passRaw == dbPinCode ||
-                passLower == dbPinCode.trim().toLowerCase())) ||
-        (passTrim.isNotEmpty &&
-            dbPinCode.isNotEmpty &&
-            (passTrim == dbPinCode.trim() ||
-                passLower == dbPinCode.trim().toLowerCase())) ||
-        (passLower == 'admin' ||
-            passLower == '1234' ||
-            passLower == '0000' ||
-            passLower == 'adama' ||
-            passLower == 'adama624');
-
-    if (passwordMatchesGlobal) {
-      final adminUser = _db.users.firstWhere(
-        (u) => u.role == 'ADMIN',
-        orElse: () => UserAccount(
-            username: inputRaw.isNotEmpty ? inputRaw : 'admin', role: 'ADMIN'),
-      );
-      _db.currentUsername = adminUser.username.isNotEmpty
-          ? adminUser.username
-          : (inputRaw.isNotEmpty ? inputRaw : 'admin');
-      _db.currentUserRole = 'ADMIN';
-      _db.logAction('CONNEXION',
-          'Connexion réussie (Admin global) pour ${_db.pharmacyName}.');
-      notifyListeners();
-      _db.save();
-      return true;
-    }
-
+    _db.logAction('CONNEXION_ECHEC',
+        'Tentative de connexion échouée pour l\'identifiant $usernameOrEmail.');
     return false;
   }
 
@@ -671,6 +618,8 @@ class AppStateProvider extends ChangeNotifier {
     _ensureDefaultUserExists();
 
     final input = usernameOrEmail.trim().toLowerCase();
+    if (input.isEmpty) return false;
+
     final passRaw = password;
     final passTrim = password.trim();
     final passLower = password.trim().toLowerCase();
@@ -678,20 +627,15 @@ class AppStateProvider extends ChangeNotifier {
     final userIndex = _db.users.indexWhere((u) {
       final uName = u.username.trim().toLowerCase();
       final uEmail = (u.email ?? '').trim().toLowerCase();
-      final uFull = (u.fullName ?? '').trim().toLowerCase();
       final uPin = u.pinCode.trim().toLowerCase();
       final uEmpId = u.employeeId.trim().toLowerCase();
 
-      final inputMatches = input.isEmpty ||
-          (uName.isNotEmpty && (input == uName || uName.contains(input))) ||
-          (uEmail.isNotEmpty && (input == uEmail || uEmail.contains(input))) ||
-          (uFull.isNotEmpty &&
-              (input == uFull ||
-                  uFull.contains(input) ||
-                  uFull.startsWith(input) ||
-                  uFull.split(' ').contains(input))) ||
+      final inputMatches = (uName.isNotEmpty && input == uName) ||
+          (uEmail.isNotEmpty && input == uEmail) ||
           (uPin.isNotEmpty && input == uPin) ||
           (uEmpId.isNotEmpty && input == uEmpId);
+
+      if (!inputMatches) return false;
 
       final passwordMatches = (passRaw.isNotEmpty &&
               u.passwordHash.isNotEmpty &&
@@ -739,7 +683,7 @@ class AppStateProvider extends ChangeNotifier {
               passLower == 'adama' ||
               passLower == 'adama624');
 
-      return inputMatches && passwordMatches;
+      return passwordMatches;
     });
 
     if (userIndex != -1) {
@@ -749,18 +693,6 @@ class AppStateProvider extends ChangeNotifier {
           user.role.isNotEmpty && user.role != 'GUEST' ? user.role : 'ADMIN';
       _db.logAction('CONNEXION',
           'Utilisateur ${user.username} s\'est connecté avec le rôle ${_db.currentUserRole}.');
-      _db.save();
-      notifyListeners();
-      return true;
-    }
-
-    if (_db.users.isNotEmpty) {
-      final u = _db.users.first;
-      _db.currentUsername = u.username;
-      _db.currentUserRole =
-          u.role.isNotEmpty && u.role != 'GUEST' ? u.role : 'ADMIN';
-      _db.logAction('CONNEXION',
-          'Connexion secours effectuée pour l\'utilisateur ${u.username}.');
       _db.save();
       notifyListeners();
       return true;
@@ -836,19 +768,20 @@ class AppStateProvider extends ChangeNotifier {
   }
 
   bool editUser(UserAccount updated, {String? oldUsername}) {
-    final targetUsername = oldUsername ?? updated.username;
-    final idx = _db.users.indexWhere((u) => u.username == targetUsername);
+    final targetUsername = (oldUsername ?? updated.username).trim().toLowerCase();
+    final idx = _db.users.indexWhere(
+        (u) => u.username.trim().toLowerCase() == targetUsername);
     if (idx != -1) {
       final old = _db.users[idx];
-      if (updated.username != targetUsername &&
+      if (updated.username.trim().toLowerCase() != targetUsername &&
           _db.users.any((u) =>
-              u.username.toLowerCase() == updated.username.toLowerCase())) {
+              u.username.trim().toLowerCase() == updated.username.trim().toLowerCase())) {
         return false;
       }
       final resolvedPin =
           updated.pinCode.isNotEmpty ? updated.pinCode : old.pinCode;
       _db.users[idx] = UserAccount(
-        username: updated.username,
+        username: updated.username.trim(),
         passwordHash: updated.passwordHash,
         employeeId: updated.employeeId,
         role: updated.role,
@@ -860,11 +793,11 @@ class AppStateProvider extends ChangeNotifier {
         profileImageBase64:
             updated.profileImageBase64 ?? old.profileImageBase64,
       );
-      if (_db.currentUsername == targetUsername) {
-        _db.currentUsername = updated.username;
+      if (_db.currentUsername.trim().toLowerCase() == targetUsername) {
+        _db.currentUsername = updated.username.trim();
       }
       _db.logAction('ADMIN_USER_EDIT',
-          'Compte utilisateur modifié : ${updated.username}.');
+          'Compte utilisateur modifié : ${updated.username.trim()}.');
       _db.save();
       notifyListeners();
       return true;
@@ -886,16 +819,17 @@ class AppStateProvider extends ChangeNotifier {
     String? profileImageBase64,
     String? newPinCode,
   }) {
-    final idx = _db.users.indexWhere((u) => u.username == _db.currentUsername);
+    final idx = _db.users.indexWhere(
+        (u) => u.username.trim().toLowerCase() == _db.currentUsername.trim().toLowerCase());
     if (idx != -1) {
       final old = _db.users[idx];
-      String resolvedUsername = old.username;
+      String resolvedUsername = old.username.trim();
       if (newUsername != null &&
           newUsername.trim().isNotEmpty &&
-          newUsername.trim() != old.username) {
+          newUsername.trim().toLowerCase() != old.username.trim().toLowerCase()) {
         final candidate = newUsername.trim();
         if (_db.users.any(
-            (u) => u.username.toLowerCase() == candidate.toLowerCase())) {
+            (u) => u.username.trim().toLowerCase() == candidate.toLowerCase())) {
           return false;
         }
         resolvedUsername = candidate;
