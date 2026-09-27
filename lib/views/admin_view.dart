@@ -453,7 +453,6 @@ class _AdminViewState extends State<AdminView> {
                           label: 'Identifiant / Nom d\'utilisateur',
                           controller: userCtrl,
                           required: true,
-                          readOnly: isEdit,
                         ),
                         const SizedBox(height: 12),
                         _dialogField(
@@ -667,8 +666,35 @@ class _AdminViewState extends State<AdminView> {
                       );
 
                       if (isEdit) {
-                        state.editUser(newUser);
+                        final ok = state.editUser(newUser,
+                            oldUsername: original.username);
+                        if (!ok) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'Ce nom d\'utilisateur est déjà utilisé par un autre compte !',
+                                  style: GoogleFonts.inter()),
+                              backgroundColor: Colors.redAccent,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                          return;
+                        }
                       } else {
+                        if (state.users.any((u) =>
+                            u.username.toLowerCase() ==
+                            newUser.username.toLowerCase())) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'Ce nom d\'utilisateur est déjà utilisé par un autre compte !',
+                                  style: GoogleFonts.inter()),
+                              backgroundColor: Colors.redAccent,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                          return;
+                        }
                         state.addUser(newUser);
                       }
                       Navigator.pop(context);

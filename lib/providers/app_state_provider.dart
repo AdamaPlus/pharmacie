@@ -40,6 +40,9 @@ class AppStateProvider extends ChangeNotifier {
   List<Expense> get expenses => _db.expenses;
   List<Expense> get allExpenses => _db.expenses;
   List<AuditLog> get auditLogs => _db.auditLogs;
+  List<AppNotification> get appNotifications => _db.appNotifications;
+  int get unreadAdminNotificationsCount =>
+      _db.appNotifications.where((n) => !n.isRead).length;
 
   int get workingYear {
     final currentRealYear = DateTime.now().year;
@@ -832,11 +835,16 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void editUser(UserAccount updated) {
-    final idx = _db.users.indexWhere((u) => u.username == updated.username);
+  bool editUser(UserAccount updated, {String? oldUsername}) {
+    final targetUsername = oldUsername ?? updated.username;
+    final idx = _db.users.indexWhere((u) => u.username == targetUsername);
     if (idx != -1) {
       final old = _db.users[idx];
-      // Préserver le pinCode existant si le nouveau est vide (mode édition sans changer le PIN)
+      if (updated.username != targetUsername &&
+          _db.users.any((u) =>
+              u.username.toLowerCase() == updated.username.toLowerCase())) {
+        return false;
+      }
       final resolvedPin =
           updated.pinCode.isNotEmpty ? updated.pinCode : old.pinCode;
       _db.users[idx] = UserAccount(
@@ -852,11 +860,16 @@ class AppStateProvider extends ChangeNotifier {
         profileImageBase64:
             updated.profileImageBase64 ?? old.profileImageBase64,
       );
+      if (_db.currentUsername == targetUsername) {
+        _db.currentUsername = updated.username;
+      }
       _db.logAction('ADMIN_USER_EDIT',
           'Compte utilisateur modifié : ${updated.username}.');
       _db.save();
       notifyListeners();
+      return true;
     }
+    return false;
   }
 
   void deleteUser(String username) {
@@ -864,7 +877,8 @@ class AppStateProvider extends ChangeNotifier {
   }
 
   /// Met à jour le profil de l'utilisateur actuellement connecté
-  void updateCurrentUserProfile({
+  bool updateCurrentUserProfile({
+    String? newUsername,
     String? fullName,
     String? email,
     String? phone,
@@ -875,24 +889,40 @@ class AppStateProvider extends ChangeNotifier {
     final idx = _db.users.indexWhere((u) => u.username == _db.currentUsername);
     if (idx != -1) {
       final old = _db.users[idx];
+      String resolvedUsername = old.username;
+      if (newUsername != null &&
+          newUsername.trim().isNotEmpty &&
+          newUsername.trim() != old.username) {
+        final candidate = newUsername.trim();
+        if (_db.users.any(
+            (u) => u.username.toLowerCase() == candidate.toLowerCase())) {
+          return false;
+        }
+        resolvedUsername = candidate;
+      }
       final updatedPassword = (newPassword != null && newPassword.isNotEmpty)
           ? newPassword
           : old.passwordHash;
       _db.users[idx] = UserAccount(
-        username: old.username,
+        username: resolvedUsername,
         passwordHash: updatedPassword,
         employeeId: old.employeeId,
         role: old.role,
         fullName: fullName ?? old.fullName,
         email: email ?? old.email,
         password: updatedPassword,
+        pinCode: (newPinCode != null && newPinCode.isNotEmpty)
+            ? newPinCode
+            : old.pinCode,
         permissions: old.permissions,
         profileImageBase64: profileImageBase64 ?? old.profileImageBase64,
       );
+
+      _db.currentUsername = resolvedUsername;
+
       if (phone != null && phone.isNotEmpty) {
         _db.pharmacyContact1 = phone;
       }
-      // Si admin, synchroniser aussi le mot de passe, le code PIN et le téléphone de la pharmacie
       if (old.role == 'ADMIN') {
         if (newPassword != null && newPassword.isNotEmpty) {
           _db.pharmacyPassword = newPassword;
@@ -905,10 +935,71 @@ class AppStateProvider extends ChangeNotifier {
         }
       }
       _db.logAction(
-          'PROFIL_MAJ', 'Profil de ${_db.currentUsername} mis à jour.');
+          'PROFIL_MAJ', 'Profil de $resolvedUsername mis à jour.');
+      _db.save();
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  // ==========================================
+  // NOTIFICATIONS ADMIN
+  // ==========================================
+
+  void _notifyAdminProductAction({
+    required String type,
+    required String productName,
+    required String productId,
+  }) {
+    if (_db.currentUserRole != 'ADMIN') {
+      final actionVerb = type == 'PRODUCT_DELETE'
+          ? 'supprimé'
+          : (type == 'PRODUCT_EDIT' ? 'modifié' : 'ajouté');
+      final notif = AppNotification(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: 'Produit $actionVerb par vendeur (${_db.currentUsername})',
+        message:
+            'Le vendeur ${_db.currentUsername} a $actionVerb le produit "$productName" (ID: $productId).',
+        timestamp: DateTime.now(),
+        author: _db.currentUsername,
+        type: type,
+        productId: productId,
+        productName: productName,
+      );
+      _db.appNotifications.insert(0, notif);
       _db.save();
       notifyListeners();
     }
+  }
+
+  void markNotificationAsRead(String id) {
+    final idx = _db.appNotifications.indexWhere((n) => n.id == id);
+    if (idx != -1) {
+      _db.appNotifications[idx].isRead = true;
+      _db.save();
+      notifyListeners();
+    }
+  }
+
+  void markAllNotificationsAsRead() {
+    for (var n in _db.appNotifications) {
+      n.isRead = true;
+    }
+    _db.save();
+    notifyListeners();
+  }
+
+  void deleteNotification(String id) {
+    _db.appNotifications.removeWhere((n) => n.id == id);
+    _db.save();
+    notifyListeners();
+  }
+
+  void clearAllNotifications() {
+    _db.appNotifications.clear();
+    _db.save();
+    notifyListeners();
   }
 
   void logAction(String action, String details) {
@@ -957,6 +1048,8 @@ class AppStateProvider extends ChangeNotifier {
     _db.products.add(product);
     _db.logAction('STOCK_ADD_PRODUCT',
         'Nouveau produit ajouté : ${product.name} (Code: ${product.id}).');
+    _notifyAdminProductAction(
+        type: 'PRODUCT_ADD', productName: product.name, productId: product.id);
     _db.save();
     refreshSystemAlerts(shouldNotify: true);
   }
@@ -966,6 +1059,10 @@ class AppStateProvider extends ChangeNotifier {
     if (idx != -1) {
       _db.products[idx] = updated;
       _db.logAction('STOCK_EDIT_PRODUCT', 'Produit modifié : ${updated.name}.');
+      _notifyAdminProductAction(
+          type: 'PRODUCT_EDIT',
+          productName: updated.name,
+          productId: updated.id);
       _db.save();
       refreshSystemAlerts(shouldNotify: true);
     }
@@ -977,6 +1074,8 @@ class AppStateProvider extends ChangeNotifier {
     _db.lots.removeWhere((l) => l.productId == productId);
     _db.logAction('STOCK_DELETE_PRODUCT',
         'Produit supprimé : ${prod.name} et tous ses lots.');
+    _notifyAdminProductAction(
+        type: 'PRODUCT_DELETE', productName: prod.name, productId: productId);
     _db.save();
     refreshSystemAlerts();
   }

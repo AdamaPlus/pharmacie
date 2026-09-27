@@ -33,6 +33,7 @@ class DatabaseService {
   List<MedicamentLoan> loans = [];
   List<Expense> expenses = [];
   List<AuditLog> auditLogs = [];
+  List<AppNotification> appNotifications = [];
 
   // Utilisateur connecté
   String currentUsername = 'anonymous';
@@ -277,6 +278,7 @@ class DatabaseService {
       'users',
       'loans',
       'expenses',
+      'app_notifications',
     ]) {
       batch.execute('''
         CREATE TABLE IF NOT EXISTS $table (
@@ -310,7 +312,8 @@ class DatabaseService {
       'suppliers',
       'users',
       'loans',
-      'expenses'
+      'expenses',
+      'app_notifications'
     ]) {
       await _db!.execute(
           'CREATE TABLE IF NOT EXISTS $table (id TEXT PRIMARY KEY, data TEXT NOT NULL)');
@@ -368,6 +371,8 @@ class DatabaseService {
     users = await _loadTable('users', (m) => UserAccount.fromMap(m));
     loans = await _loadTable('loans', (m) => MedicamentLoan.fromMap(m));
     expenses = await _loadTable('expenses', (m) => Expense.fromMap(m));
+    appNotifications = await _loadTable(
+        'app_notifications', (m) => AppNotification.fromMap(m));
 
     // Logs d'audit (ordre décroissant, limité à 2000)
     final logRows = await _db!.query(
@@ -440,6 +445,7 @@ class DatabaseService {
         'users',
         'loans',
         'expenses',
+        'app_notifications',
       ]) {
         batch.delete(table);
       }
@@ -458,6 +464,8 @@ class DatabaseService {
       _upsertAll(batch, 'users', users, (e) => e.username, (e) => e.toMap());
       _upsertAll(batch, 'loans', loans, (e) => e.id, (e) => e.toMap());
       _upsertAll(batch, 'expenses', expenses, (e) => e.id, (e) => e.toMap());
+      _upsertAll(batch, 'app_notifications', appNotifications, (e) => e.id,
+          (e) => e.toMap());
 
       // Logs d'audit
       batch.delete('audit_logs');

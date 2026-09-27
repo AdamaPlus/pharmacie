@@ -917,6 +917,64 @@ class AuditLog {
 }
 
 // ==========================================
+// 9. ADMIN NOTIFICATION MODEL
+// ==========================================
+
+class AppNotification {
+  final String id;
+  final String title;
+  final String message;
+  final DateTime timestamp;
+  final String author;
+  final String type; // 'PRODUCT_ADD', 'PRODUCT_EDIT', 'PRODUCT_DELETE'
+  final String? productId;
+  final String? productName;
+  bool isRead;
+
+  AppNotification({
+    required this.id,
+    required this.title,
+    required this.message,
+    required this.timestamp,
+    required this.author,
+    required this.type,
+    this.productId,
+    this.productName,
+    this.isRead = false,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'message': message,
+      'timestamp': timestamp.toIso8601String(),
+      'author': author,
+      'type': type,
+      'productId': productId,
+      'productName': productName,
+      'isRead': isRead,
+    };
+  }
+
+  factory AppNotification.fromMap(Map<String, dynamic> map) {
+    return AppNotification(
+      id: map['id'] ?? '',
+      title: map['title'] ?? '',
+      message: map['message'] ?? '',
+      timestamp: DateTime.parse(
+          map['timestamp'] ?? DateTime.now().toIso8601String()),
+      author: map['author'] ?? '',
+      type: map['type'] ?? '',
+      productId: map['productId'],
+      productName: map['productName'],
+      isRead: map['isRead'] ?? false,
+    );
+  }
+}
+
+
+// ==========================================
 // 10. DETTES & EMPRUNTS MODELS
 // ==========================================
 

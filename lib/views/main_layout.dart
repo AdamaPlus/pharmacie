@@ -634,6 +634,55 @@ class _MainLayoutState extends State<MainLayout> {
                         SizedBox(width: 16),
                       ],
 
+                      // Notifications Admin (Modifications/Suppressions Produits par les vendeurs)
+                      if (state.currentUserRole == 'ADMIN') ...[
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                state.unreadAdminNotificationsCount > 0
+                                    ? Icons.notifications_active_rounded
+                                    : Icons.notifications_none_rounded,
+                                color: state.unreadAdminNotificationsCount > 0
+                                    ? const Color(0xFFEF4444)
+                                    : state.textSecondary,
+                                size: 24,
+                              ),
+                              tooltip: 'Notifications Vendeurs (Stock)',
+                              onPressed: () =>
+                                  _showAdminNotificationsDialog(context, state),
+                            ),
+                            if (state.unreadAdminNotificationsCount > 0)
+                              Positioned(
+                                right: 4,
+                                top: 4,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.redAccent,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 16,
+                                    minHeight: 16,
+                                  ),
+                                  child: Text(
+                                    '${state.unreadAdminNotificationsCount}',
+                                    style: GoogleFonts.inter(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+
                       // Notification Toggle
                       IconButton(
                         icon: Icon(
@@ -1869,6 +1918,7 @@ class _MainLayoutState extends State<MainLayout> {
           username: state.currentUsername, role: state.currentUserRole),
     );
 
+    final usernameCtrl = TextEditingController(text: currentUser.username);
     final nameCtrl = TextEditingController(text: currentUser.fullName);
     final emailCtrl = TextEditingController(text: currentUser.email);
     final phoneCtrl = TextEditingController(text: state.pharmacyContact1);
@@ -2066,6 +2116,47 @@ class _MainLayoutState extends State<MainLayout> {
                             ),
                           ),
                         const SizedBox(height: 16),
+
+                        // Nom d'utilisateur
+                        Text('Nom d\'utilisateur',
+                            style: GoogleFonts.inter(
+                                color: state.textSecondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: usernameCtrl,
+                          style: GoogleFonts.inter(color: state.textPrimary),
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: state.bgPrimary,
+                            hintText: 'Votre nom d\'utilisateur',
+                            hintStyle: GoogleFonts.inter(
+                                color: state.textSecondaryLight),
+                            prefixIcon: Icon(Icons.person_outline_rounded,
+                                color: state.textSecondaryLight, size: 18),
+                            contentPadding: const EdgeInsets.symmetric(
+                                vertical: 14, horizontal: 16),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide.none),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(
+                                  color: themeColor, width: 1.5),
+                            ),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Nom d\'utilisateur requis';
+                            }
+                            if (v.trim().length < 3) {
+                              return 'Minimum 3 caractères';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 14),
 
                         // Nom complet
                         Text('Nom complet',
@@ -2319,7 +2410,8 @@ class _MainLayoutState extends State<MainLayout> {
                       foregroundColor: Colors.white),
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
-                      state.updateCurrentUserProfile(
+                      final ok = state.updateCurrentUserProfile(
+                        newUsername: usernameCtrl.text.trim(),
                         fullName: nameCtrl.text.trim(),
                         email: emailCtrl.text.trim(),
                         phone: phoneCtrl.text.trim(),
@@ -2327,6 +2419,18 @@ class _MainLayoutState extends State<MainLayout> {
                             passCtrl.text.isNotEmpty ? passCtrl.text : null,
                         profileImageBase64: newProfileImageBase64,
                       );
+                      if (!ok) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'Ce nom d\'utilisateur est déjà utilisé par un autre compte !',
+                                style: GoogleFonts.inter()),
+                            backgroundColor: Colors.redAccent,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        return;
+                      }
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -2338,6 +2442,210 @@ class _MainLayoutState extends State<MainLayout> {
                       );
                     }
                   },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ==========================================
+  // DIALOG NOTIFICATIONS ADMIN (MODIFS/SUPPRESSIONS PAR LES VENDEURS)
+  // ==========================================
+  void _showAdminNotificationsDialog(
+      BuildContext context, AppStateProvider state) {
+    const themeColor = Color(0xFF10B981);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final list = state.appNotifications;
+            return AlertDialog(
+              backgroundColor: state.bgSecondary,
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: themeColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.notifications_active_rounded,
+                        color: themeColor, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Notifications Vendeurs (Stock)',
+                      style: GoogleFonts.outfit(
+                        color: state.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  if (list.isNotEmpty) ...[
+                    TextButton.icon(
+                      onPressed: () {
+                        state.clearAllNotifications();
+                        setDialogState(() {});
+                      },
+                      icon: const Icon(Icons.delete_sweep_rounded,
+                          size: 16, color: Colors.redAccent),
+                      label: Text(
+                        'Tout supprimer',
+                        style: GoogleFonts.inter(
+                            color: Colors.redAccent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              content: SizedBox(
+                width: 520,
+                height: 420,
+                child: list.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.notifications_off_outlined,
+                                size: 48, color: state.textSecondaryLight),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Aucune notification enregistrée.',
+                              style: GoogleFonts.inter(
+                                color: state.textSecondary,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: list.length,
+                        itemBuilder: (context, idx) {
+                          final n = list[idx];
+                          Color badgeColor = Colors.blue;
+                          IconData badgeIcon = Icons.edit_note_rounded;
+                          if (n.type == 'PRODUCT_DELETE') {
+                            badgeColor = Colors.redAccent;
+                            badgeIcon = Icons.delete_outline_rounded;
+                          } else if (n.type == 'PRODUCT_ADD') {
+                            badgeColor = const Color(0xFF10B981);
+                            badgeIcon = Icons.add_circle_outline_rounded;
+                          }
+
+                          final formattedDate =
+                              DateFormat('dd/MM/yyyy HH:mm', 'fr_FR')
+                                  .format(n.timestamp);
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: n.isRead
+                                  ? state.bgPrimary.withOpacity(0.5)
+                                  : badgeColor.withOpacity(0.06),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: n.isRead
+                                    ? state.borderTheme
+                                    : badgeColor.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: badgeColor.withOpacity(0.12),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(badgeIcon,
+                                      color: badgeColor, size: 18),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              n.title,
+                                              style: GoogleFonts.inter(
+                                                color: state.textPrimary,
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                          Text(
+                                            formattedDate,
+                                            style: GoogleFonts.inter(
+                                              color: state.textSecondaryLight,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        n.message,
+                                        style: GoogleFonts.inter(
+                                          color: state.textSecondary,
+                                          fontSize: 12.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close_rounded,
+                                      size: 16, color: Colors.grey),
+                                  tooltip: 'Supprimer cette notification',
+                                  onPressed: () {
+                                    state.deleteNotification(n.id);
+                                    setDialogState(() {});
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              actions: [
+                if (list.any((n) => !n.isRead))
+                  TextButton(
+                    onPressed: () {
+                      state.markAllNotificationsAsRead();
+                      setDialogState(() {});
+                    },
+                    child: Text(
+                      'Tout marquer comme lu',
+                      style: GoogleFonts.inter(color: themeColor),
+                    ),
+                  ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: themeColor,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () {
+                    state.markAllNotificationsAsRead();
+                    Navigator.pop(context);
+                  },
+                  child: Text('Fermer', style: GoogleFonts.inter()),
                 ),
               ],
             );
